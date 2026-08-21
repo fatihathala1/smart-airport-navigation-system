@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  AIRPORT_ADMIN
+}
+
+enum RecordStatus {
+  ACTIVE
+  INACTIVE
+  TEMPORARILY_CLOSED
+}
+
+enum SpaceType {
+  TENANT
+  GATE
+  FACILITY
+  SERVICE
+  CIRCULATION
+  RESTRICTED
+}
+
+enum EdgeType {
+  WALKWAY
+  STAIRS
+  LIFT
+  ESCALATOR
+}
+
+enum EdgeDirection {
+  BIDIRECTIONAL
+  ONE_WAY
+}
+
+model Terminal {
+  id        String       @id @default(cuid())
+  code      String       @unique
+  name      String
+  status    RecordStatus @default(ACTIVE)
+  floors    Floor[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Floor {
+  id          String       @id @default(cuid())
+  terminalId  String
+  code        String       @unique
+  number      Int
+  label       String
+  mapAsset    String?
+  viewBox     String?
+  sortOrder   Int          @default(0)
+  terminal    Terminal     @relation(fields: [terminalId], references: [id], onDelete: Cascade)
+  spaces      Space[]
+  facilities  Facility[]
+  routeNodes  RouteNode[]
+  qrLocations QRLocation[]
+
+  @@unique([terminalId, number])
+  @@index([terminalId, sortOrder])
+}
+
+model Space {
+  id                  String            @id @default(cuid())
+  floorId             String
+  code                String            @unique
+  label               String
+  type                SpaceType
+  status              RecordStatus      @default(ACTIVE)
+  geometry            Json
+  svgElementId        String?
+  routingAnchorNodeId String?           @unique
+  floor               Floor             @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  routingAnchor       RouteNode?        @relation("SpaceRoutingAnchor", fields: [routingAnchorNodeId], references: [id], onDelete: SetNull)
+  assignments         SpaceAssignment[]
+  facilities          Facility[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([floorId, status])
+}
+
+model Tenant {
+  id          String            @id @default(cuid())
+  name        String
+  slug        String            @unique
+  description String?
+  logoUrl     String?
+  photoUrl    String?
+  contact     String?
+  website     String?
+  status      RecordStatus      @default(ACTIVE)
+  assignments SpaceAssignment[]
+  hours       OperationalHour[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model SpaceAssignment {
+  id        String    @id @default(cuid())
+  spaceId   String
+  tenantId  String
+  active    Boolean   @default(true)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  space     Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([spaceId, active])
+  @@index([tenantId, active])
+}
+
+model Category {
+  id         String     @id @default(cuid())
+  slug       String     @unique
+  name       String
+  icon       String
+  color      String
+  sortOrder  Int        @default(0)
+  facilities Facility[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+// Airport-owned POIs remain separate from commercial tenant occupancy.
+model Facility {
+  id           String            @id @default(cuid())
+  floorId      String
+  spaceId      String?
+  categoryId   String
+  anchorNodeId String?
+  code         String            @unique
+  name         String
+  description  String?
+  photoUrl     String?
+  status       RecordStatus      @default(ACTIVE)
+  floor        Floor             @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  space        Space?            @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  category     Category          @relation(fields: [categoryId], references: [id])
+  anchorNode   RouteNode?        @relation(fields: [anchorNodeId], references: [id], onDelete: SetNull)
+  hours        OperationalHour[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([floorId, status])
+  @@index([categoryId])
+}
+
+model OperationalHour {
+  id         String    @id @default(cuid())
+  tenantId   String?
+  facilityId String?
+  dayOfWeek  Int
+  isOpen     Boolean   @default(true)
+  is24Hours  Boolean   @default(false)
+  openTime   String?
+  closeTime  String?
+  tenant     Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  facility   Facility? @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, dayOfWeek])
+  @@unique([facilityId, dayOfWeek])
+}
+
+model RouteNode {
+  id            String       @id @default(cuid())
+  floorId       String
+  code          String       @unique
+  x             Float
+  y             Float
+  label         String?
+  active        Boolean      @default(true)
+  floor         Floor        @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  outgoingEdges RouteEdge[]  @relation("RouteEdgeFrom")
+  incomingEdges RouteEdge[]  @relation("RouteEdgeTo")
+  anchoredSpace Space?       @relation("SpaceRoutingAnchor")
+  facilities    Facility[]
+  qrLocations   QRLocation[]
+
+  @@index([floorId, active])
+}
+
+model RouteEdge {
+  id             String        @id @default(cuid())
+  fromNodeId     String
+  toNodeId       String
+  distanceMeters Float
+  type           EdgeType      @default(WALKWAY)
+  direction      EdgeDirection @default(BIDIRECTIONAL)
+  publicAccess   Boolean       @default(true)
+  accessible     Boolean       @default(true)
+  active         Boolean       @default(true)
+  status         RecordStatus  @default(ACTIVE)
+  fromNode       RouteNode     @relation("RouteEdgeFrom", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  toNode         RouteNode     @relation("RouteEdgeTo", fields: [toNodeId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([fromNodeId, active, publicAccess])
+  @@index([toNodeId])
+}
+
+model QRLocation {
+  id         String    @id @default(cuid())
+  floorId    String
+  nodeId     String
+  locationId String    @unique
+  label      String
+  active     Boolean   @default(true)
+  isMock     Boolean   @default(true)
+  floor      Floor     @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  node       RouteNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  role         AdminRole
+  active       Boolean    @default(true)
+  auditLogs    AuditLog[] @relation("AuditActor")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+}
