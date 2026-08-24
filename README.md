@@ -1,4 +1,4 @@
-# JUA Interactive Indoor Wayfinding
+# Juanda Airport Wayfinding — InJourney Airports
 
 Web wayfinding responsif untuk membantu pengunjung Bandar Udara Internasional Juanda mencari lokasi dan mendapatkan rute di Terminal 1 dan Terminal 2. Halaman publik langsung membuka peta. Pengunjung tidak perlu login.
 

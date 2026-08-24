@@ -28,10 +28,11 @@ async function main() {
   for (const terminal of terminals) {
     const terminalRow = await prisma.terminal.upsert({ where: { code: terminal.code }, update: { name: terminal.name }, create: { code: terminal.code, name: terminal.name } });
     for (const floor of floors.filter((item) => item.terminal === terminal.code)) {
+      const mapAsset = terminal.floorMaps[floor.id]?.asset ?? terminal.mapAsset;
       const row = await prisma.floor.upsert({
         where: { code: floor.id },
-        update: { label: floor.label, mapAsset: terminal.mapAsset },
-        create: { terminalId: terminalRow.id, code: floor.id, number: floor.number, label: floor.label, mapAsset: terminal.mapAsset, viewBox: "0 0 1000 700", sortOrder: floor.number },
+        update: { label: floor.label, mapAsset },
+        create: { terminalId: terminalRow.id, code: floor.id, number: floor.number, label: floor.label, mapAsset, viewBox: "0 0 1000 700", sortOrder: floor.number },
         select: { id: true },
       });
       floorRows.set(floor.id, row);

@@ -5,30 +5,49 @@ export const terminals: Array<{
   code: TerminalCode;
   name: string;
   mapAsset: string;
-  imageWidth: number;
-  imageHeight: number;
-  floorCrops: Record<string, { x: number; y: number; width: number; height: number }>;
+  floorMaps: Record<string, {
+    asset: string;
+    imageWidth: number;
+    imageHeight: number;
+    crop: { x: number; y: number; width: number; height: number };
+  }>;
 }> = [
   {
     code: "T1",
     name: "Terminal 1",
-    mapAsset: "/map/juanda-terminal-1.png",
-    imageWidth: 2198,
-    imageHeight: 1065,
-    floorCrops: {
-      "T1-L1": { x: 45, y: 55, width: 2090, height: 535 },
-      "T1-L2": { x: 35, y: 625, width: 2110, height: 415 },
+    mapAsset: "/map/juanda-terminal-1.svg",
+    floorMaps: {
+      "T1-L1": {
+        asset: "/map/juanda-terminal-1.svg",
+        imageWidth: 9820,
+        imageHeight: 1875,
+        crop: { x: 0, y: 0, width: 9820, height: 1875 },
+      },
+      "T1-L2": {
+        asset: "/map/juanda-terminal-1.png",
+        imageWidth: 2198,
+        imageHeight: 1065,
+        crop: { x: 35, y: 625, width: 2110, height: 415 },
+      },
     },
   },
   {
     code: "T2",
     name: "Terminal 2",
     mapAsset: "/map/juanda-terminal-2.png",
-    imageWidth: 1650,
-    imageHeight: 1169,
-    floorCrops: {
-      "T2-L1": { x: 25, y: 35, width: 1600, height: 500 },
-      "T2-L2": { x: 20, y: 545, width: 1610, height: 545 },
+    floorMaps: {
+      "T2-L1": {
+        asset: "/map/juanda-terminal-2.png",
+        imageWidth: 1650,
+        imageHeight: 1169,
+        crop: { x: 25, y: 35, width: 1600, height: 500 },
+      },
+      "T2-L2": {
+        asset: "/map/juanda-terminal-2.png",
+        imageWidth: 1650,
+        imageHeight: 1169,
+        crop: { x: 20, y: 545, width: 1610, height: 545 },
+      },
     },
   },
 ];

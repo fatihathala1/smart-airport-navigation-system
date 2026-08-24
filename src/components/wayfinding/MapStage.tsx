@@ -31,7 +31,7 @@ export function MapStage({ terminal, floorId, spaces, selectedId, route, fromId,
   }, [terminal, floorId]);
   const visibleNodes = routeNodes.filter((node) => node.floorId === floorId);
   const terminalMap = terminals.find((item) => item.code === terminal)!;
-  const crop = terminalMap.floorCrops[floorId];
+  const floorMap = terminalMap.floorMaps[floorId];
   return (
     <section className="map-stage" aria-label="Peta interaktif terminal">
       <div className="map-context">
@@ -48,7 +48,13 @@ export function MapStage({ terminal, floorId, spaces, selectedId, route, fromId,
         onPointerUp={(event) => { if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null; }}
       >
         <g ref={layerRef}>
-          <BaseMapLayer asset={terminalMap.mapAsset} label={`${terminal} ${floorId}`} imageWidth={terminalMap.imageWidth} imageHeight={terminalMap.imageHeight} crop={crop} />
+          <BaseMapLayer
+            asset={floorMap.asset}
+            label={`${terminal} ${floorId}`}
+            imageWidth={floorMap.imageWidth}
+            imageHeight={floorMap.imageHeight}
+            crop={floorMap.crop}
+          />
           <SpaceLayer spaces={spaces} selectedId={selectedId} onSelect={onSelect} />
           <POILayer spaces={spaces} nodes={visibleNodes} />
           <RouteLayer route={route} floorId={floorId} />

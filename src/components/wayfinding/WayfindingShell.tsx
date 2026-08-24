@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { AlertTriangle, ChevronRight, Clock3, MapPin, Navigation, Ruler, Search, ShieldCheck, Wifi, WifiOff, X } from "lucide-react";
 import { categories, DEMO_DATA_NOTICE, floors, qrLocations, routeEdges, routeNodes, spaces } from "@/data/demo-wayfinding";
@@ -10,6 +9,8 @@ import { findShortestRoute } from "@/lib/dijkstra";
 import { useMapStore } from "@/store/mapStore";
 import type { MapSpace, TerminalCode } from "@/types";
 import { MapStage } from "./MapStage";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import { SiteHeader } from "@/components/site/SiteHeader";
 
 export function WayfindingShell() {
   const searchParams = useSearchParams();
@@ -77,12 +78,13 @@ export function WayfindingShell() {
   const routeFloorIds = [...new Set(store.route?.nodes.map((node) => node.floorId) ?? [])];
 
   return (
-    <main className="wayfinding-shell">
-      <header className="app-header">
-        <div className="brand-lockup" aria-label="InJourney Airports Juanda Wayfinding">
-          <Image className="brand-logo" src="/injourney-airports.png" width={253} height={121} priority alt="InJourney Airports" />
-          <span className="brand-divider" aria-hidden="true" />
-          <span className="brand-product"><strong>Airport Wayfinding</strong><small>Bandara Internasional Juanda</small></span>
+    <div className="wayfinding-page">
+      <SiteHeader />
+      <main className="wayfinding-shell">
+        <section className="wayfinding-controlbar" aria-label="Kontrol navigasi bandara">
+        <div className="wayfinding-title">
+          <MapPin size={20} aria-hidden="true" />
+          <span><strong>Airport Wayfinding</strong><small>Bandara Internasional Juanda</small></span>
         </div>
         <div className="terminal-switch" aria-label="Pilih terminal">
           {(["T1", "T2"] as TerminalCode[]).map((terminal) => (
@@ -93,7 +95,7 @@ export function WayfindingShell() {
           <span className="connection-pill" data-online={online}>{online ? <Wifi size={15} /> : <WifiOff size={15} />}<span>{online ? "Online" : "Offline"}</span></span>
           <Link className="admin-link" href="/admin"><ShieldCheck size={16} /><span>Portal admin</span></Link>
         </div>
-      </header>
+        </section>
 
       <section className="toolbar">
         <label className="search-field">
@@ -177,6 +179,8 @@ export function WayfindingShell() {
           </aside>
         )}
       </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

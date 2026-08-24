@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { LockKeyhole } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -22,7 +23,7 @@ export default function SignInPage() {
   }
   return (
     <main className="signin-shell">
-      <Link href="/" className="signin-brand"><span className="brand-mark">JUA</span><span><strong>Wayfinding</strong><small>Portal admin</small></span></Link>
+      <Link href="/" className="signin-brand"><Image className="admin-brand-logo" src="/injourney-airports.png" width={253} height={121} alt="InJourney Airports" /><span><strong>Wayfinding</strong><small>Portal admin</small></span></Link>
       <section className="signin-panel">
         <LockKeyhole size={28} />
         <h1>Masuk sebagai admin</h1>

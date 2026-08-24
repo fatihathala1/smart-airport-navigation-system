@@ -1,4 +1,5 @@
 import { Building2, Clock3, FileClock, Map, MapPinned, ShieldCheck, Store, Tags, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
@@ -26,7 +27,7 @@ export default async function AdminPage() {
   return (
     <main className="admin-shell">
       <aside className="admin-sidebar">
-        <Link href="/" className="admin-brand"><span className="brand-mark">JUA</span><span><strong>Wayfinding</strong><small>Portal admin</small></span></Link>
+        <Link href="/" className="admin-brand"><Image className="admin-brand-logo" src="/injourney-airports.png" width={253} height={121} alt="InJourney Airports" /><span><strong>Wayfinding</strong><small>Portal admin</small></span></Link>
         <nav aria-label="Navigasi admin">
           <a href="/admin" aria-current="page"><ShieldCheck size={19} /> Ringkasan</a>
           {allowed.map((item) => <a key={item.title} href={`#${item.permission.toLowerCase()}`}><item.icon size={19} /> {item.title}</a>)}
