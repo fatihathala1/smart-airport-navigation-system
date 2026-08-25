@@ -224,6 +224,8 @@ npm test
 npm run build
 ```
 
+Perintah `npm run dev` bind ke seluruh interface jaringan dan menampilkan dua URL: URL lokal serta URL Wi-Fi yang dapat dibuka perangkat lain pada jaringan yang sama. Gunakan URL `Jaringan` yang dicetak terminal (contoh saat ini `http://192.168.2.123:3000`), bukan alamat adaptor virtual seperti `192.168.56.1`. Jika perangkat lain masih tidak dapat tersambung, izinkan Node.js pada Windows Firewall untuk jaringan Private.
+
 Rute penting:
 
 - `http://localhost:3000/`

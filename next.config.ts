@@ -1,9 +1,14 @@
 import type { NextConfig } from "next";
+import { networkInterfaces } from "node:os";
 
 const scriptPolicy = process.env.NODE_ENV === "development" ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'";
+const localDevOrigins = Object.values(networkInterfaces())
+  .flatMap((addresses) => addresses ?? [])
+  .filter((address) => address.family === "IPv4" && !address.internal)
+  .map((address) => address.address);
 
 const nextConfig: NextConfig = {
-    allowedDevOrigins: ["192.168.56.1"],
+  allowedDevOrigins: ["localhost", "127.0.0.1", ...localDevOrigins],
   async headers() {
     return [{ source: "/(.*)", headers: [
       { key: "X-Content-Type-Options", value: "nosniff" },

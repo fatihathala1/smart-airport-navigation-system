@@ -1,6 +1,12 @@
-import type { MapSpace, TerminalCode, WayfindingEdge, WayfindingNode } from "@/types";
+import t1Json from "@/data/map/T1_gabungan.json";
+import t2Json from "@/data/map/T2_gabungan.json";
+import { T1_WALL_DATA } from "@/data/walls/t1";
+import { T2_WALL_DATA } from "@/data/walls/t2";
+import { buildWallSet } from "@/lib/astar";
+import type { DestinationPoint, GridRoom, MapSpace, TerminalCode, WayfindingEdge, WayfindingNode } from "@/types";
 
-export const DEMO_DATA_NOTICE = "Data demonstrasi. Belum divalidasi sebagai data operasional Juanda.";
+export const DEMO_DATA_NOTICE = "Nama unit bersifat demonstrasi. Geometri mengikuti data denah, tetapi wajib divalidasi sebelum penggunaan operasional.";
+
 export const terminals: Array<{
   code: TerminalCode;
   name: string;
@@ -13,93 +19,144 @@ export const terminals: Array<{
   }>;
 }> = [
   {
-    code: "T1",
-    name: "Terminal 1",
-    mapAsset: "/map/juanda-terminal-1.svg",
+    code: "T1", name: "Terminal 1", mapAsset: "/map/juanda-terminal-1.svg",
     floorMaps: {
-      "T1-L1": {
-        asset: "/map/juanda-terminal-1.svg",
-        imageWidth: 9820,
-        imageHeight: 1875,
-        crop: { x: 0, y: 0, width: 9820, height: 1875 },
-      },
-      "T1-L2": {
-        asset: "/map/juanda-terminal-1.png",
-        imageWidth: 2198,
-        imageHeight: 1065,
-        crop: { x: 35, y: 625, width: 2110, height: 415 },
-      },
+      "T1-L1": { asset: "/map/juanda-terminal-1.svg", imageWidth: 9820, imageHeight: 1875, crop: { x: 0, y: 0, width: 9820, height: 1875 } },
+      "T1-L2": { asset: "/map/juanda-terminal-1.png", imageWidth: 2198, imageHeight: 1065, crop: { x: 35, y: 625, width: 2110, height: 415 } },
     },
   },
   {
-    code: "T2",
-    name: "Terminal 2",
-    mapAsset: "/map/juanda-terminal-2.png",
+    code: "T2", name: "Terminal 2", mapAsset: "/map/juanda-terminal-2.png",
     floorMaps: {
-      "T2-L1": {
-        asset: "/map/juanda-terminal-2.png",
-        imageWidth: 1650,
-        imageHeight: 1169,
-        crop: { x: 25, y: 35, width: 1600, height: 500 },
-      },
-      "T2-L2": {
-        asset: "/map/juanda-terminal-2.png",
-        imageWidth: 1650,
-        imageHeight: 1169,
-        crop: { x: 20, y: 545, width: 1610, height: 545 },
-      },
+      "T2-L1": { asset: "/map/juanda-terminal-2.png", imageWidth: 1650, imageHeight: 1169, crop: { x: 25, y: 35, width: 1600, height: 500 } },
+      "T2-L2": { asset: "/map/juanda-terminal-2.png", imageWidth: 1650, imageHeight: 1169, crop: { x: 20, y: 545, width: 1610, height: 545 } },
     },
   },
 ];
+
 export const floors = [
-  { id: "T1-L1", terminal: "T1" as const, label: "Lantai 1", number: 1 }, { id: "T1-L2", terminal: "T1" as const, label: "Lantai 2", number: 2 },
-  { id: "T2-L1", terminal: "T2" as const, label: "Lantai 1", number: 1 }, { id: "T2-L2", terminal: "T2" as const, label: "Lantai 2", number: 2 },
+  { id: "T1-L1", terminal: "T1" as const, label: "Lantai 1", number: 1 },
+  { id: "T1-L2", terminal: "T1" as const, label: "Lantai 2", number: 2 },
+  { id: "T2-L1", terminal: "T2" as const, label: "Lantai 1", number: 1 },
+  { id: "T2-L2", terminal: "T2" as const, label: "Lantai 2", number: 2 },
 ];
+
 export const categories = [
-  { id: "all", label: "Semua" }, { id: "gate", label: "Gate" }, { id: "toilet", label: "Toilet" }, { id: "food", label: "Makan" },
-  { id: "shop", label: "Belanja" }, { id: "atm", label: "ATM" }, { id: "prayer", label: "Mushola" }, { id: "info", label: "Informasi" },
+  { id: "all", label: "Semua" },
+  { id: "office", label: "Kantor" },
+  { id: "food", label: "Makanan & Minuman" },
+  { id: "shop", label: "Toko Pakaian" },
+  { id: "prayer", label: "Mushola" },
 ];
 
-const nodePositions: Record<TerminalCode, Record<string, [number, number]>> = {
-  T1: {
-    "L1-ENTRANCE": [88, 392], "L1-A": [250, 382], "L1-B": [420, 368], "L1-LIFT": [585, 360], "L1-STAIRS": [745, 352], "L1-END": [912, 344],
-    "L2-LIFT": [585, 362], "L2-STAIRS": [745, 360], "L2-C": [420, 368], "L2-D": [250, 374], "L2-END": [912, 354],
-  },
-  T2: {
-    "L1-ENTRANCE": [88, 405], "L1-A": [245, 390], "L1-B": [410, 374], "L1-LIFT": [575, 362], "L1-STAIRS": [738, 354], "L1-END": [910, 348],
-    "L2-LIFT": [575, 365], "L2-STAIRS": [738, 362], "L2-C": [410, 373], "L2-D": [245, 382], "L2-END": [910, 354],
-  },
-};
+type RawDestination = DestinationPoint & { room?: GridRoom };
+type RawMap = { destinations: RawDestination[] };
+type PlaceKind = "office" | "food" | "shop" | "prayer";
 
-const nodesFor = (terminal: TerminalCode): WayfindingNode[] => Object.entries(nodePositions[terminal]).map(([key, [x, y]]) => {
-  const floor = key.startsWith("L1") ? "L1" : "L2";
-  return { id: `${terminal}-${key}`, floorId: `${terminal}-${floor}`, floorLabel: floor === "L1" ? "Lantai 1" : "Lantai 2", x, y };
-});
-const edge = (terminal: TerminalCode, id: string, from: string, to: string, distanceMeters: number, overrides: Partial<WayfindingEdge> = {}): WayfindingEdge => ({
-  id: `${terminal}-${id}`, fromNodeId: `${terminal}-${from}`, toNodeId: `${terminal}-${to}`, distanceMeters, type: "WALKWAY", direction: "BIDIRECTIONAL", publicAccess: true, accessible: true, active: true, ...overrides,
-});
-const edgesFor = (terminal: TerminalCode): WayfindingEdge[] => [
-  edge(terminal, "E1", "L1-ENTRANCE", "L1-A", 28), edge(terminal, "E2", "L1-A", "L1-B", 36), edge(terminal, "E3", "L1-B", "L1-LIFT", 22),
-  edge(terminal, "E4", "L1-LIFT", "L1-STAIRS", 24), edge(terminal, "E5", "L1-STAIRS", "L1-END", 31), edge(terminal, "E6", "L1-LIFT", "L2-LIFT", 12, { type: "LIFT" }),
-  edge(terminal, "E7", "L1-STAIRS", "L2-STAIRS", 18, { type: "STAIRS", accessible: false }), edge(terminal, "E8", "L2-LIFT", "L2-C", 25),
-  edge(terminal, "E9", "L2-C", "L2-D", 34), edge(terminal, "E10", "L2-LIFT", "L2-STAIRS", 24), edge(terminal, "E11", "L2-STAIRS", "L2-END", 30),
-  edge(terminal, "E12", "L1-B", "L1-END", 43, { publicAccess: false }), edge(terminal, "E13", "L1-A", "L1-END", 120, { direction: "ONE_WAY", type: "ESCALATOR", accessible: false }),
-];
-export const routeNodes = [...nodesFor("T1"), ...nodesFor("T2")];
-export const routeEdges = [...edgesFor("T1"), ...edgesFor("T2")];
+const palette: Record<PlaceKind, string> = { office: "#8e9091", food: "#d89a0b", shop: "#dd0fc9", prayer: "#0f9a55" };
+const foodNames = ["Kopi Juanda", "Dapur Nusantara", "Soto Cak Har", "Roti Pagi", "Ayam Rempah", "Kedai Madura", "Bakso Transit", "Nasi Krawu", "Teh Terminal", "Warung Selasar", "Lontong Surabaya", "Kopi Landas", "Mie Penerbangan", "Pojok Dessert", "Sego Sambel", "Kedai Tropis", "Rasa Jawa", "Brew & Bites"];
+const shopNames = ["Nusantara Fashion", "Batik Angkasa", "Laras Apparel", "Runway Wear", "Svara Mode", "Puspa Textile", "Langit Outfit", "Jelita Busana", "Aruna Clothing", "Cakra Style", "Kelana Wear", "Srikandi Fashion"];
+const officeNames = ["Kantor Operasional Apron", "Kantor Administrasi Terminal", "Kantor Layanan Maskapai", "Kantor Keamanan Penerbangan", "Kantor Informasi Bandara", "Kantor Pengelola Fasilitas", "Kantor Operasional Bagasi", "Kantor Pelayanan Penumpang", "Kantor Koordinasi Gate", "Kantor Pengendali Terminal", "Kantor Teknik Gedung", "Kantor Kebersihan Terminal"];
+const prayerNames = ["Mushola Al-Ikhlas", "Mushola Ar-Rahman", "Mushola An-Nur", "Mushola As-Salam", "Mushola Al-Hidayah", "Mushola At-Taqwa", "Mushola Al-Falah", "Mushola Al-Barokah"];
 
-const spacesFor = (terminal: TerminalCode): MapSpace[] => [
-  { id: `${terminal}-S001`, code: `${terminal}-L1-S001`, terminal, floorId: `${terminal}-L1`, label: "Pintu Masuk", type: "SERVICE", status: "ACTIVE", polygon: "48,360 130,360 130,430 48,430", anchorNodeId: `${terminal}-L1-ENTRANCE`, category: "info", description: "Titik masuk contoh untuk memulai simulasi rute." },
-  { id: `${terminal}-S002`, code: `${terminal}-L1-S002`, terminal, floorId: `${terminal}-L1`, label: "Toilet", type: "FACILITY", status: "ACTIVE", polygon: "205,350 285,350 285,420 205,420", anchorNodeId: `${terminal}-L1-A`, category: "toilet", description: "Fasilitas contoh. Posisi dan status perlu validasi lapangan." },
-  { id: `${terminal}-S003`, code: `${terminal}-L1-S003`, terminal, floorId: `${terminal}-L1`, label: "Food Court", type: "TENANT", status: "ACTIVE", polygon: "360,335 470,335 470,405 360,405", anchorNodeId: `${terminal}-L1-B`, category: "food", description: "Area kuliner contoh dengan assignment tenant dinamis.", tenant: { name: "Area Kuliner", status: "ACTIVE", hours: "Contoh 06.00-21.00" } },
-  { id: `${terminal}-S004`, code: `${terminal}-L1-S004`, terminal, floorId: `${terminal}-L1`, label: "Lift", type: "FACILITY", status: "ACTIVE", polygon: "545,325 620,325 620,397 545,397", anchorNodeId: `${terminal}-L1-LIFT`, category: "info", description: "Konektor lintas lantai yang mendukung rute aksesibel." },
-  { id: `${terminal}-S005`, code: `${terminal}-L1-S005`, terminal, floorId: `${terminal}-L1`, label: "Area Gate", type: "GATE", status: "ACTIVE", polygon: "858,312 960,312 960,385 858,385", anchorNodeId: `${terminal}-L1-END`, category: "gate", description: "Area gate demonstrasi. Penomoran perlu disesuaikan dengan data resmi." },
-  { id: `${terminal}-S006`, code: `${terminal}-L2-S001`, terminal, floorId: `${terminal}-L2`, label: "Mushola", type: "FACILITY", status: "ACTIVE", polygon: "195,340 295,340 295,415 195,415", anchorNodeId: `${terminal}-L2-D`, category: "prayer", description: "Lokasi contoh untuk pengujian rute lintas lantai." },
-  { id: `${terminal}-S007`, code: `${terminal}-L2-S002`, terminal, floorId: `${terminal}-L2`, label: "ATM", type: "FACILITY", status: "TEMPORARILY_CLOSED", polygon: "365,335 455,335 455,408 365,408", anchorNodeId: `${terminal}-L2-C`, category: "atm", description: "Contoh status tutup sementara untuk desain state." },
-  { id: `${terminal}-S008`, code: `${terminal}-L2-S003`, terminal, floorId: `${terminal}-L2`, label: "Retail", type: "TENANT", status: "ACTIVE", polygon: "855,318 960,318 960,390 855,390", anchorNodeId: `${terminal}-L2-END`, category: "shop", description: "Space contoh dengan tenant yang dapat diganti tanpa mengubah geometri.", tenant: { name: "Area Retail", status: "ACTIVE", hours: "Contoh 07.00-20.00" } },
-];
-export const spaces = [...spacesFor("T1"), ...spacesFor("T2")];
+function placeKind(id: string): PlaceKind | null {
+  if (id.includes("_kan")) return "office";
+  if (id.includes("_fnb")) return "food";
+  if (id.includes("_ret")) return "shop";
+  if (id.includes("_mus")) return "prayer";
+  return null;
+}
+
+function floorFor(id: string, terminal: TerminalCode) { return `${terminal}-${id.startsWith("l2_") ? "L2" : "L1"}`; }
+
+function uniqueName(kind: PlaceKind, index: number, terminal: TerminalCode, floorId: string) {
+  const source = kind === "office" ? officeNames : kind === "food" ? foodNames : kind === "shop" ? shopNames : prayerNames;
+  const floor = floorId.endsWith("L1") ? "L1" : "L2";
+  return `${source[index % source.length]} ${terminal}-${floor}-${String(index + 1).padStart(2, "0")}`;
+}
+
+export function gridToMapPoint(terminal: TerminalCode, floorId: string, r: number, c: number) {
+  if (terminal === "T1") {
+    const x = 38 + (Math.max(0, Math.min(300, c)) / 300) * 924;
+    const y = floorId.endsWith("L1") ? 262 + (Math.max(0, Math.min(100, r)) / 100) * 176 : 265 + (Math.max(0, Math.min(32, r)) / 32) * 170;
+    return { x, y };
+  }
+  const x = 38 + (Math.max(0, Math.min(321, c)) / 321) * 924;
+  const y = floorId.endsWith("L1") ? 210 + ((Math.max(55, Math.min(117, r)) - 55) / 62) * 285 : 205 + (Math.max(0, Math.min(54, r)) / 54) * 300;
+  return { x, y };
+}
+
+function roomPolygon(terminal: TerminalCode, floorId: string, room: GridRoom | undefined, fallback: { r: number; c: number }) {
+  if (!room) {
+    const center = gridToMapPoint(terminal, floorId, fallback.r, fallback.c);
+    return `${center.x - 5},${center.y - 5} ${center.x + 5},${center.y - 5} ${center.x + 5},${center.y + 5} ${center.x - 5},${center.y + 5}`;
+  }
+  const a = gridToMapPoint(terminal, floorId, room.r1, room.c1);
+  const b = gridToMapPoint(terminal, floorId, room.r2, room.c2);
+  return `${a.x},${a.y} ${b.x},${a.y} ${b.x},${b.y} ${a.x},${b.y}`;
+}
+
+function nearestWalkable(r: number, c: number, walls: Set<string>, rows: number, cols: number) {
+  const startR = Math.max(0, Math.min(rows - 1, Math.round(r)));
+  const startC = Math.max(0, Math.min(cols - 1, Math.round(c)));
+  if (!walls.has(`${startR},${startC}`)) return { r: startR, c: startC };
+  for (let radius = 1; radius <= 14; radius += 1) {
+    for (let dr = -radius; dr <= radius; dr += 1) {
+      for (let dc = -radius; dc <= radius; dc += 1) {
+        if (Math.abs(dr) !== radius && Math.abs(dc) !== radius) continue;
+        const nr = startR + dr;
+        const nc = startC + dc;
+        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !walls.has(`${nr},${nc}`)) return { r: nr, c: nc };
+      }
+    }
+  }
+  return { r: startR, c: startC };
+}
+
+function buildTerminalData(terminal: TerminalCode, raw: RawMap) {
+  const wallData = terminal === "T1" ? T1_WALL_DATA : T2_WALL_DATA;
+  const walls = buildWallSet(wallData.walls);
+  const counters: Record<PlaceKind, number> = { office: 0, food: 0, shop: 0, prayer: 0 };
+  const terminalSpaces: MapSpace[] = [];
+  const terminalNodes: WayfindingNode[] = [];
+  const entranceFloor = `${terminal}-L1`;
+  const entranceGrid = { r: wallData.startRow, c: wallData.startCol };
+  const entrancePoint = gridToMapPoint(terminal, entranceFloor, entranceGrid.r, entranceGrid.c);
+
+  terminalSpaces.push({ id: `${terminal}-ENTRANCE`, code: `${terminal}-ENTRANCE`, terminal, floorId: entranceFloor, label: `Pintu Masuk ${terminal}`, type: "SERVICE", status: "ACTIVE", polygon: `${entrancePoint.x - 6},${entrancePoint.y - 6} ${entrancePoint.x + 6},${entrancePoint.y - 6} ${entrancePoint.x + 6},${entrancePoint.y + 6} ${entrancePoint.x - 6},${entrancePoint.y + 6}`, anchorNodeId: `${terminal}-ENTRANCE-NODE`, category: "entrance", description: "Titik awal navigasi terminal.", mapColor: "#008ca2" });
+  terminalNodes.push({ id: `${terminal}-ENTRANCE-NODE`, floorId: entranceFloor, floorLabel: "Lantai 1", x: entrancePoint.x, y: entrancePoint.y, gridRow: entranceGrid.r, gridCol: entranceGrid.c });
+
+  for (const destination of raw.destinations) {
+    const kind = placeKind(destination.id);
+    if (!kind) continue;
+    const index = counters[kind]++;
+    const floorId = floorFor(destination.id, terminal);
+    const room = destination.room;
+    const preferredR = room ? (floorId.endsWith("L2") ? room.r1 - 1 : room.r2) : destination.r;
+    const preferredC = room ? (room.c1 + room.c2) / 2 : destination.c;
+    const anchor = nearestWalkable(preferredR, preferredC, walls, wallData.rows, wallData.cols);
+    const point = gridToMapPoint(terminal, floorId, anchor.r, anchor.c);
+    const mapPoint = gridToMapPoint(
+      terminal,
+      floorId,
+      room ? (room.r1 + room.r2) / 2 : destination.r,
+      room ? (room.c1 + room.c2) / 2 : destination.c,
+    );
+    const label = uniqueName(kind, index, terminal, floorId);
+    const id = `${terminal}-${destination.id.toUpperCase()}`;
+    const nodeId = `${id}-NODE`;
+    terminalSpaces.push({ id, code: `${terminal}-${floorId.endsWith("L1") ? "L1" : "L2"}-${String(index + 1).padStart(3, "0")}`, terminal, floorId, label, type: kind === "office" ? "SERVICE" : kind === "prayer" ? "FACILITY" : "TENANT", status: "ACTIVE", polygon: roomPolygon(terminal, floorId, room, destination), anchorNodeId: nodeId, category: kind, description: kind === "office" ? "Unit kantor operasional." : kind === "food" ? "Tenant makanan dan minuman." : kind === "shop" ? "Tenant pakaian dan aksesori." : "Fasilitas mushola.", icon: kind === "prayer" ? "/icons/wayfinding/musholla.svg" : undefined, mapColor: palette[kind], mapPoint, room });
+    terminalNodes.push({ id: nodeId, floorId, floorLabel: floorId.endsWith("L1") ? "Lantai 1" : "Lantai 2", x: point.x, y: point.y, gridRow: anchor.r, gridCol: anchor.c });
+  }
+  return { spaces: terminalSpaces, nodes: terminalNodes };
+}
+
+const t1 = buildTerminalData("T1", t1Json as RawMap);
+const t2 = buildTerminalData("T2", t2Json as RawMap);
+export const spaces = [...t1.spaces, ...t2.spaces];
+export const routeNodes = [...t1.nodes, ...t2.nodes];
+export const routeEdges: WayfindingEdge[] = [];
 export const qrLocations = [
-  { locationId: "demo-t1-arrival", terminal: "T1" as const, floorId: "T1-L1", nodeId: "T1-L1-ENTRANCE", label: "Titik QR demo T1" },
-  { locationId: "demo-t2-arrival", terminal: "T2" as const, floorId: "T2-L1", nodeId: "T2-L1-ENTRANCE", label: "Titik QR demo T2" },
+  { locationId: "demo-t1-arrival", terminal: "T1" as const, floorId: "T1-L1", nodeId: "T1-ENTRANCE-NODE", label: "Pintu Masuk T1" },
+  { locationId: "demo-t2-arrival", terminal: "T2" as const, floorId: "T2-L1", nodeId: "T2-ENTRANCE-NODE", label: "Pintu Masuk T2" },
 ];

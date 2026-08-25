@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { etaMinutes, findShortestRoute } from "../src/lib/dijkstra";
+import { routeNodes, spaces } from "../src/data/demo-wayfinding";
+import { findGridRoute } from "../src/lib/grid-route";
 import type { WayfindingEdge, WayfindingNode } from "../src/types";
 
 const nodes: WayfindingNode[] = [
@@ -37,4 +39,17 @@ test("distance, configurable ETA, and connector instruction are returned", () =>
   assert.equal(result?.estimatedMinutes, 2);
   assert.deepEqual(result?.connectorInstructions, ["Gunakan lift dari Lantai 1 ke Lantai 2"]);
   assert.equal(etaMinutes(145, 72), 3);
+});
+
+test("entrance-to-food route follows orthogonal walkable grid segments", () => {
+  const destination = spaces.find((space) => space.terminal === "T1" && space.floorId === "T1-L1" && space.category === "food");
+  const start = routeNodes.find((node) => node.id === "T1-ENTRANCE-NODE");
+  const end = routeNodes.find((node) => node.id === destination?.anchorNodeId);
+  const result = findGridRoute(start, end);
+
+  assert.ok(result);
+  assert.ok(result.nodes.length > 2);
+  assert.ok(result.segments.every((segment) => segment.type !== "WALKWAY" || segment.from.gridRow === segment.to.gridRow || segment.from.gridCol === segment.to.gridCol));
+  assert.equal(result.nodes[0].id, start?.id);
+  assert.equal(result.nodes.at(-1)?.id, end?.id);
 });

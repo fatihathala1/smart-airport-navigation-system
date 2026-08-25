@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { MapSpace } from "@/types";
 
 export function SpaceLayer({ spaces, selectedId, onSelect }: { spaces: MapSpace[]; selectedId: string | null; onSelect: (space: MapSpace) => void }) {
@@ -10,6 +11,7 @@ export function SpaceLayer({ spaces, selectedId, onSelect }: { spaces: MapSpace[
           className="map-space"
           data-selected={space.id === selectedId}
           data-closed={space.status !== "ACTIVE"}
+          style={{ "--space-color": space.mapColor ?? "#00a8bd" } as CSSProperties}
           role="button"
           tabIndex={0}
           aria-label={`${space.label}, ${space.code}`}

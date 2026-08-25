@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, ChevronRight, Clock3, MapPin, Navigation, Ruler, Search, ShieldCheck, Wifi, WifiOff, X } from "lucide-react";
-import { categories, DEMO_DATA_NOTICE, floors, qrLocations, routeEdges, routeNodes, spaces } from "@/data/demo-wayfinding";
-import { findShortestRoute } from "@/lib/dijkstra";
+import { categories, DEMO_DATA_NOTICE, floors, qrLocations, routeNodes, spaces } from "@/data/demo-wayfinding";
+import { findGridRoute } from "@/lib/grid-route";
 import { useMapStore } from "@/store/mapStore";
 import type { MapSpace, TerminalCode } from "@/types";
 import { MapStage } from "./MapStage";
@@ -53,18 +53,16 @@ export function WayfindingShell() {
   const routeTo = terminalSpaces.find((space) => space.anchorNodeId === store.toNodeId);
 
   const computeRoute = (fromId: string, toId: string) => {
-    const result = findShortestRoute(
-      routeNodes.filter((node) => node.id.startsWith(store.terminal)),
-      routeEdges.filter((edge) => edge.id.startsWith(store.terminal)),
-      fromId,
-      toId,
+    const result = findGridRoute(
+      routeNodes.find((node) => node.id === fromId),
+      routeNodes.find((node) => node.id === toId),
     );
     store.setRoute(result, result ? "ready" : "no-route");
     if (result?.nodes[0]) store.setFloorId(result.nodes[0].floorId);
   };
 
   const startDirections = (space: MapSpace) => {
-    const from = store.currentNodeId ?? `${store.terminal}-L1-ENTRANCE`;
+    const from = store.currentNodeId ?? `${store.terminal}-ENTRANCE-NODE`;
     store.setFromNodeId(from);
     store.setToNodeId(space.anchorNodeId);
     computeRoute(from, space.anchorNodeId);
@@ -122,7 +120,13 @@ export function WayfindingShell() {
           <div className="result-list">
             {visibleSpaces.length ? visibleSpaces.map((space) => (
               <button key={space.id} type="button" className="result-row" data-active={space.id === selected?.id} onClick={() => selectSpace(space)}>
-                <span className="result-icon"><MapPin size={17} /></span>
+                <span
+                  className="result-icon"
+                  data-has-icon={Boolean(space.icon)}
+                  style={{ backgroundImage: space.icon ? `url("${space.icon}")` : undefined, color: space.mapColor ?? undefined, borderColor: space.mapColor ?? undefined }}
+                >
+                  {!space.icon && <MapPin size={17} />}
+                </span>
                 <span className="result-copy"><strong>{space.tenant?.name ?? space.label}</strong><small>{space.label} • {space.code}</small></span>
                 <span className="result-floor">{space.floorId.endsWith("L1") ? "L1" : "L2"}<ChevronRight size={15} /></span>
               </button>
@@ -139,6 +143,15 @@ export function WayfindingShell() {
             {store.routeStatus === "idle" && selected && (
               <>
                 <span className="space-code">{selected.code}</span>
+                {selected.icon && (
+                  <span
+                    className="detail-location-icon"
+                    style={{ backgroundImage: `url("${selected.icon}")` }}
+                    role="img"
+                    aria-label={`Ikon ${selected.label}`}
+                  />
+                )}
+                <span className="detail-category"><i style={{ background: selected.mapColor }} />{categories.find((category) => category.id === selected.category)?.label ?? "Lokasi"}</span>
                 <h1>{selected.tenant?.name ?? selected.label}</h1>
                 {selected.tenant && <p className="space-subtitle">{selected.label}</p>}
                 <p>{selected.description}</p>

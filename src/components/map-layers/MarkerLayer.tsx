@@ -12,8 +12,8 @@ function Marker({ node, label, variant }: { node?: WayfindingNode; label: string
   );
 }
 
-export function MarkerLayer({ nodes, fromId, toId, currentId }: { nodes: WayfindingNode[]; fromId: string | null; toId: string | null; currentId: string | null }) {
-  const map = new Map(nodes.map((node) => [node.id, node]));
+export function MarkerLayer({ nodes, routeNodes = [], fromId, toId, currentId }: { nodes: WayfindingNode[]; routeNodes?: WayfindingNode[]; fromId: string | null; toId: string | null; currentId: string | null }) {
+  const map = new Map([...nodes, ...routeNodes].map((node) => [node.id, node]));
   return (
     <g data-layer="markers">
       <Marker node={map.get(fromId ?? "")} label="Titik asal" variant={currentId === fromId ? "current" : "start"} />

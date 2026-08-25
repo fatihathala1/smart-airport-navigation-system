@@ -15,7 +15,7 @@ export function BaseMapLayer({ asset, label, imageWidth, imageHeight, crop }: {
           href={asset}
           width={imageWidth}
           height={imageHeight}
-          opacity={isVector ? 0.82 : 0.42}
+          opacity={isVector ? 0.88 : 0.72}
           pointerEvents="none"
           className="blueprint-image"
           data-vector={isVector ? "true" : "false"}
