@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { MapPin, Navigation } from "lucide-react";
+import { Navigation } from "lucide-react";
 import { useMapStore } from "@/store/mapStore";
 
 export function SplashScreen() {

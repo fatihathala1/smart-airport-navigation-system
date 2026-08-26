@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function AdminLayout({
   children,
@@ -7,6 +8,9 @@ export default async function AdminLayout({
 }) {
   const session = await auth();
 
-  // Allow access for interactive dashboard demo if no active session
+  if (!session?.user) {
+    redirect("/auth/signin");
+  }
+
   return <>{children}</>;
 }

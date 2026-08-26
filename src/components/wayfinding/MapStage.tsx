@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Compass, Layers3, LocateFixed, Minus, Plus } from "lucide-react";
+import { Layers3, LocateFixed, Minus, Plus } from "lucide-react";
 import { terminals, routeNodes } from "@/data/demo-wayfinding";
 import type { DijkstraResult, MapSpace, TerminalCode } from "@/types";
 import { BaseMapLayer } from "@/components/map-layers/BaseMapLayer";

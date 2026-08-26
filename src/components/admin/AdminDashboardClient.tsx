@@ -3,34 +3,35 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import {
-  Activity,
   AlertTriangle,
-  ArrowRight,
+  BarChart3,
   Building2,
-  CheckCircle2,
+  CirclePause,
+  CirclePlay,
   Clock3,
-  Compass,
-  Edit3,
+  FileSpreadsheet,
   FileClock,
-  KeyRound,
-  Layers,
+  FileText,
   LogOut,
   Map,
   MapPinned,
   Plus,
-  PlusCircle,
-  RefreshCw,
+  RotateCcw,
   Search,
   ShieldCheck,
+  SlidersHorizontal,
   Store,
   Tags,
-  Trash2,
   UserPlus,
   Users,
   X,
 } from "lucide-react";
 import type { AdminRole } from "@/types";
+import type { SheetData } from "write-excel-file/browser";
+import { AdminMapPanel } from "@/components/admin/AdminMapPanel";
+import { DashboardAnalytics } from "@/components/admin/DashboardAnalytics";
 
 // Initial Demo Data for Admin Komersil
 const INITIAL_TENANTS = [
@@ -45,8 +46,8 @@ const INITIAL_TENANTS = [
 ];
 
 const INITIAL_USERS = [
-  { id: "usr-01", name: "Super Administrator", email: "admin@juanda-airport.com", role: "SUPER_ADMIN" as AdminRole, status: "ACTIVE", lastLogin: "Hari ini, 08:30" },
-  { id: "usr-02", name: "Budi Santoso (Admin Komersil)", email: "budi.komersil@juanda-airport.com", role: "AIRPORT_ADMIN" as AdminRole, status: "ACTIVE", lastLogin: "Kemarin, 14:15" },
+  { id: "usr-01", name: "Super Administrator Juanda", email: "superadmin@juanda-airport.local", role: "SUPER_ADMIN" as AdminRole, status: "ACTIVE", lastLogin: "Hari ini, 08:30" },
+  { id: "usr-02", name: "Admin Komersil Juanda", email: "admin.komersil@juanda-airport.local", role: "AIRPORT_ADMIN" as AdminRole, status: "ACTIVE", lastLogin: "Kemarin, 14:15" },
   { id: "usr-03", name: "Siti Rahma (Operator T1)", email: "siti.t1@juanda-airport.com", role: "AIRPORT_ADMIN" as AdminRole, status: "ACTIVE", lastLogin: "24 Aug 2026" },
   { id: "usr-04", name: "Dewi Lestari (Operator T2)", email: "dewi.t2@juanda-airport.com", role: "AIRPORT_ADMIN" as AdminRole, status: "INACTIVE", lastLogin: "18 Aug 2026" },
 ];
@@ -58,14 +59,26 @@ const AUDIT_LOGS = [
   { id: "log-104", timestamp: "2026-08-24 09:14:55", actor: "Siti Rahma", action: "TOGGLE_FACILITY_STATUS", entity: "Facility Mushola T1-L1", ip: "192.168.1.33" },
 ];
 
-export function AdminDashboardClient() {
-  const [activeRole, setActiveRole] = useState<AdminRole>("AIRPORT_ADMIN");
-  const [activeTab, setActiveTab] = useState<string>("tenants");
+export function AdminDashboardClient({
+  user,
+}: {
+  user: { name: string | null; email: string | null; role: AdminRole };
+}) {
+  const activeRole = user.role;
+  const [activeTab, setActiveTab] = useState<string>("overview");
   const [tenants, setTenants] = useState(INITIAL_TENANTS);
   const [users, setUsers] = useState(INITIAL_USERS);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddTenantModal, setShowAddTenantModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState<"excel" | "pdf" | null>(null);
+  const [reportFilters, setReportFilters] = useState({ terminal: "ALL", category: "ALL", status: "ALL" });
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    entity: "tenant" | "user";
+    id: string;
+    name: string;
+    currentStatus: string;
+  } | null>(null);
 
   // New Tenant Form state
   const [newTenant, setNewTenant] = useState({
@@ -119,28 +132,164 @@ export function AdminDashboardClient() {
     setShowAddUserModal(false);
   };
 
-  const toggleTenantStatus = (id: string) => {
-    setTenants(
-      tenants.map((t) =>
-        t.id === id ? { ...t, status: t.status === "ACTIVE" ? "TEMPORARILY_CLOSED" : "ACTIVE" } : t
-      )
-    );
+  const confirmStatusChange = () => {
+    if (!pendingStatusChange) return;
+    if (pendingStatusChange.entity === "tenant") {
+      setTenants(
+        tenants.map((tenant) =>
+          tenant.id === pendingStatusChange.id
+            ? { ...tenant, status: tenant.status === "ACTIVE" ? "TEMPORARILY_CLOSED" : "ACTIVE" }
+            : tenant
+        )
+      );
+    } else {
+      setUsers(
+        users.map((account) =>
+          account.id === pendingStatusChange.id
+            ? { ...account, status: account.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }
+            : account
+        )
+      );
+    }
+    setPendingStatusChange(null);
   };
 
-  const toggleUserStatus = (id: string) => {
-    setUsers(
-      users.map((u) =>
-        u.id === id ? { ...u, status: u.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" } : u
-      )
-    );
-  };
-
-  const filteredTenants = tenants.filter(
-    (t) =>
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.spaceCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.category.toLowerCase().includes(searchQuery.toLowerCase())
+  const tenantCategories = [...new Set(tenants.map((tenant) => tenant.category))].sort();
+  const reportTenants = tenants.filter((tenant) => {
+    const matchesTerminal = reportFilters.terminal === "ALL" || tenant.terminal === reportFilters.terminal;
+    const matchesCategory = reportFilters.category === "ALL" || tenant.category === reportFilters.category;
+    const matchesStatus = reportFilters.status === "ALL" || tenant.status === reportFilters.status;
+    return matchesTerminal && matchesCategory && matchesStatus;
+  });
+  const filteredTenants = reportTenants.filter(
+    (tenant) =>
+      tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tenant.spaceCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tenant.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const exportFilterSummary = [
+    `Terminal: ${reportFilters.terminal === "ALL" ? "Semua" : reportFilters.terminal}`,
+    `Kategori: ${reportFilters.category === "ALL" ? "Semua" : reportFilters.category}`,
+    `Status: ${reportFilters.status === "ALL" ? "Semua" : reportFilters.status === "ACTIVE" ? "Buka" : "Tutup Sementara"}`,
+  ].join(" | ");
+
+  const tenantReportRows = reportTenants.map((tenant, index) => ({
+    No: index + 1,
+    "Nama Tenant": tenant.name,
+    Kategori: tenant.category,
+    Terminal: tenant.terminal,
+    Lantai: tenant.floor,
+    "Space Code": tenant.spaceCode,
+    "Jam Operasional": tenant.hours,
+    Status: tenant.status === "ACTIVE" ? "Buka" : "Tutup Sementara",
+  }));
+  const exportTenantExcel = async () => {
+    setExportingFormat("excel");
+    try {
+      const { default: writeXlsxFile } = await import("write-excel-file/browser");
+      const mergedRow = (value: string, style: Record<string, unknown> = {}) => [
+        { value, columnSpan: 8, ...style }, null, null, null, null, null, null, null,
+      ];
+      const tableHeader = (value: string) => ({
+        value,
+        fontWeight: "bold" as const,
+        backgroundColor: "#00A8BD",
+        textColor: "#FFFFFF",
+        align: "center" as const,
+        alignVertical: "center" as const,
+        height: 24,
+      });
+      const sheetData: SheetData = [
+        mergedRow("INJOURNEY AIRPORTS — BANDARA INTERNASIONAL JUANDA", {
+          fontWeight: "bold",
+          fontSize: 16,
+          backgroundColor: "#142328",
+          textColor: "#FFFFFF",
+          height: 30,
+          alignVertical: "center",
+        }),
+        mergedRow("LAPORAN TENANT KOMERSIL", { fontWeight: "bold", fontSize: 12, height: 24 }),
+        mergedRow(`Tanggal ekspor: ${new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date())}`),
+        mergedRow(`Filter laporan: ${exportFilterSummary}`),
+        mergedRow(`Jumlah data: ${tenantReportRows.length} tenant`),
+        [null, null, null, null, null, null, null, null],
+        ["No", "Nama Tenant", "Kategori", "Terminal", "Lantai", "Space Code", "Jam Operasional", "Status"].map(tableHeader),
+        ...tenantReportRows.map((row, index) => [
+          { value: row.No, type: Number, align: "center" as const, backgroundColor: index % 2 ? "#F3F7F8" : undefined },
+          { value: row["Nama Tenant"], backgroundColor: index % 2 ? "#F3F7F8" : undefined },
+          { value: row.Kategori, backgroundColor: index % 2 ? "#F3F7F8" : undefined },
+          { value: row.Terminal, align: "center" as const, backgroundColor: index % 2 ? "#F3F7F8" : undefined },
+          { value: row.Lantai, backgroundColor: index % 2 ? "#F3F7F8" : undefined },
+          { value: row["Space Code"], backgroundColor: index % 2 ? "#F3F7F8" : undefined },
+          { value: row["Jam Operasional"], backgroundColor: index % 2 ? "#F3F7F8" : undefined },
+          { value: row.Status, backgroundColor: index % 2 ? "#F3F7F8" : undefined },
+        ]),
+      ];
+      const excelFile = writeXlsxFile(sheetData, {
+        columns: [
+          { width: 6 }, { width: 28 }, { width: 22 }, { width: 10 },
+          { width: 14 }, { width: 16 }, { width: 22 }, { width: 20 },
+        ],
+        sheet: "Laporan Tenant",
+      });
+      await excelFile.toFile(`laporan-tenant-juanda-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
+  const exportTenantPdf = async () => {
+    setExportingFormat("pdf");
+    try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
+      const document = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      document.setFillColor(20, 35, 40);
+      document.rect(0, 0, 297, 31, "F");
+      document.setTextColor(255, 255, 255);
+      document.setFontSize(10);
+      document.setFont("helvetica", "bold");
+      document.text("INJOURNEY AIRPORTS", 14, 10);
+      document.setFontSize(17);
+      document.text("Laporan Tenant Komersil", 14, 20);
+      document.setFontSize(9);
+      document.setFont("helvetica", "normal");
+      document.text("Bandara Internasional Juanda", 14, 26);
+      document.setFontSize(9);
+      document.setTextColor(94, 111, 117);
+      document.text(`Tanggal ekspor: ${new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date())}`, 14, 38);
+      document.text(`Filter: ${exportFilterSummary}`, 14, 43);
+      document.text(`Jumlah data: ${reportTenants.length} tenant`, 240, 38);
+      autoTable(document, {
+        startY: 48,
+        head: [["No", "Nama Tenant", "Kategori", "Lokasi", "Space Code", "Jam Operasional", "Status"]],
+        body: reportTenants.map((tenant, index) => [
+          index + 1,
+          tenant.name,
+          tenant.category,
+          `${tenant.terminal} - ${tenant.floor}`,
+          tenant.spaceCode,
+          tenant.hours,
+          tenant.status === "ACTIVE" ? "Buka" : "Tutup Sementara",
+        ]),
+        styles: { fontSize: 8, cellPadding: 2.5 },
+        headStyles: { fillColor: [0, 168, 189], textColor: 255 },
+        alternateRowStyles: { fillColor: [243, 247, 248] },
+        margin: { left: 14, right: 14 },
+        didDrawPage: ({ pageNumber }) => {
+          document.setFontSize(8);
+          document.setTextColor(94, 111, 117);
+          document.text(`Halaman ${pageNumber}`, 283, 200, { align: "right" });
+        },
+      });
+      document.save(`laporan-tenant-juanda-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } finally {
+      setExportingFormat(null);
+    }
+  };
 
   return (
     <main className="admin-dashboard-root">
@@ -157,42 +306,19 @@ export function AdminDashboardClient() {
           </div>
         </div>
 
-        {/* Role Switcher Pills */}
-        <div className="role-switcher-container">
-          <span className="role-switch-label">Pratinjau Role:</span>
-          <div className="role-switcher-pills">
-            <button
-              type="button"
-              className="role-btn"
-              data-active={activeRole === "AIRPORT_ADMIN"}
-              onClick={() => {
-                setActiveRole("AIRPORT_ADMIN");
-                setActiveTab("tenants");
-              }}
-            >
-              <Store size={15} />
-              <span>Admin Komersil</span>
-            </button>
-            <button
-              type="button"
-              className="role-btn"
-              data-active={activeRole === "SUPER_ADMIN"}
-              onClick={() => {
-                setActiveRole("SUPER_ADMIN");
-                setActiveTab("users");
-              }}
-            >
-              <ShieldCheck size={15} />
-              <span>Superadmin</span>
-            </button>
-          </div>
-        </div>
-
         <div className="admin-header-right">
-          <Link href="/" className="back-visitor-link">
-            <ArrowRight size={15} style={{ transform: "rotate(180deg)" }} />
-            <span>Ke Tampilan Pengunjung</span>
-          </Link>
+          <span className="session-role-badge">
+            {activeRole === "SUPER_ADMIN" ? <ShieldCheck size={14} /> : <Store size={14} />}
+            {activeRole === "SUPER_ADMIN" ? "Superadmin" : "Admin Komersil"}
+          </span>
+          <button
+            type="button"
+            className="admin-signout-button"
+            onClick={() => signOut({ redirectTo: "/auth/signin" })}
+          >
+            <LogOut size={15} />
+            <span>Keluar</span>
+          </button>
         </div>
       </header>
 
@@ -204,23 +330,43 @@ export function AdminDashboardClient() {
               {activeRole === "SUPER_ADMIN" ? "SA" : "AK"}
             </div>
             <div className="user-info">
-              <strong>{activeRole === "SUPER_ADMIN" ? "Super Administrator" : "Admin Komersil Juanda"}</strong>
-              <small>{activeRole === "SUPER_ADMIN" ? "superadmin@juanda-airport.com" : "komersil@juanda-airport.com"}</small>
+              <strong>{user.name ?? (activeRole === "SUPER_ADMIN" ? "Super Administrator" : "Admin Komersil")}</strong>
+              <small>{user.email ?? "Akun admin Juanda"}</small>
             </div>
           </div>
 
           <nav className="nav-menu-list">
+            <button
+              type="button"
+              className="nav-item"
+              data-active={activeTab === "overview"}
+              onClick={() => setActiveTab("overview")}
+            >
+              <BarChart3 size={18} />
+              <span>Ringkasan Dashboard</span>
+            </button>
+            <button
+              type="button"
+              className="nav-item"
+              data-active={activeTab === "map"}
+              onClick={() => setActiveTab("map")}
+            >
+              <MapPinned size={18} />
+              <span>Peta Terminal</span>
+            </button>
+
+            <button
+              type="button"
+              className="nav-item"
+              data-active={activeTab === "tenants"}
+              onClick={() => setActiveTab("tenants")}
+            >
+              <Store size={18} />
+              <span>Manajemen Tenant</span>
+            </button>
+
             {activeRole === "AIRPORT_ADMIN" && (
               <>
-                <button
-                  type="button"
-                  className="nav-item"
-                  data-active={activeTab === "tenants"}
-                  onClick={() => setActiveTab("tenants")}
-                >
-                  <Store size={18} />
-                  <span>Manajemen Tenant</span>
-                </button>
                 <button
                   type="button"
                   className="nav-item"
@@ -381,8 +527,12 @@ export function AdminDashboardClient() {
           </div>
 
           {/* Dynamic Content Views */}
+          {activeTab === "overview" && <DashboardAnalytics tenants={tenants} />}
+
+          {activeTab === "map" && <AdminMapPanel />}
+
           {/* AIRPORT ADMIN: TENANTS TAB */}
-          {activeRole === "AIRPORT_ADMIN" && activeTab === "tenants" && (
+          {activeTab === "tenants" && (
             <div className="content-box">
               <div className="box-header">
                 <div className="box-title">
@@ -402,6 +552,121 @@ export function AdminDashboardClient() {
                   <button type="button" className="btn-primary" onClick={() => setShowAddTenantModal(true)}>
                     <Plus size={16} /> Tambah Tenant
                   </button>
+                </div>
+              </div>
+
+              <div className="report-command-bar" aria-label="Filter laporan tenant">
+                <div className="report-command-header">
+                  <div className="report-command-title">
+                    <span><SlidersHorizontal size={18} /></span>
+                    <div>
+                      <small>PUSAT LAPORAN TENANT</small>
+                      <strong>Atur data sebelum diekspor</strong>
+                    </div>
+                  </div>
+                  <div className="report-command-actions">
+                    <div className="report-command-count" aria-live="polite">
+                      <strong>{reportTenants.length}</strong>
+                      <span>tenant siap diekspor</span>
+                    </div>
+                    <div className="export-action-group" aria-label="Ekspor laporan tenant">
+                      <button
+                        type="button"
+                        className="btn-export excel"
+                        onClick={exportTenantExcel}
+                        disabled={exportingFormat !== null || !reportTenants.length}
+                      >
+                        <FileSpreadsheet size={16} />
+                        {exportingFormat === "excel" ? "Menyiapkan..." : "Excel"}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-export pdf"
+                        onClick={exportTenantPdf}
+                        disabled={exportingFormat !== null || !reportTenants.length}
+                      >
+                        <FileText size={16} />
+                        {exportingFormat === "pdf" ? "Menyiapkan..." : "PDF"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="report-command-controls">
+                  <div className="report-filter-control">
+                    <span className="report-control-label"><Building2 size={13} /> Terminal</span>
+                    <div className="report-segmented" aria-label="Filter terminal">
+                      {[
+                        { value: "ALL", label: "Semua" },
+                        { value: "T1", label: "T1" },
+                        { value: "T2", label: "T2" },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          data-active={reportFilters.terminal === option.value}
+                          aria-pressed={reportFilters.terminal === option.value}
+                          onClick={() => setReportFilters({ ...reportFilters, terminal: option.value })}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="report-filter-control">
+                    <span className="report-control-label"><CirclePlay size={13} /> Status</span>
+                    <div className="report-segmented status" aria-label="Filter status">
+                      {[
+                        { value: "ALL", label: "Semua" },
+                        { value: "ACTIVE", label: "Buka" },
+                        { value: "TEMPORARILY_CLOSED", label: "Tutup" },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          data-active={reportFilters.status === option.value}
+                          aria-pressed={reportFilters.status === option.value}
+                          onClick={() => setReportFilters({ ...reportFilters, status: option.value })}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <label className="report-filter-control report-category-control">
+                    <span className="report-control-label"><Tags size={13} /> Kategori</span>
+                    <select
+                      value={reportFilters.category}
+                      onChange={(event) => setReportFilters({ ...reportFilters, category: event.target.value })}
+                    >
+                      <option value="ALL">Semua kategori</option>
+                      {tenantCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+                    </select>
+                  </label>
+
+                  <button
+                    type="button"
+                    className="report-reset-button"
+                    onClick={() => setReportFilters({ terminal: "ALL", category: "ALL", status: "ALL" })}
+                    disabled={reportFilters.terminal === "ALL" && reportFilters.category === "ALL" && reportFilters.status === "ALL"}
+                  >
+                    <RotateCcw size={14} /> Reset
+                  </button>
+                </div>
+
+                <div className="report-filter-summary">
+                  <span>Filter aktif</span>
+                  {reportFilters.terminal === "ALL" && reportFilters.category === "ALL" && reportFilters.status === "ALL" ? (
+                    <strong>Semua data tenant ditampilkan</strong>
+                  ) : (
+                    <div>
+                      {reportFilters.terminal !== "ALL" && <i>Terminal {reportFilters.terminal.slice(1)}</i>}
+                      {reportFilters.category !== "ALL" && <i>{reportFilters.category}</i>}
+                      {reportFilters.status !== "ALL" && <i>{reportFilters.status === "ACTIVE" ? "Status Buka" : "Tutup Sementara"}</i>}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -442,16 +707,23 @@ export function AdminDashboardClient() {
                         <td>
                           <button
                             type="button"
-                            className="btn-sm-action"
-                            onClick={() => toggleTenantStatus(t.id)}
-                            title="Ubah status operasional"
+                            className={`status-action-button ${t.status === "ACTIVE" ? "deactivate" : "activate"}`}
+                            onClick={() => setPendingStatusChange({ entity: "tenant", id: t.id, name: t.name, currentStatus: t.status })}
+                            aria-label={`${t.status === "ACTIVE" ? "Tutup sementara" : "Aktifkan kembali"} tenant ${t.name}`}
                           >
-                            <RefreshCw size={13} />
-                            <span>Toggle Status</span>
+                            {t.status === "ACTIVE" ? <CirclePause size={15} /> : <CirclePlay size={15} />}
+                            <span>{t.status === "ACTIVE" ? "Tutup sementara" : "Aktifkan kembali"}</span>
                           </button>
                         </td>
                       </tr>
                     ))}
+                    {!filteredTenants.length && (
+                      <tr>
+                        <td colSpan={7} className="table-empty-result">
+                          Tidak ada tenant yang sesuai dengan filter atau pencarian.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -569,11 +841,12 @@ export function AdminDashboardClient() {
                         <td>
                           <button
                             type="button"
-                            className="btn-sm-action"
-                            onClick={() => toggleUserStatus(u.id)}
+                            className={`status-action-button ${u.status === "ACTIVE" ? "deactivate" : "activate"}`}
+                            onClick={() => setPendingStatusChange({ entity: "user", id: u.id, name: u.name, currentStatus: u.status })}
+                            aria-label={`${u.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"} akun ${u.name}`}
                           >
-                            <RefreshCw size={13} />
-                            <span>Toggle Status</span>
+                            {u.status === "ACTIVE" ? <CirclePause size={15} /> : <CirclePlay size={15} />}
+                            <span>{u.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}</span>
                           </button>
                         </td>
                       </tr>
@@ -662,6 +935,40 @@ export function AdminDashboardClient() {
           )}
         </section>
       </div>
+
+      {/* Enterprise status confirmation */}
+      {pendingStatusChange && (
+        <div className="modal-overlay" onClick={() => setPendingStatusChange(null)}>
+          <div className="admin-modal-card status-confirmation-card" onClick={(event) => event.stopPropagation()}>
+            <div className={`status-confirmation-icon ${pendingStatusChange.currentStatus === "ACTIVE" ? "deactivate" : "activate"}`}>
+              {pendingStatusChange.currentStatus === "ACTIVE" ? <CirclePause size={24} /> : <CirclePlay size={24} />}
+            </div>
+            <div className="status-confirmation-copy">
+              <span>KONFIRMASI PERUBAHAN STATUS</span>
+              <h3>
+                {pendingStatusChange.currentStatus === "ACTIVE"
+                  ? pendingStatusChange.entity === "tenant" ? "Tutup tenant sementara?" : "Nonaktifkan akun?"
+                  : pendingStatusChange.entity === "tenant" ? "Aktifkan tenant kembali?" : "Aktifkan akun kembali?"}
+              </h3>
+              <p>
+                Status <strong>{pendingStatusChange.name}</strong> akan diperbarui. Pastikan perubahan ini sudah sesuai dengan kondisi operasional.
+              </p>
+            </div>
+            <div className="form-actions">
+              <button type="button" className="btn-secondary" onClick={() => setPendingStatusChange(null)}>Batal</button>
+              <button
+                type="button"
+                className={`status-confirm-button ${pendingStatusChange.currentStatus === "ACTIVE" ? "deactivate" : "activate"}`}
+                onClick={confirmStatusChange}
+              >
+                {pendingStatusChange.currentStatus === "ACTIVE"
+                  ? pendingStatusChange.entity === "tenant" ? "Ya, tutup sementara" : "Ya, nonaktifkan"
+                  : "Ya, aktifkan kembali"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Tenant Modal */}
       {showAddTenantModal && (

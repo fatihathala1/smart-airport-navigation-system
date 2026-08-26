@@ -2,7 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { categories, floors, routeEdges, routeNodes, spaces, terminals } from "../src/data/demo-wayfinding";
+import { categories, floors, qrLocations, routeEdges, routeNodes, spaces, terminals } from "../src/data/demo-wayfinding";
 
 const connectionString = process.env.DATABASE_URL;
 const seedPassword = process.env.SEED_ADMIN_PASSWORD;
@@ -58,6 +58,9 @@ async function main() {
     });
   }
 
+  const fallbackCategoryId = categoryRows.values().next().value?.id;
+  if (!fallbackCategoryId) throw new Error("At least one facility category is required");
+
   for (const space of spaces) {
     const spaceRow = await prisma.space.upsert({
       where: { code: space.code },
@@ -70,7 +73,7 @@ async function main() {
       const assignment = await prisma.spaceAssignment.findFirst({ where: { spaceId: spaceRow.id, tenantId: tenant.id, active: true } });
       if (!assignment) await prisma.spaceAssignment.create({ data: { spaceId: spaceRow.id, tenantId: tenant.id, active: true } });
     } else {
-      const categoryId = categoryRows.get(space.category)?.id ?? categoryRows.get("info")!.id;
+      const categoryId = categoryRows.get(space.category)?.id ?? fallbackCategoryId;
       await prisma.facility.upsert({
         where: { code: `${space.code}-POI` },
         update: { name: space.label, description: space.description, status: space.status },
@@ -80,15 +83,12 @@ async function main() {
   }
 
   const users = [
-    { email: "superadmin@example.invalid", name: "Super Admin Demo", role: "SUPER_ADMIN" as const },
-    { email: "airportadmin@example.invalid", name: "Airport Admin Demo", role: "AIRPORT_ADMIN" as const },
+    { email: "superadmin@juanda-airport.local", name: "Super Administrator Juanda", role: "SUPER_ADMIN" as const },
+    { email: "admin.komersil@juanda-airport.local", name: "Admin Komersil Juanda", role: "AIRPORT_ADMIN" as const },
   ];
   for (const user of users) await prisma.user.upsert({ where: { email: user.email }, update: { passwordHash, name: user.name, role: user.role }, create: { ...user, passwordHash } });
 
-  for (const location of [
-    { locationId: "demo-t1-arrival", floorId: "T1-L1", nodeId: "T1-L1-ENTRANCE", label: "Titik QR demo T1" },
-    { locationId: "demo-t2-arrival", floorId: "T2-L1", nodeId: "T2-L1-ENTRANCE", label: "Titik QR demo T2" },
-  ]) await prisma.qRLocation.upsert({ where: { locationId: location.locationId }, update: { label: location.label }, create: { locationId: location.locationId, label: location.label, floorId: floorRows.get(location.floorId)!.id, nodeId: nodeRows.get(location.nodeId)!.id, isMock: true } });
+  for (const location of qrLocations) await prisma.qRLocation.upsert({ where: { locationId: location.locationId }, update: { label: location.label }, create: { locationId: location.locationId, label: location.label, floorId: floorRows.get(location.floorId)!.id, nodeId: nodeRows.get(location.nodeId)!.id, isMock: true } });
 
   console.info("Seed completed with DEMO data only. No location is claimed as official Juanda data.");
 }
