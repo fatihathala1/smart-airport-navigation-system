@@ -23,9 +23,9 @@ export function POILayer({ spaces, nodes, selectedId, onSelect }: { spaces: MapS
             onClick={(event) => { event.stopPropagation(); onSelect(space); }}
             onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onSelect(space); }}
           >
-            <circle r={selected ? 8 : 5} className="poi-marker-halo" />
-            <circle r={selected ? 5 : 3.25} className="poi-marker-core" />
-            <text y="-12" textAnchor="middle" className="map-label">{space.label}</text>
+            <circle r={selected ? 4.5 : 2.2} className="poi-marker-halo" />
+            <circle r={selected ? 2.5 : 1.2} className="poi-marker-core" />
+            <text y="-6" textAnchor="middle" className="map-label">{space.label}</text>
             <title>{space.label}</title>
           </g>
         );
