@@ -12,19 +12,60 @@ export function SiteHeader() {
   return (
     <header className={styles.header}>
       <div className={styles.headerInner}>
-        <Link className={styles.logoLink} href="/" aria-label="InJourney Airports — Beranda">
+        {/* InJourney Airports Logo */}
+        <div className={styles.logoGroup}>
+          <Link className={styles.logoLink} href="/" aria-label="InJourney Airports">
           <Image
             className={styles.headerLogo}
-            src="/injourney-airports.png"
-            width={240}
-            height={90}
+            src="/injourney-airports-white.png"
+            width={200}
+            height={60}
             priority
             alt="InJourney Airports"
           />
-        </Link>
+          </Link>
+          <span className={styles.logoDivider} aria-hidden="true" />
+          <Image
+            className={styles.juandaLogo}
+            src="/Logo-ToDjuanda/Logo-Text-White.svg"
+            width={540}
+            height={217}
+            priority
+            alt="Juanda Airport"
+          />
+        </div>
 
+        {/* Navigation */}
+        <nav className={styles.navMenu} aria-label="Main Navigation">
+          <Link href="/" className={styles.navLink} data-active={true}>
+            Home
+          </Link>
+          <button
+            type="button"
+            className={styles.navLink}
+            onClick={() => {
+              document.querySelector(".workspace")?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            Map
+          </button>
+          <button
+            type="button"
+            className={styles.navLink}
+            onClick={() => {
+              document.querySelector(".workspace")?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            Search
+          </button>
+          <Link href="#" className={styles.navLink}>
+            Help
+          </Link>
+        </nav>
+
+        {/* Language Switcher */}
         <div className={styles.headerRightArea}>
-          <div className={styles.languageSwitch} aria-label="Pilih bahasa / Select language">
+          <div className={styles.languageSwitch} aria-label="Select language">
             <button
               type="button"
               aria-pressed={currentLang === "ID"}
