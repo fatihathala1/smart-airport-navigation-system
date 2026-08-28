@@ -4,12 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
+  ArrowRight,
   Building2,
   ChevronRight,
   Clock3,
   Compass,
   MapPin,
   Navigation,
+  Plane,
   QrCode,
   Ruler,
   Search,
@@ -186,192 +188,166 @@ export function WayfindingShell() {
       <SiteHeader />
 
       <main className="wayfinding-shell">
-        {/* Top Control Bar */}
-        <section className="wayfinding-controlbar" aria-label="Kontrol navigasi bandara">
-          <div className="wayfinding-title">
-            <div className="wayfinding-title-icon">
-              <MapPin size={18} aria-hidden="true" />
-            </div>
-            <span>
-              <strong>{t.appTitle}</strong>
-              <small>{t.appSubtitle}</small>
-            </span>
-          </div>
+        {/* Roamora Hero Section */}
+        <section className="roamora-hero">
+          <div className="roamora-hero-backdrop" />
+          <div className="roamora-hero-content">
+            <h1 className="roamora-hero-title">
+              Explore <span className="roamora-blue-text">Juanda Airport</span>
+            </h1>
 
-          {/* Compact Grouped Terminal & Floor Selectors */}
-          <div className="map-selector-group">
-            <div className="terminal-switch" aria-label="Pilih terminal">
-              {(["T1", "T2"] as TerminalCode[]).map((terminal) => (
-                <button
-                  key={terminal}
-                  type="button"
-                  aria-pressed={store.terminal === terminal}
-                  onClick={() => store.setTerminal(terminal)}
-                >
-                  <span>{t.terminal}</span> {terminal.slice(1)}
-                </button>
-              ))}
-            </div>
+            <p className="roamora-hero-subtitle">
+              {lang === "ID"
+                ? "Temukan gate, musala, kuliner, dan dapatkan petunjuk arah di Terminal 1 & 2."
+                : "Find gates, lounges, dining, and get walking directions across Terminal 1 & 2."}
+            </p>
 
-            <span className="map-selector-divider" aria-hidden="true" />
-
-            <div className="floor-switch" aria-label="Pilih lantai">
-              {terminalFloors.map((floor) => (
-                <button
-                  key={floor.id}
-                  type="button"
-                  aria-pressed={store.floorId === floor.id}
-                  onClick={() => store.setFloorId(floor.id)}
-                >
-                  {lang === "ID" ? floor.label : floor.label.replace("Lantai", "Floor")}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Origin Location Banner */}
-        <div className="origin-banner">
-          <div className="origin-info">
-            <span className="origin-badge">
-              <MapPin size={12} /> {t.yourLocation}
-            </span>
-            <span>
-              {t.qrOriginText}{" "}
-              <strong>
-                {currentOriginSpace?.tenant?.name ??
-                  currentOriginSpace?.label ??
-                  `${t.terminal} ${store.terminal} Entrance`}
-              </strong>
-            </span>
-          </div>
-          <div className="origin-actions">
-            <button type="button" onClick={() => setShowQrModal(true)}>
-              <QrCode size={13} style={{ marginRight: 4, display: "inline" }} />
-              {t.changeOrigin}
-            </button>
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <section className="toolbar">
-          <label className="search-field">
-            <Search size={20} aria-hidden="true" />
-            <span className="sr-only">Cari lokasi</span>
-            <input
-              value={store.query}
-              onChange={(event) => store.setQuery(event.target.value)}
-              placeholder={t.searchPlaceholder}
-            />
-            {store.query && (
-              <button type="button" onClick={() => store.setQuery("")} aria-label="Hapus pencarian">
-                <X size={18} />
-              </button>
-            )}
-          </label>
-        </section>
-
-        {/* Quick Destination Dock */}
-        <nav className="quick-dock" aria-label="Kategori fasilitas cepat">
-          {quickDockItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = store.category === item.id;
-            return (
+            <div className="roamora-hero-actions">
               <button
-                key={item.id}
                 type="button"
-                className="quick-chip"
-                data-active={isActive}
-                onClick={() => store.setCategory(item.id)}
+                className="roamora-cta-btn"
+                onClick={() => {
+                  const target = visibleSpaces[0];
+                  if (target) selectSpace(target);
+                }}
               >
-                <Icon size={15} />
-                <span>{item.label}</span>
+                <span>{lang === "ID" ? "Jelajahi Sekarang" : "Explore Now"}</span>
+                <span className="roamora-cta-arrow">
+                  <ArrowRight size={15} />
+                </span>
               </button>
-            );
-          })}
-        </nav>
+            </div>
+          </div>
 
-        {/* Main Workspace Layout */}
-        <div className="workspace">
-          {/* Result Directory Horizontal Carousel */}
-          <aside className="search-panel" aria-label="Hasil pencarian">
-            <div className="panel-heading">
-              <div>
-                <span>{t.nearbyDirectory}</span>
-                <strong>
-                  {store.terminal} • {store.floorId.endsWith("L1") ? (lang === "ID" ? "Lantai 1" : "Floor 1") : (lang === "ID" ? "Lantai 2" : "Floor 2")}
+          {/* Roamora Floating Search & Navigation Card Widget */}
+          <div className="roamora-floating-widget" aria-label="Pencarian & Kontrol Navigasi">
+            {/* Field 1: Where to? / Origin */}
+            <div className="roamora-widget-col" onClick={() => setShowQrModal(true)} title={lang === "ID" ? "Klik untuk ganti posisi QR awal" : "Click to change QR origin"}>
+              <div className="roamora-col-icon">
+                <MapPin size={20} />
+              </div>
+              <div className="roamora-col-copy">
+                <span className="roamora-col-label">{lang === "ID" ? "Lokasi Anda?" : "Where to?"}</span>
+                <strong className="roamora-col-val">
+                  {currentOriginSpace?.tenant?.name ??
+                    currentOriginSpace?.label ??
+                    `Terminal ${store.terminal} Entrance`}
                 </strong>
               </div>
-              <small>
-                {visibleSpaces.length} {t.locations}
-              </small>
             </div>
 
-            <div className="result-list">
-              {visibleSpaces.length ? (
-                visibleSpaces.map((space) => (
-                  <button
-                    key={space.id}
-                    type="button"
-                    className="result-row"
-                    data-active={space.id === selected?.id}
-                    onClick={() => selectSpace(space)}
-                  >
-                    <span
-                      className="result-icon"
-                      data-has-icon={Boolean(space.icon)}
-                      style={{
-                        backgroundImage: space.icon ? `url("${space.icon}")` : undefined,
-                        color: space.mapColor ?? undefined,
-                        borderColor: space.mapColor ?? undefined,
-                      }}
-                    >
-                      {!space.icon && <MapPin size={17} />}
-                    </span>
-                    <span className="result-copy">
-                      <strong>{space.tenant?.name ?? space.label}</strong>
-                      <small>
-                        {space.label} • {space.code}
-                      </small>
-                    </span>
-                    <span className="result-floor">
-                      {space.floorId.endsWith("L1") ? "L1" : "L2"}
-                      <ChevronRight size={14} />
-                    </span>
-                  </button>
-                ))
-              ) : (
-                <div className="empty-state">
-                  <Search size={24} />
-                  <strong>{t.locationNotFound}</strong>
-                  <span>{t.tryOtherKeywords}</span>
-                </div>
+            <span className="roamora-widget-divider" />
+
+            {/* Field 2: Search Destination */}
+            <div className="roamora-widget-col search-col">
+              <div className="roamora-col-icon">
+                <Search size={20} />
+              </div>
+              <div className="roamora-col-copy">
+                <span className="roamora-col-label">{lang === "ID" ? "Cari Tujuan" : "Search Destination"}</span>
+                <input
+                  className="roamora-widget-input"
+                  value={store.query}
+                  onChange={(e) => store.setQuery(e.target.value)}
+                  placeholder={lang === "ID" ? "Cari gate, musala, ATM..." : "Search gates, lounges..."}
+                />
+              </div>
+              {store.query && (
+                <button type="button" className="roamora-clear-btn" onClick={() => store.setQuery("")}>
+                  <X size={15} />
+                </button>
               )}
             </div>
-            <p className="data-notice">
-              <AlertTriangle size={15} /> {DEMO_DATA_NOTICE}
-            </p>
-          </aside>
 
-          {/* Interactive 2D Vector Map Canvas Stage */}
-          <MapStage
-            terminal={store.terminal}
-            floorId={store.floorId}
-            spaces={visibleSpaces}
-            selectedId={store.selectedSpaceId}
-            route={store.route}
-            fromId={store.fromNodeId}
-            toId={store.toNodeId}
-            currentId={store.currentNodeId}
-            onSelect={selectSpace}
-          />
+            <span className="roamora-widget-divider" />
 
-          {/* Interactive Floating Details & Wayfinding Sheet */}
-          {(selected || store.routeStatus !== "idle") && (
-            <aside
-              className="detail-sheet"
-              aria-label={store.routeStatus === "idle" ? "Detail lokasi" : "Detail rute"}
+            {/* Field 3: Terminal & Floor Switcher */}
+            <div className="roamora-widget-col">
+              <div className="roamora-col-icon">
+                <Building2 size={20} />
+              </div>
+              <div className="roamora-col-copy">
+                <span className="roamora-col-label">{lang === "ID" ? "Terminal & Lantai" : "Terminal & Floor"}</span>
+                <div className="roamora-inline-switches">
+                  <select
+                    value={store.terminal}
+                    onChange={(e) => store.setTerminal(e.target.value as TerminalCode)}
+                    className="roamora-widget-select"
+                  >
+                    <option value="T1">Terminal 1</option>
+                    <option value="T2">Terminal 2</option>
+                  </select>
+                  <select
+                    value={store.floorId}
+                    onChange={(e) => store.setFloorId(e.target.value)}
+                    className="roamora-widget-select"
+                  >
+                    {terminalFloors.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {lang === "ID" ? f.label : f.label.replace("Lantai", "Floor")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <span className="roamora-widget-divider" />
+
+            {/* Field 4: Category Filter */}
+            <div className="roamora-widget-col">
+              <div className="roamora-col-icon">
+                <Compass size={20} />
+              </div>
+              <div className="roamora-col-copy">
+                <span className="roamora-col-label">{lang === "ID" ? "Kategori POI" : "Categories"}</span>
+                <select
+                  value={store.category}
+                  onChange={(e) => store.setCategory(e.target.value)}
+                  className="roamora-widget-select"
+                >
+                  {quickDockItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Search Submit Button */}
+            <button
+              type="button"
+              className="roamora-search-submit-btn"
+              onClick={() => {
+                if (visibleSpaces.length > 0) {
+                  selectSpace(visibleSpaces[0]);
+                }
+              }}
             >
+              <span>{lang === "ID" ? "Cari Rute" : "Search"}</span>
+              <Search size={16} />
+            </button>
+          </div>
+        </section>
+
+        {/* Explore Section */}
+        <section className="explore-section">
+          <div className="explore-heading">
+            <span>Jelajahi Terminal</span>
+            <h2>Mari Jelajahi!</h2>
+          </div>
+
+          {/* Empty Map Canvas Container (Peta dikosongkan untuk ditambahkan sendiri oleh user) */}
+          <div className="workspace">
+            <div className="map-stage map-stage-empty" aria-label="Area Peta" />
+
+            {/* Interactive Floating Details & Wayfinding Sheet */}
+            {(selected || store.routeStatus !== "idle") && (
+              <aside
+                className="detail-sheet"
+                aria-label={store.routeStatus === "idle" ? "Detail lokasi" : "Detail rute"}
+              >
               <button
                 type="button"
                 className="sheet-close"
@@ -543,9 +519,43 @@ export function WayfindingShell() {
                   )}
                 </>
               )}
-            </aside>
-          )}
-        </div>
+              </aside>
+            )}
+          </div>
+
+          <section className="airport-insights" aria-labelledby="airport-insights-title">
+            <div className="insights-heading">
+              <span>Temukan Lebih Banyak</span>
+              <h2 id="airport-insights-title">Insight Bandara Juanda</h2>
+            </div>
+            <div className="insights-layout">
+              <div className="insights-photo" role="img" aria-label="Pemandangan perjalanan" />
+              <div className="insights-grid">
+                <article className="insight-item">
+                  <span className="insight-item-icon"><ShoppingBag size={22} /></span>
+                  <div>
+                    <h3>Tenant Favorit</h3>
+                    <p>Temukan pilihan tenant yang paling sering dikunjungi.</p>
+                  </div>
+                </article>
+                <article className="insight-item">
+                  <span className="insight-item-icon"><Plane size={22} /></span>
+                  <div>
+                    <h3>Lokasi Peristirahatan</h3>
+                    <p>Temukan area nyaman untuk beristirahat sebelum penerbangan.</p>
+                  </div>
+                </article>
+                <article className="insight-item">
+                  <span className="insight-item-icon"><Sparkles size={22} /></span>
+                  <div>
+                    <h3>Lokasi Insight</h3>
+                    <p>Ruang disabilitas, fasilitas penting, dan layanan lainnya.</p>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </section>
+        </section>
       </main>
 
       {/* Simulated QR Location Scanner Modal */}

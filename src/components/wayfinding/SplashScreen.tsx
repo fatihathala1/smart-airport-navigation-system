@@ -2,23 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Navigation } from "lucide-react";
-import { useMapStore } from "@/store/mapStore";
 
 export function SplashScreen() {
   const [visible, setVisible] = useState(true);
   const [fading, setFading] = useState(false);
-  const lang = useMapStore((s) => s.lang);
+  const [activeLogo, setActiveLogo] = useState(0);
 
   useEffect(() => {
-    // 1.2s loading state then 0.4s fade out
-    const timer = setTimeout(() => {
+    const logoTimer = setInterval(() => setActiveLogo((logo) => (logo === 0 ? 1 : 0)), 1400);
+    const t = setTimeout(() => {
       setFading(true);
-      const hideTimer = setTimeout(() => setVisible(false), 400);
-      return () => clearTimeout(hideTimer);
-    }, 1200);
-
-    return () => clearTimeout(timer);
+      const hide = setTimeout(() => setVisible(false), 600);
+      return () => clearTimeout(hide);
+    }, 3000);
+    return () => {
+      clearInterval(logoTimer);
+      clearTimeout(t);
+    };
   }, []);
 
   if (!visible) return null;
@@ -30,115 +30,84 @@ export function SplashScreen() {
         inset: 0,
         zIndex: 9999,
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #142328 0%, #1a323a 60%, #005b64 100%)",
-        color: "#ffffff",
-        transition: "opacity 0.4s ease, transform 0.4s ease",
+        background: "#0a1628",
+        transition: "opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
         opacity: fading ? 0 : 1,
-        transform: fading ? "scale(1.03)" : "scale(1)",
         pointerEvents: fading ? "none" : "all",
       }}
     >
-      <div style={{ textAlign: "center", padding: "24px", maxWidth: "420px" }}>
-        <div
-          style={{
-            display: "inline-flex",
-            padding: "16px 24px",
-            borderRadius: "20px",
-            background: "rgba(255, 255, 255, 0.96)",
-            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.3)",
-            marginBottom: "24px",
-          }}
-        >
+      {/* Subtle radial glow behind logo */}
+      <div
+        style={{
+          position: "absolute",
+          width: "620px",
+          height: "620px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%)",
+          animation: "splash-glow 2s ease-in-out infinite alternate",
+        }}
+      />
+
+      {/* Logo */}
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "48px",
+          animation: "splash-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both",
+        }}
+      >
+        <div style={{ position: "relative", width: "min(78vw, 460px)", height: "180px" }}>
           <Image
-            src="/injourney-airports.png"
-            width={180}
-            height={60}
+            src="/injourney-airports-white.png"
+            fill
             priority
             alt="InJourney Airports"
-            style={{ objectFit: "contain" }}
+            style={{ objectFit: "contain", opacity: activeLogo === 0 ? 1 : 0, transition: "opacity 0.45s ease" }}
+          />
+          <Image
+            src="/Logo-ToDjuanda/Logo-Text-White.svg"
+            fill
+            priority
+            alt="Juanda Airport"
+            style={{ objectFit: "contain", opacity: activeLogo === 1 ? 1 : 0, transition: "opacity 0.45s ease" }}
           />
         </div>
 
-        <h1
-          style={{
-            margin: "0 0 8px",
-            fontSize: "22px",
-            fontWeight: 800,
-            letterSpacing: "-0.02em",
-            color: "#ffffff",
-          }}
-        >
-          {lang === "ID" ? "JUA Indoor Wayfinding" : "JUA Indoor Wayfinding"}
-        </h1>
-        <p
-          style={{
-            margin: "0 0 28px",
-            fontSize: "13px",
-            color: "#9eb4ba",
-            fontWeight: 500,
-          }}
-        >
-          {lang === "ID"
-            ? "Bandara Internasional Juanda — Terminal 1 & 2"
-            : "Juanda International Airport — Terminal 1 & 2"}
-        </p>
-
-        {/* Loading Progress Animation Bar */}
-        <div
-          style={{
-            width: "100%",
-            height: "4px",
-            borderRadius: "999px",
-            background: "rgba(255, 255, 255, 0.15)",
-            overflow: "hidden",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: "100%",
-              background: "linear-gradient(90deg, #00a8bd, #00e0fb)",
-              animation: "splash-bar 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-            }}
-          />
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            marginTop: "16px",
-            fontSize: "11px",
-            color: "#00a8bd",
-            fontWeight: 700,
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-          }}
-        >
-          <Navigation size={14} className="animate-spin" />
-          <span>
-            {lang === "ID" ? "Memuat Peta Vector 2D..." : "Loading 2D Vector Map..."}
-          </span>
+        {/* Minimal loading dots */}
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              style={{
+                width: "5px",
+                height: "5px",
+                borderRadius: "50%",
+                background: "rgba(125, 211, 252, 0.7)",
+                display: "block",
+                animation: `splash-dot 1.2s ease-in-out ${i * 0.2}s infinite`,
+              }}
+            />
+          ))}
         </div>
       </div>
 
-      <style jsx global>{`
-        @keyframes splash-bar {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(0%);
-          }
+      <style>{`
+        @keyframes splash-in {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes splash-glow {
+          from { opacity: 0.5; transform: scale(0.95); }
+          to   { opacity: 1;   transform: scale(1.05); }
+        }
+        @keyframes splash-dot {
+          0%, 100% { opacity: 0.25; transform: scaleY(0.6); }
+          50%       { opacity: 1;    transform: scaleY(1); }
         }
       `}</style>
     </div>

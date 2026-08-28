@@ -1,68 +1,227 @@
 .header {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 40;
-  min-height: 64px;
-  border-bottom: 1px solid #dfe7e9;
-  background: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  min-height: 80px;
+  border-bottom: none;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .headerInner {
-  width: min(1700px, calc(100% - 40px));
-  min-height: 64px;
+  width: min(1700px, calc(100% - 48px));
+  min-height: 80px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 24px;
 }
 
 .logoLink {
   display: flex;
   align-items: center;
-  height: 48px;
   text-decoration: none;
+  color: inherit;
+}
+
+.logoGroup {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.logoDivider {
+  width: 1px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.45);
 }
 
 .headerLogo {
   width: auto;
-  height: 44px;
+  height: 48px;
   object-fit: contain;
+}
+
+.juandaLogo {
+  width: auto;
+  height: 42px;
+  object-fit: contain;
+}
+
+.brandContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandIconWrapper {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0f2d35 0%, #1a424e 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 45, 53, 0.2);
+}
+
+.brandPlaneIcon {
+  transform: rotate(-15deg);
+}
+
+.brandTextGroup {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brandTitle {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0f2d35;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brandTag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #eef8f9;
+  color: #008ca2;
+  letter-spacing: 0;
+}
+
+.brandSubtitle {
+  font-size: 10px;
+  font-weight: 500;
+  color: #6b7f86;
+  letter-spacing: 0.02em;
+}
+
+/* Center Nav Menu */
+.navMenu {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.navLink {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 6px 0;
+  position: relative;
+  transition: all 0.18s ease;
+}
+
+.navLink:hover, .navLink[data-active="true"] {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.navLink[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
 }
 
 .headerRightArea {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .languageSwitch {
   display: flex;
   align-items: center;
   padding: 3px;
-  background: #eef3f4;
-  border: 1px solid #dfe7e9;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
+  backdrop-filter: blur(8px);
 }
 
 .languageSwitch button {
-  min-width: 44px;
-  min-height: 32px;
-  padding: 0 12px;
+  min-width: 38px;
+  min-height: 30px;
+  padding: 0 10px;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #5e6f75;
-  font-size: 13px;
-  font-weight: 750;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: all 0.18s ease;
 }
 
 .languageSwitch button[aria-pressed="true"] {
   color: #ffffff;
-  background: #00a8bd;
-  box-shadow: 0 2px 8px rgba(0, 168, 189, 0.3);
+  background: #0284c7;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
+}
+
+.contactBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 1.5px solid #d8e2e5;
+  background: #ffffff;
+  color: #0f2d35;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(15, 35, 40, 0.04);
+  transition: all 0.18s ease;
+}
+
+.contactBtn:hover {
+  border-color: #0f2d35;
+  background: #0f2d35;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 45, 53, 0.2);
+}
+
+.circularMenuBtn {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid #d8e2e5;
+  background: #ffffff;
+  color: #0f2d35;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 35, 40, 0.04);
+  transition: all 0.18s ease;
+}
+
+.circularMenuBtn:hover {
+  border-color: #0f2d35;
+  background: #eef8f9;
+  transform: rotate(90deg);
 }
 
 /* Footer Styling */
@@ -122,6 +281,18 @@
   }
   .headerLogo {
     height: 36px;
+  }
+
+  .logoGroup {
+    gap: 10px;
+  }
+
+  .logoDivider {
+    height: 26px;
+  }
+
+  .juandaLogo {
+    height: 30px;
   }
   .languageSwitch button {
     min-width: 38px;
