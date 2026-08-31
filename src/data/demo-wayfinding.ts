@@ -77,12 +77,20 @@ function uniqueName(kind: PlaceKind, index: number, terminal: TerminalCode, floo
 
 export function gridToMapPoint(terminal: TerminalCode, floorId: string, r: number, c: number) {
   if (terminal === "T1") {
-    const x = 38 + (Math.max(0, Math.min(300, c)) / 300) * 924;
-    const y = floorId.endsWith("L1") ? 262 + (Math.max(0, Math.min(100, r)) / 100) * 176 : 265 + (Math.max(0, Math.min(32, r)) / 32) * 170;
+    // T1 image: 9820×1875, SVG viewBox 1000×700, terminal spreads horizontally
+    // Grid: cols 0-300 → SVG x 20-980; rows 0-100 → SVG y 180-520 (floor 1)
+    const x = 20 + (Math.max(0, Math.min(300, c)) / 300) * 960;
+    const y = floorId.endsWith("L1")
+      ? 180 + (Math.max(0, Math.min(100, r)) / 100) * 340
+      : 180 + (Math.max(0, Math.min(32, r)) / 32) * 340;
     return { x, y };
   }
-  const x = 38 + (Math.max(0, Math.min(321, c)) / 321) * 924;
-  const y = floorId.endsWith("L1") ? 210 + ((Math.max(55, Math.min(117, r)) - 55) / 62) * 285 : 205 + (Math.max(0, Math.min(54, r)) / 54) * 300;
+  // T2 image: 1650×1169, terminal is more square
+  // Grid: cols 0-321 → SVG x 30-970; rows 55-117 → SVG y 160-540 (floor 1)
+  const x = 30 + (Math.max(0, Math.min(321, c)) / 321) * 940;
+  const y = floorId.endsWith("L1")
+    ? 160 + ((Math.max(55, Math.min(117, r)) - 55) / 62) * 380
+    : 160 + (Math.max(0, Math.min(54, r)) / 54) * 380;
   return { x, y };
 }
 

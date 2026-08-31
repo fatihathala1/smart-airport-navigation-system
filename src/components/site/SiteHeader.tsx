@@ -2,27 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useMapStore } from "@/store/mapStore";
 import styles from "./SiteChrome.module.css";
 
 export function SiteHeader() {
   const store = useMapStore();
   const currentLang = store.lang;
+  const pathname = usePathname();
+  const isMapPage = pathname === "/map";
 
   return (
-    <header className={styles.header}>
+    <header className={`${styles.header} ${isMapPage ? styles.mapHeader : ""}`}>
       <div className={styles.headerInner}>
         {/* InJourney Airports Logo */}
         <div className={styles.logoGroup}>
           <Link className={styles.logoLink} href="/" aria-label="InJourney Airports">
-          <Image
-            className={styles.headerLogo}
-            src="/injourney-airports-white.png"
-            width={200}
-            height={60}
-            priority
-            alt="InJourney Airports"
-          />
+            <Image
+              className={styles.headerLogo}
+              src="/injourney-airports-white.png"
+              width={200}
+              height={60}
+              priority
+              alt="InJourney Airports"
+            />
           </Link>
           <span className={styles.logoDivider} aria-hidden="true" />
           <Image
@@ -37,28 +40,16 @@ export function SiteHeader() {
 
         {/* Navigation */}
         <nav className={styles.navMenu} aria-label="Main Navigation">
-          <Link href="/" className={styles.navLink} data-active={true}>
+          <Link href="/" className={styles.navLink} data-active={pathname === "/"}>
             Home
           </Link>
-          <button
-            type="button"
-            className={styles.navLink}
-            onClick={() => {
-              document.querySelector(".workspace")?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
+          <Link href="/map" className={styles.navLink} data-active={pathname === "/map"}>
             Map
-          </button>
-          <button
-            type="button"
-            className={styles.navLink}
-            onClick={() => {
-              document.querySelector(".workspace")?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
+          </Link>
+          <Link href="/map" className={styles.navLink} data-active={pathname === "/map" && store.query !== ""}>
             Search
-          </button>
-          <Link href="#" className={styles.navLink}>
+          </Link>
+          <Link href="/map?help=true" className={styles.navLink}>
             Help
           </Link>
         </nav>
@@ -86,3 +77,4 @@ export function SiteHeader() {
     </header>
   );
 }
+
