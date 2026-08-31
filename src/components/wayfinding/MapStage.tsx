@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Layers3, LocateFixed, Minus, Plus } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { terminals, routeNodes } from "@/data/demo-wayfinding";
 import type { DijkstraResult, MapSpace, TerminalCode } from "@/types";
 import { BaseMapLayer } from "@/components/map-layers/BaseMapLayer";
@@ -33,11 +32,8 @@ export function MapStage({
 }) {
   const layerRef = useRef<SVGGElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const transformRef = useRef({ x: 0, y: 0, scale: 1 });
+  const transformRef = useRef({ x: 0, y: 0, scale: 1.2 });
   const dragRef = useRef<{ pointerId: number; x: number; y: number; originX: number; originY: number } | null>(null);
-
-  // LOD State (LOD 0: Airport Overview, LOD 1: Zones, LOD 2: Indoor Wayfinding)
-  const [lodLevel, setLodLevel] = useState<0 | 1 | 2>(2);
 
   const applyTransform = () => {
     const value = transformRef.current;
@@ -56,7 +52,7 @@ export function MapStage({
 
   const zoom = (delta: number, focus = { x: 500, y: 350 }) => {
     const current = transformRef.current;
-    const nextScale = Math.min(2.8, Math.max(1, current.scale + delta));
+    const nextScale = Math.min(12.0, Math.max(0.1, current.scale + delta));
     const ratio = nextScale / current.scale;
     transformRef.current = {
       x: focus.x - (focus.x - current.x) * ratio,
@@ -66,16 +62,30 @@ export function MapStage({
     applyTransform();
   };
 
-  const reset = () => {
-    transformRef.current = { x: 0, y: 0, scale: 1 };
-    applyTransform();
-  };
-
+  // Reset transform when terminal or floor changes
   useEffect(() => {
-    transformRef.current = { x: 0, y: 0, scale: 1 };
-    layerRef.current?.setAttribute("transform", "translate(0 0) scale(1)");
+    transformRef.current = { x: 0, y: 0, scale: 1.2 };
+    layerRef.current?.setAttribute("transform", "translate(0 0) scale(1.2)");
   }, [terminal, floorId]);
 
+  // Listen for pan-to events (e.g. from "Where Am I?" button)
+  useEffect(() => {
+    const handlePanTo = (event: Event) => {
+      const { x, y, scale: targetScale } = (event as CustomEvent<{ x: number; y: number; scale: number }>).detail;
+      const s = Math.min(12, Math.max(0.1, targetScale));
+      transformRef.current = {
+        x: 500 - x * s,
+        y: 350 - y * s,
+        scale: s,
+      };
+      applyTransform();
+    };
+    window.addEventListener("wayfinding:pan-to", handlePanTo);
+    return () => window.removeEventListener("wayfinding:pan-to", handlePanTo);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Pan to selected space
   useEffect(() => {
     if (!selectedId || route) return;
     const selected = spaces.find((space) => space.id === selectedId);
@@ -89,6 +99,7 @@ export function MapStage({
     applyTransform();
   }, [route, selectedId, spaces]);
 
+  // Fit route in view
   useEffect(() => {
     const points = route?.nodes.filter((node) => node.floorId === floorId) ?? [];
     if (points.length < 2) return;
@@ -114,16 +125,6 @@ export function MapStage({
 
   return (
     <section className="map-stage" aria-label="Peta interaktif terminal">
-      {/* Map Context Header Badge */}
-      <div className="map-context">
-        <span>
-          <Layers3 size={14} /> Peta Vector Terminal 2D
-        </span>
-        <strong>
-          {terminalMap.name} <i /> {floorId.endsWith("L1") ? "Lantai 1" : "Lantai 2"}
-        </strong>
-      </div>
-
       <svg
         ref={svgRef}
         viewBox="0 0 1000 700"
@@ -132,7 +133,7 @@ export function MapStage({
         aria-label="Gunakan sentuhan atau mouse untuk menggeser dan memperbesar peta"
         onWheel={(event) => {
           event.preventDefault();
-          zoom(event.deltaY > 0 ? -0.14 : 0.14, clientToMap(event.clientX, event.clientY));
+          zoom(event.deltaY > 0 ? -0.25 : 0.25, clientToMap(event.clientX, event.clientY));
         }}
         onPointerDown={(event) => {
           if ((event.target as Element).closest(".map-space, .map-poi")) return;
@@ -172,9 +173,7 @@ export function MapStage({
           />
           <SpaceLayer spaces={spaces} selectedId={selectedId} onSelect={onSelect} />
           <RouteLayer route={route} floorId={floorId} />
-          {lodLevel >= 1 && (
-            <POILayer spaces={spaces} nodes={visibleNodes} selectedId={selectedId} onSelect={onSelect} />
-          )}
+          <POILayer spaces={spaces} nodes={visibleNodes} selectedId={selectedId} onSelect={onSelect} />
           <MarkerLayer
             nodes={visibleNodes}
             routeNodes={route?.nodes.filter((node) => node.floorId === floorId)}
@@ -184,80 +183,6 @@ export function MapStage({
           />
         </g>
       </svg>
-
-      {/* Floating HUD Controls */}
-      <div className="map-controls-group">
-        <div className="compass-indicator" title="Orientasi Utara Peta">
-          <i className="compass-arrow" />
-          <span>UTARA</span>
-        </div>
-
-        {/* LOD Switcher */}
-        <div className="lod-switch" aria-label="Level Detail Peta (LOD)">
-          <button
-            type="button"
-            aria-pressed={lodLevel === 0}
-            onClick={() => setLodLevel(0)}
-            title="LOD 0: Makro Overview"
-          >
-            Makro
-          </button>
-          <button
-            type="button"
-            aria-pressed={lodLevel === 1}
-            onClick={() => setLodLevel(1)}
-            title="LOD 1: Zona Terminal"
-          >
-            Zona
-          </button>
-          <button
-            type="button"
-            aria-pressed={lodLevel === 2}
-            onClick={() => setLodLevel(2)}
-            title="LOD 2: Detail Indoor"
-          >
-            Detail
-          </button>
-        </div>
-
-        <div className="map-controls" aria-label="Kontrol perbesaran peta">
-          <button type="button" onClick={() => zoom(0.2)} aria-label="Perbesar peta">
-            <Plus size={20} />
-          </button>
-          <button type="button" onClick={() => zoom(-0.2)} aria-label="Perkecil peta">
-            <Minus size={20} />
-          </button>
-          <button type="button" onClick={reset} aria-label="Atur ulang posisi peta">
-            <LocateFixed size={20} />
-          </button>
-        </div>
-      </div>
-
-      {/* Map Color Key */}
-      <div className="map-color-key" aria-label="Arti warna bangunan">
-        <span>
-          <i style={{ background: "#8e9091" }} /> Kantor & Layanan
-        </span>
-        <span>
-          <i style={{ background: "#d89a0b" }} /> Kuliner & F&B
-        </span>
-        <span>
-          <i style={{ background: "#dd0fc9" }} /> Toko & Retail
-        </span>
-        <span>
-          <i style={{ background: "#0f9a55" }} /> Mushola
-        </span>
-      </div>
-
-      {/* Map Legend */}
-      <div className="map-legend" aria-label="Legenda peta">
-        <span>
-          <i className="legend-route" /> Jalur Navigasi
-        </span>
-        <span>
-          <i className="legend-poi" /> Titik Lokasi
-        </span>
-      </div>
     </section>
   );
 }

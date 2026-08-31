@@ -11,6 +11,17 @@
   box-shadow: none;
 }
 
+.mapHeader {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  background: #18222b !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  z-index: 50 !important;
+  min-height: 72px !important;
+}
+
 .headerInner {
   width: min(1700px, calc(100% - 48px));
   min-height: 80px;

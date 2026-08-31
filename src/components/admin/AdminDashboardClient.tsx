@@ -279,7 +279,7 @@ export function AdminDashboardClient({
         headStyles: { fillColor: [0, 168, 189], textColor: 255 },
         alternateRowStyles: { fillColor: [243, 247, 248] },
         margin: { left: 14, right: 14 },
-        didDrawPage: ({ pageNumber }) => {
+        didDrawPage: ({ pageNumber }: { pageNumber: number }) => {
           document.setFontSize(8);
           document.setTextColor(94, 111, 117);
           document.text(`Halaman ${pageNumber}`, 283, 200, { align: "right" });
