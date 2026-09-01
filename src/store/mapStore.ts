@@ -15,6 +15,7 @@ interface WayfindingState {
   currentNodeId: string | null;
   route: DijkstraResult | null;
   routeStatus: "idle" | "ready" | "no-route";
+  isSearchOpen: boolean;
   setTerminal: (terminal: TerminalCode) => void;
   setFloorId: (floorId: string) => void;
   setQuery: (query: string) => void;
@@ -26,6 +27,8 @@ interface WayfindingState {
   setCurrentNodeId: (id: string | null) => void;
   setRoute: (route: DijkstraResult | null, status?: "idle" | "ready" | "no-route") => void;
   clearRoute: () => void;
+  setIsSearchOpen: (open: boolean) => void;
+  toggleSearch: () => void;
 }
 
 export const useMapStore = create<WayfindingState>((set) => ({
@@ -40,6 +43,7 @@ export const useMapStore = create<WayfindingState>((set) => ({
   currentNodeId: null,
   route: null,
   routeStatus: "idle",
+  isSearchOpen: false,
 
   setTerminal: (terminal) =>
     set({
@@ -62,4 +66,6 @@ export const useMapStore = create<WayfindingState>((set) => ({
   setCurrentNodeId: (currentNodeId) => set({ currentNodeId, fromNodeId: currentNodeId }),
   setRoute: (route, routeStatus = route ? "ready" : "idle") => set({ route, routeStatus }),
   clearRoute: () => set({ toNodeId: null, route: null, routeStatus: "idle" }),
+  setIsSearchOpen: (isSearchOpen) => set({ isSearchOpen }),
+  toggleSearch: () => set((state) => ({ isSearchOpen: !state.isSearchOpen })),
 }));

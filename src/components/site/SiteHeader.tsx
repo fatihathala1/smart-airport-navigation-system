@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMapStore } from "@/store/mapStore";
 import styles from "./SiteChrome.module.css";
 
@@ -10,7 +10,17 @@ export function SiteHeader() {
   const store = useMapStore();
   const currentLang = store.lang;
   const pathname = usePathname();
+  const router = useRouter();
   const isMapPage = pathname === "/map";
+
+  const handleSearchClick = () => {
+    if (!isMapPage) {
+      router.push("/map");
+      store.setIsSearchOpen(true);
+    } else {
+      store.toggleSearch();
+    }
+  };
 
   return (
     <header className={`${styles.header} ${isMapPage ? styles.mapHeader : ""}`}>
@@ -43,12 +53,17 @@ export function SiteHeader() {
           <Link href="/" className={styles.navLink} data-active={pathname === "/"}>
             Home
           </Link>
-          <Link href="/map" className={styles.navLink} data-active={pathname === "/map"}>
+          <Link href="/map" className={styles.navLink} data-active={isMapPage && !store.isSearchOpen}>
             Map
           </Link>
-          <Link href="/map" className={styles.navLink} data-active={pathname === "/map" && store.query !== ""}>
+          <button
+            type="button"
+            className={styles.navLink}
+            data-active={store.isSearchOpen}
+            onClick={handleSearchClick}
+          >
             Search
-          </Link>
+          </button>
           <Link href="/map?help=true" className={styles.navLink}>
             Help
           </Link>
