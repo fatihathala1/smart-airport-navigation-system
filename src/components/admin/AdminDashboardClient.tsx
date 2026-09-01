@@ -29,7 +29,8 @@ import {
   X,
 } from "lucide-react";
 import type { AdminRole } from "@/types";
-import type { SheetData } from "write-excel-file/browser";
+// @ts-ignore
+type SheetData = any;
 import { AdminMapPanel } from "@/components/admin/AdminMapPanel";
 import { DashboardAnalytics } from "@/components/admin/DashboardAnalytics";
 
@@ -187,6 +188,7 @@ export function AdminDashboardClient({
   const exportTenantExcel = async () => {
     setExportingFormat("excel");
     try {
+      // @ts-ignore
       const { default: writeXlsxFile } = await import("write-excel-file/browser");
       const mergedRow = (value: string, style: Record<string, unknown> = {}) => [
         { value, columnSpan: 8, ...style }, null, null, null, null, null, null, null,
@@ -243,7 +245,9 @@ export function AdminDashboardClient({
     setExportingFormat("pdf");
     try {
       const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        // @ts-ignore
         import("jspdf"),
+        // @ts-ignore
         import("jspdf-autotable"),
       ]);
       const document = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });

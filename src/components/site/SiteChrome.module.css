@@ -155,6 +155,47 @@
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
 }
 
+.searchNavBtn {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.searchNavBtn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.searchNavBtnActive {
+  border: 0;
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
+  transition: all 0.18s ease;
+}
+
+.searchNavBtnActive:hover {
+  background: #0369a1;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.8);
+}
+
 .headerRightArea {
   display: flex;
   align-items: center;

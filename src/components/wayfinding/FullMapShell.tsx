@@ -18,6 +18,8 @@ import { findGridRoute } from "@/lib/grid-route";
 import { useMapStore } from "@/store/mapStore";
 import type { MapSpace } from "@/types";
 import { MapStage } from "./MapStage";
+import { SearchOverlayModal } from "./SearchOverlayModal";
+import { WayfindingTutorialModal } from "./WayfindingTutorialModal";
 import { SiteHeader } from "@/components/site/SiteHeader";
 
 const tDict = {
@@ -497,40 +499,15 @@ export function FullMapShell() {
         </div>
       )}
 
-      {/* Help Modal */}
-      {showHelpModal && (
-        <div className="modal-overlay" onClick={() => setShowHelpModal(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{lang === "ID" ? "Panduan Navigasi Peta Interaktif" : "Map Wayfinding Guide"}</h3>
-              <button type="button" className="modal-close" onClick={() => setShowHelpModal(false)} aria-label="Tutup modal"><X size={18} /></button>
-            </div>
-            <div className="help-modal-body">
-              <div className="help-step-item">
-                <div className="help-step-num">1</div>
-                <div>
-                  <strong>{lang === "ID" ? "Cari Lokasi atau Pilih dari Peta" : "Search or Select Destination"}</strong>
-                  <p>{lang === "ID" ? "Ketik nama gate, toko, musala, atau klik langsung polygon area di denah." : "Type a location in the search bar or click any room shape on the map vector."}</p>
-                </div>
-              </div>
-              <div className="help-step-item">
-                <div className="help-step-num">2</div>
-                <div>
-                  <strong>{lang === "ID" ? "Scan QR Standee Fisik" : "Scan QR Standee Location"}</strong>
-                  <p>{lang === "ID" ? "Tekan tombol Scan QR untuk menyesuaikan lokasi keberadaan Anda saat ini secara presisi." : "Tap Scan QR to position your starting point based on airport QR standees."}</p>
-                </div>
-              </div>
-              <div className="help-step-item">
-                <div className="help-step-num">3</div>
-                <div>
-                  <strong>{lang === "ID" ? "Petunjuk Arah Dijkstra" : "Interactive Directions"}</strong>
-                  <p>{lang === "ID" ? "Dapatkan jalur rute terpendek, estimasi waktu jalan, serta instruksi lintas lantai (lift/tangga)." : "Get real-time shortest path routing with distance, ETA, and floor connector steps."}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Tutorial & Help Modal */}
+      <WayfindingTutorialModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        onOpenQrModal={() => setShowQrModal(true)}
+      />
+
+      {/* Search Overlay Modal */}
+      <SearchOverlayModal />
     </div>
   );
 }
