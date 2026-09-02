@@ -19,6 +19,7 @@ export function MapStage({
   toId,
   currentId,
   onSelect,
+  overview = false,
 }: {
   terminal: TerminalCode;
   floorId: string;
@@ -29,10 +30,15 @@ export function MapStage({
   toId: string | null;
   currentId: string | null;
   onSelect: (space: MapSpace) => void;
+  overview?: boolean;
 }) {
   const layerRef = useRef<SVGGElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const transformRef = useRef({ x: 0, y: 0, scale: 1.2 });
+  const transformRef = useRef(
+    overview
+      ? { x: 310, y: 217, scale: 0.38 }
+      : { x: 0, y: 0, scale: 1.2 }
+  );
   const dragRef = useRef<{ pointerId: number; x: number; y: number; originX: number; originY: number } | null>(null);
 
   const applyTransform = () => {
@@ -64,9 +70,15 @@ export function MapStage({
 
   // Reset transform when terminal or floor changes
   useEffect(() => {
-    transformRef.current = { x: 0, y: 0, scale: 1.2 };
-    layerRef.current?.setAttribute("transform", "translate(0 0) scale(1.2)");
-  }, [terminal, floorId]);
+    const initialView = overview
+      ? { x: 310, y: 217, scale: 0.38 }
+      : { x: 0, y: 0, scale: 1.2 };
+    transformRef.current = initialView;
+    layerRef.current?.setAttribute(
+      "transform",
+      `translate(${initialView.x} ${initialView.y}) scale(${initialView.scale})`
+    );
+  }, [terminal, floorId, overview]);
 
   // Listen for pan-to events (e.g. from "Where Am I?" button)
   useEffect(() => {
@@ -82,7 +94,6 @@ export function MapStage({
     };
     window.addEventListener("wayfinding:pan-to", handlePanTo);
     return () => window.removeEventListener("wayfinding:pan-to", handlePanTo);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Pan to selected space

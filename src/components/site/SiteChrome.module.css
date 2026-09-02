@@ -16,8 +16,8 @@
   top: auto !important;
   left: auto !important;
   right: auto !important;
-  background: #18222b !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: #15222c !important;
+  border-bottom: 1px solid rgba(145, 166, 183, 0.16) !important;
   z-index: 50 !important;
   min-height: 72px !important;
 }

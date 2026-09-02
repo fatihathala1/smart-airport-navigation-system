@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -11,7 +14,6 @@ import {
   Compass,
   MapPin,
   Navigation,
-  Plane,
   QrCode,
   Ruler,
   Search,
@@ -20,18 +22,21 @@ import {
   Utensils,
   X,
 } from "lucide-react";
-import { categories, DEMO_DATA_NOTICE, floors, qrLocations, routeNodes, spaces } from "@/data/demo-wayfinding";
+import { categories, floors, qrLocations, routeNodes, spaces } from "@/data/demo-wayfinding";
 import { findGridRoute } from "@/lib/grid-route";
 import { useMapStore } from "@/store/mapStore";
 import type { MapSpace, TerminalCode } from "@/types";
 import { MapStage } from "./MapStage";
 import { SearchOverlayModal } from "./SearchOverlayModal";
-import { SplashScreen } from "./SplashScreen";
 import { WayfindingFullTutorialSection } from "./WayfindingFullTutorialSection";
 import { WayfindingTutorialModal } from "./WayfindingTutorialModal";
 import { WayfindingVideoTutorial } from "./WayfindingVideoTutorial";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, useGSAP);
+}
 
 // Bilingual Translations Dictionary
 const tDict = {
@@ -102,6 +107,7 @@ const tDict = {
 };
 
 export function WayfindingShell() {
+  const pageRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const [showQrModal, setShowQrModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -130,6 +136,142 @@ export function WayfindingShell() {
     const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
   }, [lang]);
+
+  useGSAP(
+    () => {
+      const scope = pageRef.current;
+      if (!scope) return;
+
+      const sections = gsap.utils.toArray<HTMLElement>("[data-scroll-reveal]", scope);
+      const liftWindow = scope.querySelector<HTMLElement>("[data-lift-window]");
+      const media = gsap.matchMedia();
+
+      media.add(
+        {
+          motionAllowed: "(prefers-reduced-motion: no-preference)",
+          reduceMotion: "(prefers-reduced-motion: reduce)",
+        },
+        (context) => {
+          const { reduceMotion } = context.conditions as { reduceMotion: boolean };
+
+          if (reduceMotion) {
+            sections.forEach((section) => {
+              const children = section.querySelectorAll<HTMLElement>("[data-reveal-child]");
+              gsap.set(children.length ? children : section, { clearProps: "all" });
+            });
+            if (liftWindow) gsap.set(liftWindow, { clearProps: "all" });
+            return;
+          }
+
+          sections.forEach((section, index) => {
+            const children = Array.from(
+              section.querySelectorAll<HTMLElement>("[data-reveal-child]")
+            );
+            const targets = children.length ? children : [section];
+
+            const hide = (direction: 1 | -1) => {
+              gsap.killTweensOf(targets);
+              gsap.set(targets, {
+                autoAlpha: 0,
+                y: 34 * direction,
+                scale: 0.992,
+              });
+            };
+
+            const reveal = (direction: 1 | -1) => {
+              gsap.killTweensOf(targets);
+              gsap.fromTo(
+                targets,
+                {
+                  autoAlpha: 0,
+                  y: 34 * direction,
+                  scale: 0.992,
+                  willChange: "transform, opacity",
+                },
+                {
+                  autoAlpha: 1,
+                  y: 0,
+                  scale: 1,
+                  duration: 0.82,
+                  stagger: children.length
+                    ? { each: 0.085, from: direction === 1 ? "start" : "end" }
+                    : 0,
+                  ease: "power3.out",
+                  overwrite: "auto",
+                  onComplete: () => gsap.set(targets, { clearProps: "willChange" }),
+                }
+              );
+            };
+
+            hide(1);
+
+            ScrollTrigger.create({
+              trigger: section,
+              start: "clamp(top 86%)",
+              end: "clamp(bottom 14%)",
+              refreshPriority: index,
+              onEnter: () => reveal(1),
+              onEnterBack: () => reveal(-1),
+              onLeave: () => hide(-1),
+              onLeaveBack: () => hide(1),
+            });
+          });
+
+          if (liftWindow) {
+            const resetLift = () => {
+              gsap.killTweensOf(liftWindow);
+              gsap.set(liftWindow, {
+                autoAlpha: 0.94,
+                y: 112,
+                scale: 0.988,
+              });
+            };
+
+            const liftIntoView = (fromY: number) => {
+              gsap.killTweensOf(liftWindow);
+              gsap.fromTo(
+                liftWindow,
+                {
+                  autoAlpha: 0.94,
+                  y: fromY,
+                  scale: 0.988,
+                  willChange: "transform, opacity",
+                },
+                {
+                  autoAlpha: 1,
+                  y: 0,
+                  scale: 1,
+                  duration: 1.05,
+                  ease: "power4.out",
+                  overwrite: "auto",
+                  onComplete: () => gsap.set(liftWindow, { clearProps: "willChange" }),
+                }
+              );
+            };
+
+            resetLift();
+
+            ScrollTrigger.create({
+              trigger: liftWindow,
+              start: "clamp(top 90%)",
+              end: "clamp(bottom 10%)",
+              onEnter: () => liftIntoView(112),
+              onEnterBack: () => liftIntoView(-36),
+              onLeaveBack: resetLift,
+            });
+          }
+        }
+      );
+
+      const refreshFrame = window.requestAnimationFrame(() => ScrollTrigger.refresh());
+
+      return () => {
+        window.cancelAnimationFrame(refreshFrame);
+        media.revert();
+      };
+    },
+    { scope: pageRef }
+  );
 
   // Quick POI Dock Items bilingual
   const quickDockItems = useMemo(
@@ -208,17 +350,14 @@ export function WayfindingShell() {
   const routeFloorIds = [...new Set(store.route?.nodes.map((node) => node.floorId) ?? [])];
 
   return (
-    <div className="wayfinding-page">
-      {/* Animated 1.5s Splash Screen */}
-      <SplashScreen />
-
+    <div ref={pageRef} className="wayfinding-page">
       <SiteHeader />
 
       <main className="wayfinding-shell">
         {/* Roamora Hero Section */}
-        <section className="roamora-hero">
+        <section className="roamora-hero" data-scroll-reveal>
           <div className="roamora-hero-backdrop" />
-          <div className="roamora-hero-content">
+          <div className="roamora-hero-content" data-reveal-child>
             <h1 className="roamora-hero-title">
               Explore <span className="roamora-blue-text">Juanda Airport</span>
             </h1>
@@ -248,7 +387,11 @@ export function WayfindingShell() {
           </div>
 
           {/* Roamora Floating Search & Navigation Card Widget */}
-          <div className="roamora-floating-widget" aria-label="Pencarian & Kontrol Navigasi">
+          <div
+            className="roamora-floating-widget"
+            aria-label="Pencarian & Kontrol Navigasi"
+            data-reveal-child
+          >
             {/* Field 1: Where to? / Origin */}
             <div className="roamora-widget-col" onClick={() => setShowQrModal(true)} title={lang === "ID" ? "Klik untuk ganti posisi QR awal" : "Click to change QR origin"}>
               <div className="roamora-col-icon">
@@ -362,15 +505,15 @@ export function WayfindingShell() {
 
         {/* Explore Section */}
         <section className="explore-section">
-          <div className="explore-heading">
+          <div className="explore-heading" data-scroll-reveal>
             <span>JELAJAHI TERMINAL</span>
             <h2>Mari Jelajahi!</h2>
           </div>
 
           {/* Stitch UI Map Dashboard Stage Container */}
-          <div className="stitch-dashboard-container" id="map-explorer">
+          <div className="stitch-dashboard-container" id="map-explorer" data-scroll-reveal>
             {/* Header Section */}
-            <header className="stitch-header">
+            <header className="stitch-header" data-reveal-child>
               {/* Location / Space Selector Badge */}
               <div
                 className="stitch-location-badge"
@@ -426,7 +569,7 @@ export function WayfindingShell() {
             </header>
 
             {/* Main Dashboard Layout Grid */}
-            <div className="stitch-main-grid">
+            <div className="stitch-main-grid" data-reveal-child>
               {/* Left Sidebar */}
               <aside className="stitch-sidebar-left">
                 {/* Air Quality Widget */}
@@ -825,7 +968,7 @@ export function WayfindingShell() {
             </div>
 
             {/* Bottom Action Footer Bar */}
-            <footer className="stitch-footer-actions">
+            <footer className="stitch-footer-actions" data-reveal-child>
               <button
                 type="button"
                 className="btn-action-blue"

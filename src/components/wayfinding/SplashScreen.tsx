@@ -10,14 +10,13 @@ export function SplashScreen() {
 
   useEffect(() => {
     const logoTimer = setInterval(() => setActiveLogo((logo) => (logo === 0 ? 1 : 0)), 1400);
-    const t = setTimeout(() => {
-      setFading(true);
-      const hide = setTimeout(() => setVisible(false), 600);
-      return () => clearTimeout(hide);
-    }, 3000);
+    const fadeTimer = setTimeout(() => setFading(true), 3000);
+    const hideTimer = setTimeout(() => setVisible(false), 3600);
+
     return () => {
       clearInterval(logoTimer);
-      clearTimeout(t);
+      clearTimeout(fadeTimer);
+      clearTimeout(hideTimer);
     };
   }, []);
 
@@ -25,6 +24,8 @@ export function SplashScreen() {
 
   return (
     <div
+      role="status"
+      aria-label="Memuat Juanda Airport Wayfinding"
       style={{
         position: "fixed",
         inset: 0,

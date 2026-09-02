@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
-  ArrowRight,
   ChevronRight,
   Clock3,
   Compass,
+  Crosshair,
   Navigation,
   QrCode,
+  RotateCcw,
   Ruler,
   X,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import { MapStage } from "./MapStage";
 import { SearchOverlayModal } from "./SearchOverlayModal";
 import { WayfindingTutorialModal } from "./WayfindingTutorialModal";
 import { SiteHeader } from "@/components/site/SiteHeader";
+import styles from "./FullMapShell.module.css";
 
 const tDict = {
   ID: {
@@ -56,6 +58,8 @@ const tDict = {
     temp: "Suhu",
     humidity: "Kelembapan",
     refreshNote: "Data diperbarui secara berkala",
+    whereAmI: "Posisi Saya",
+    resetMap: "Reset Peta",
   },
   EN: {
     getDirections: "Get Directions",
@@ -90,6 +94,8 @@ const tDict = {
     temp: "Temperature",
     humidity: "Humidity",
     refreshNote: "Data refreshes periodically",
+    whereAmI: "Where Am I?",
+    resetMap: "Reset Map",
   },
 };
 
@@ -104,7 +110,9 @@ export function FullMapShell() {
   const t = tDict[lang];
 
   useEffect(() => {
-    if (searchParams.get("help") === "true") setShowHelpModal(true);
+    if (searchParams.get("help") !== "true") return;
+    const timer = window.setTimeout(() => setShowHelpModal(true), 0);
+    return () => window.clearTimeout(timer);
   }, [searchParams]);
 
   useEffect(() => {
@@ -184,7 +192,7 @@ export function FullMapShell() {
   const routeFloorIds = [...new Set(store.route?.nodes.map((n) => n.floorId) ?? [])];
 
   return (
-    <div className="wayfinding-page full-screen-page">
+    <div className={`wayfinding-page full-screen-page ${styles.root}`}>
       <SiteHeader />
 
       <main className="wayfinding-shell full-screen-shell">
@@ -201,12 +209,14 @@ export function FullMapShell() {
             toId={store.toNodeId}
             currentId={store.currentNodeId}
             onSelect={selectSpace}
+            overview
           />
         </div>
 
         {/* ── LAYER 1: Floating Header HUD ── */}
         <header className="fs-hud-header">
-          <div
+          <button
+            type="button"
             className="stitch-location-badge"
             onClick={() => setShowQrModal(true)}
             title={lang === "ID" ? "Klik untuk memilih posisi awal" : "Click to select origin point"}
@@ -220,7 +230,7 @@ export function FullMapShell() {
               </p>
             </div>
             <ChevronRight size={18} className="stitch-arrow-icon" />
-          </div>
+          </button>
 
           <div className="stitch-header-right">
             <div className="stitch-time-block">
@@ -233,10 +243,6 @@ export function FullMapShell() {
                 <h1>{currentTime || "9:04 PM"}</h1>
               </div>
             </div>
-            <button type="button" className="stitch-help-btn" onClick={() => setShowHelpModal(true)}>
-              <span>{lang === "ID" ? "Cara Pakai\nPeta?" : "How do I\nuse this?"}</span>
-              <div className="help-icon-circle"><ArrowRight size={14} /></div>
-            </button>
           </div>
         </header>
 
@@ -272,14 +278,16 @@ export function FullMapShell() {
           {/* Journey Input */}
           <section className="stitch-card journey-card">
             <h3>{t.startJourney}</h3>
-            <div className="journey-input-box" onClick={() => setShowQrModal(true)} title={lang === "ID" ? "Klik untuk ganti posisi QR awal" : "Click to change QR start location"}>
-              <label>{t.originInput}</label>
-              <input readOnly value={currentOriginSpace?.tenant?.name ?? currentOriginSpace?.label ?? `Terminal ${store.terminal} Entrance`} placeholder={t.chooseOrigin} />
-            </div>
-            <div className="journey-input-box" title={lang === "ID" ? "Pilih lokasi di peta" : "Select location on map"}>
-              <label>{t.finishInput}</label>
-              <input readOnly value={selected?.tenant?.name ?? selected?.label ?? (store.query || t.chooseDestination)} placeholder={t.chooseDestination} />
-            </div>
+            <button type="button" className="journey-input-box" onClick={() => setShowQrModal(true)} title={lang === "ID" ? "Klik untuk ganti posisi QR awal" : "Click to change QR start location"}>
+              <span className="journey-field-label">{t.originInput}</span>
+              <span className="journey-field-value">{currentOriginSpace?.tenant?.name ?? currentOriginSpace?.label ?? `Terminal ${store.terminal} Entrance`}</span>
+              <ChevronRight size={15} />
+            </button>
+            <button type="button" className="journey-input-box" onClick={() => store.setIsSearchOpen(true)} title={lang === "ID" ? "Pilih lokasi di peta" : "Select location on map"}>
+              <span className="journey-field-label">{t.finishInput}</span>
+              <span className="journey-field-value" data-placeholder={!selected && !store.query}>{selected?.tenant?.name ?? selected?.label ?? (store.query || t.chooseDestination)}</span>
+              <ChevronRight size={15} />
+            </button>
           </section>
 
           {/* Route Timeline */}
@@ -312,7 +320,7 @@ export function FullMapShell() {
                     ) : (
                       <li className="timeline-step">
                         <div className="step-dot mid" />
-                        <span style={{ opacity: 0.65 }}>{t.chooseDestMap}</span>
+                        <span className="timeline-placeholder">{t.chooseDestMap}</span>
                       </li>
                     )}
                   </>
@@ -328,15 +336,15 @@ export function FullMapShell() {
             <h3>{t.onThisFloor}</h3>
             <p>{t.tapToFind}</p>
             <div className="floor-poi-buttons">
-              <button type="button" className="poi-filter-btn" onClick={() => { store.setCategory("all"); store.setQuery(lang === "ID" ? "toilet" : "restroom"); }}>
+              <button type="button" className="poi-filter-btn" data-active={store.query === (lang === "ID" ? "toilet" : "restroom")} aria-pressed={store.query === (lang === "ID" ? "toilet" : "restroom")} onClick={() => { store.setCategory("all"); store.setQuery(lang === "ID" ? "toilet" : "restroom"); }}>
                 <div className="icon-badge"><div className="square-dot" /></div>
-                <span>Rest Rooms</span>
+                <span>{lang === "ID" ? "Rest Rooms" : "Restrooms"}</span>
               </button>
-              <button type="button" className="poi-filter-btn" onClick={() => { store.setCategory("office"); store.setQuery(lang === "ID" ? "layanan" : "child"); }}>
+              <button type="button" className="poi-filter-btn" data-active={store.query === (lang === "ID" ? "layanan" : "child")} aria-pressed={store.query === (lang === "ID" ? "layanan" : "child")} onClick={() => { store.setCategory("office"); store.setQuery(lang === "ID" ? "layanan" : "child"); }}>
                 <div className="icon-badge"><div className="circle-dot" /></div>
                 <span>Child Care Area</span>
               </button>
-              <button type="button" className="poi-filter-btn" onClick={() => { store.setCategory("all"); store.setQuery(lang === "ID" ? "tangga" : "stairs"); }}>
+              <button type="button" className="poi-filter-btn" data-active={store.query === (lang === "ID" ? "tangga" : "stairs")} aria-pressed={store.query === (lang === "ID" ? "tangga" : "stairs")} onClick={() => { store.setCategory("all"); store.setQuery(lang === "ID" ? "tangga" : "stairs"); }}>
                 <div className="icon-badge">
                   <svg className="w-3.5 h-3.5 transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path d="M4 8h16M4 16h16" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
@@ -344,11 +352,11 @@ export function FullMapShell() {
                 </div>
                 <span>Stairs</span>
               </button>
-              <button type="button" className="poi-filter-btn" onClick={() => { store.setCategory("all"); store.setQuery(lang === "ID" ? "lift" : "elevator"); }}>
+              <button type="button" className="poi-filter-btn" data-active={store.query === (lang === "ID" ? "lift" : "elevator")} aria-pressed={store.query === (lang === "ID" ? "lift" : "elevator")} onClick={() => { store.setCategory("all"); store.setQuery(lang === "ID" ? "lift" : "elevator"); }}>
                 <div className="icon-badge"><div className="elevator-ic" /></div>
                 <span>Elevators</span>
               </button>
-              <button type="button" className="poi-filter-btn" onClick={() => { store.setCategory("prayer"); store.setQuery(""); }}>
+              <button type="button" className="poi-filter-btn" data-active={store.category === "prayer"} aria-pressed={store.category === "prayer"} onClick={() => { store.setCategory("prayer"); store.setQuery(""); }}>
                 <div className="icon-badge"><Compass size={14} /></div>
                 <span>{lang === "ID" ? "Mushola" : "Prayer Room"}</span>
               </button>
@@ -434,11 +442,11 @@ export function FullMapShell() {
 
         {/* ── LAYER 1: Floating Footer Actions ── */}
         <footer className="fs-hud-footer">
-          <button type="button" className="btn-action-blue" onClick={() => setShowQrModal(true)}>
+          <button type="button" className="btn-action-blue" data-variant="primary" onClick={() => setShowQrModal(true)}>
             <QrCode size={18} /><span>Scan QR</span>
           </button>
           <div className="right-action-group">
-            <button type="button" className="btn-action-blue" onClick={() => {
+            <button type="button" className="btn-action-blue" data-variant="secondary" onClick={() => {
               // Use currentNodeId, or fall back to the terminal entrance
               const nodeId = store.currentNodeId ?? `${store.terminal}-ENTRANCE-NODE`;
 
@@ -463,12 +471,12 @@ export function FullMapShell() {
               const spaceAtNode = spaces.find((s) => s.anchorNodeId === nodeId);
               if (spaceAtNode) selectSpace(spaceAtNode);
             }}>
-              <span>Where Am I?</span>
+              <Crosshair size={17} /><span>{t.whereAmI}</span>
             </button>
-            <button type="button" className="btn-action-blue" onClick={() => {
+            <button type="button" className="btn-action-blue" data-variant="secondary" onClick={() => {
               store.selectSpace(null); store.clearRoute(); store.setQuery(""); store.setCategory("all");
             }}>
-              <Navigation size={16} /><span>Reset Map</span>
+              <RotateCcw size={16} /><span>{t.resetMap}</span>
             </button>
           </div>
         </footer>

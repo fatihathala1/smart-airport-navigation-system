@@ -4,16 +4,25 @@ import {
   Building2,
   ChevronRight,
   Compass,
-  Navigation,
+  MapPin,
   Search,
   ShoppingBag,
   Sparkles,
   Utensils,
   X,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { categories, routeNodes, spaces } from "@/data/demo-wayfinding";
 import { useMapStore } from "@/store/mapStore";
 import type { MapSpace } from "@/types";
+
+const resultCategoryIcons: Record<string, LucideIcon> = {
+  entrance: MapPin,
+  office: Building2,
+  food: Utensils,
+  shop: ShoppingBag,
+  prayer: Compass,
+};
 
 export function SearchOverlayModal() {
   const store = useMapStore();
@@ -61,12 +70,12 @@ export function SearchOverlayModal() {
         {/* Header */}
         <div className="search-modal-header">
           <div className="search-modal-title-group">
-            <div className="search-modal-icon-badge">
-              <Search size={22} />
-            </div>
             <div>
-              <h3>{lang === "ID" ? "Pencarian Lokasi Bandara" : "Airport Location Search"}</h3>
-              <p>{lang === "ID" ? "Cari gate, toko, musala, ATM, atau layanan bandara" : "Search gates, dining, prayer rooms, or airport services"}</p>
+              <span className="search-modal-eyebrow">
+                {lang === "ID" ? "Direktori terminal" : "Terminal directory"}
+              </span>
+              <h3>{lang === "ID" ? "Cari lokasi" : "Find a location"}</h3>
+              <p>{lang === "ID" ? "Gate, tenant, layanan, dan fasilitas Bandara Juanda." : "Gates, tenants, services, and facilities at Juanda Airport."}</p>
             </div>
           </div>
           <button
@@ -83,7 +92,7 @@ export function SearchOverlayModal() {
         <div className="search-modal-top-controls">
           {/* Search Bar Input */}
           <div className="search-modal-input-wrapper">
-            <Search size={20} />
+            <Search size={20} aria-hidden="true" />
             <input
               type="text"
               className="search-modal-input"
@@ -114,11 +123,14 @@ export function SearchOverlayModal() {
                   key={cat.id}
                   type="button"
                   className="search-cat-pill"
+                  data-category={cat.id}
                   data-active={isActive}
                   onClick={() => store.setCategory(cat.id)}
                 >
-                  <Icon size={14} style={{ display: "inline-block", marginRight: 6, verticalAlign: "middle" }} />
-                  {cat.label}
+                  <span className="search-cat-icon" aria-hidden="true">
+                    <Icon size={15} />
+                  </span>
+                  <span>{cat.label}</span>
                 </button>
               );
             })}
@@ -131,7 +143,7 @@ export function SearchOverlayModal() {
                 ? `${visibleSpaces.length} lokasi ditemukan`
                 : `${visibleSpaces.length} locations found`}
             </span>
-            <span style={{ background: "rgba(255, 255, 255, 0.08)", padding: "3px 10px", borderRadius: "999px", fontSize: "12px", color: "rgba(255, 255, 255, 0.8)", fontWeight: 600 }}>
+            <span className="search-results-floor">
               {store.terminal} • {store.floorId.endsWith("L1") ? (lang === "ID" ? "Lantai 1" : "Floor 1") : (lang === "ID" ? "Lantai 2" : "Floor 2")}
             </span>
           </div>
@@ -142,31 +154,20 @@ export function SearchOverlayModal() {
           {visibleSpaces.length > 0 ? (
             visibleSpaces.map((space) => {
               const categoryObj = categories.find((c) => c.id === space.category);
-              const spaceColor = space.mapColor || "#38bdf8";
+              const ResultIcon = resultCategoryIcons[space.category] ?? MapPin;
               return (
-                <div
+                <button
+                  type="button"
                   key={space.id}
                   className="search-result-item"
                   onClick={() => handleSelectSpace(space)}
                 >
                   <div className="search-result-left">
-                    <div
-                      style={{
-                        width: "40px",
-                        height: "40px",
-                        borderRadius: "12px",
-                        background: `${spaceColor}22`,
-                        border: `1px solid ${spaceColor}55`,
-                        display: "grid",
-                        placeItems: "center",
-                        color: spaceColor,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Navigation size={18} />
+                    <div className="search-result-icon" data-category={space.category}>
+                      <ResultIcon size={18} />
                     </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                    <div className="search-result-copy">
+                      <div className="search-result-heading">
                         <span className="search-result-name">{space.tenant?.name ?? space.label}</span>
                         <span className="search-result-code">{space.code}</span>
                       </div>
@@ -176,11 +177,11 @@ export function SearchOverlayModal() {
                     </div>
                   </div>
 
-                  <button type="button" className="search-result-btn">
+                  <span className="search-result-btn">
                     <span>{lang === "ID" ? "Pilih" : "Select"}</span>
                     <ChevronRight size={14} />
-                  </button>
-                </div>
+                  </span>
+                </button>
               );
             })
           ) : (

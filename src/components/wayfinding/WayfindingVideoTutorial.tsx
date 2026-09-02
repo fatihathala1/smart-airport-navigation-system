@@ -1,30 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
-  Film,
   Play,
   Clock,
   Volume2,
   VolumeX,
-  Sparkles,
 } from "lucide-react";
-
-function useInView(threshold = 0.15) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setInView(true); obs.unobserve(el); } },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return { ref, inView };
-}
+import styles from "./WayfindingVideoTutorial.module.css";
 
 interface WayfindingVideoTutorialProps {
   videoUrl?: string;
@@ -39,9 +22,6 @@ export function WayfindingVideoTutorial({
   const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const { ref: headingRef, inView: headingInView } = useInView(0.2);
-  const { ref: playerRef, inView: playerInView } = useInView(0.1);
-
   function handlePlay() {
     if (videoRef.current) {
       videoRef.current.play().catch(() => {});
@@ -50,43 +30,30 @@ export function WayfindingVideoTutorial({
   }
 
   return (
-    <section className="vts-section" id="video-tutorial" aria-labelledby="vts-title">
+    <section
+      className={`vts-section ${styles.root}`}
+      id="video-tutorial"
+      aria-labelledby="vts-title"
+      data-lift-window
+      data-scroll-reveal
+    >
       <div className="vts-bg-grid" />
       <div className="vts-orb vts-orb-1" />
       <div className="vts-orb vts-orb-2" />
 
       {/* Header */}
-      <div
-        ref={headingRef}
-        className="vts-header"
-        style={{
-          opacity: headingInView ? 1 : 0,
-          transform: headingInView ? "translateY(0)" : "translateY(36px)",
-          transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1)",
-        }}
-      >
-        <div className="vts-eyebrow">
-          <Film size={13} />
-          <span>VIDEO PANDUAN LANGSUNG</span>
-        </div>
+      <div className="vts-header" data-reveal-child>
+        <span className="vts-heading-mark" aria-hidden="true" />
         <h2 id="vts-title">
-          Video Tutorial Navigasi <span className="vts-title-accent">Wayfinding</span>
+          Pahami navigasi sebelum <span className="vts-title-accent">mulai berjalan.</span>
         </h2>
         <p>
-          Saksikan demonstrasi singkat berikut untuk memahami cara bernavigasi di Bandara Juanda secara cepat dan efisien.
+          Pelajari cara mencari lokasi, menetapkan titik awal, dan mengikuti rute di Terminal Juanda melalui demonstrasi singkat ini.
         </p>
       </div>
 
       {/* Full-width video player */}
-      <div
-        ref={playerRef}
-        className="vts-full-player-wrap"
-        style={{
-          opacity: playerInView ? 1 : 0,
-          transform: playerInView ? "translateY(0)" : "translateY(40px)",
-          transition: "opacity 0.8s cubic-bezier(0.16,1,0.3,1) 100ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) 100ms",
-        }}
-      >
+      <div className="vts-full-player-wrap" data-reveal-child>
         <div className="vts-player-card">
           {/* Video Viewport */}
           <div className="vts-viewport">
@@ -108,7 +75,7 @@ export function WayfindingVideoTutorial({
               <div
                 className="vts-poster"
                 style={{
-                  backgroundImage: `linear-gradient(160deg, rgba(8,15,27,0.2) 0%, rgba(8,15,27,0.78) 100%), url('${posterUrl}')`,
+                  backgroundImage: `linear-gradient(160deg, rgba(9,28,42,0.18) 0%, rgba(6,19,30,0.82) 100%), url('${posterUrl}')`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
