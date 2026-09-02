@@ -294,6 +294,16 @@ button:active { transform: translateY(1px); }
 .wayfinding-page { min-height: 100dvh; background: linear-gradient(180deg, #0284c7 0%, #0284c7 54%, #7dd3fc 68%, #075985 100%); display: flex; flex-direction: column; }
 .wayfinding-page .wayfinding-shell { flex: 1 1 auto; display: block; overflow: visible; }
 .explore-section { padding: 72px 0 0; background: #0284c7; }
+
+/* ── Overlapping Scroll Stack ────────────────────────────────────────────── */
+/* Tutorial section (sticky, z-index:1) pins while the video section
+   (relative, z-index:10) naturally scrolls UP and covers it from below.
+   IMPORTANT: no overflow:hidden on this wrapper or any ancestor. */
+.section-overlap-stack {
+  position: relative;
+  isolation: isolate;
+}
+
 .explore-heading, .insights-heading { width: min(1200px, calc(100% - 48px)); margin: 0 auto; color: #ffffff; text-align: center; }
 .explore-heading span, .insights-heading span { display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.74); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .explore-heading h2, .insights-heading h2 { margin: 0; font-size: clamp(28px, 4vw, 44px); line-height: 1.1; font-weight: 800; letter-spacing: -.03em; }

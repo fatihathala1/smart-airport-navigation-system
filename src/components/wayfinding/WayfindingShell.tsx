@@ -263,6 +263,26 @@ export function WayfindingShell() {
         }
       );
 
+      // ── Tutorial section pin: freezes when step 4 hits the bottom of viewport,
+      // then the dark video card scrolls upward and overlaps from below ──
+      const tutorialSection = scope.querySelector<HTMLElement>("#panduan-lengkap");
+      if (tutorialSection) {
+        ScrollTrigger.create({
+          trigger: tutorialSection,
+          // Pin activates when the BOTTOM of the tutorial (step 4) reaches the
+          // BOTTOM of the viewport — NOT at the start.
+          start: "bottom bottom",
+          // Keep pinned for one full viewport height of scroll distance so the
+          // video section has room to rise up and fully cover the tutorial.
+          end: "+=100%",
+          pin: true,
+          // pinSpacing:false = don't push content down; the video section stays
+          // at its DOM position and naturally scrolls upward over the frozen tutorial.
+          pinSpacing: false,
+          anticipatePin: 1,
+        });
+      }
+
       const refreshFrame = window.requestAnimationFrame(() => ScrollTrigger.refresh());
 
       return () => {
@@ -1009,15 +1029,17 @@ export function WayfindingShell() {
             </footer>
           </div>
 
-          {/* Seksi Panduan Lengkap Wayfinding di Home Landing Page */}
-          <WayfindingFullTutorialSection
-            onOpenSearchModal={() => store.setIsSearchOpen(true)}
-            onOpenQrModal={() => setShowQrModal(true)}
-            onOpenHelpModal={() => setShowHelpModal(true)}
-          />
-
-          {/* Seksi Video Tutorial Navigasi Wayfinding */}
-          <WayfindingVideoTutorial />
+          {/* ── Scroll Stack: Tutorial pins, video card slides up over it ── */}
+          <div className="section-overlap-stack">
+            {/* Tutorial section — position:sticky inside, freezes in place */}
+            <WayfindingFullTutorialSection
+              onOpenSearchModal={() => store.setIsSearchOpen(true)}
+              onOpenQrModal={() => setShowQrModal(true)}
+              onOpenHelpModal={() => setShowHelpModal(true)}
+            />
+            {/* Video section — position:relative, z-index:10 — slides UP over tutorial */}
+            <WayfindingVideoTutorial />
+          </div>
 
 
         </section>
