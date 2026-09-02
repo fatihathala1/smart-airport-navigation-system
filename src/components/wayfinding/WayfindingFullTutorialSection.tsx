@@ -82,22 +82,29 @@ export function WayfindingFullTutorialSection({
             return (
               <li key={step.num} className={styles.step} data-reveal-child>
                 <div className={styles.index} aria-hidden="true">
-                  <span>Langkah</span>
+                  <span className={styles.stepLabel}>Langkah</span>
                   <strong>{step.num}</strong>
                 </div>
 
                 <div className={styles.copy}>
-                  <span className={styles.tag}>{step.tag}</span>
+                  <div className={styles.tag}>
+                    <span className={styles.tagDot} />
+                    <span>{step.tag}</span>
+                  </div>
                   <h3>{step.title}</h3>
                   <p>{step.desc}</p>
-                  <button type="button" onClick={step.onCta}>
-                    {step.cta}
-                    <ArrowRight size={16} />
+                  <button type="button" onClick={step.onCta} className={styles.ctaBtn}>
+                    <span>{step.cta}</span>
+                    <span className={styles.ctaIcon}>
+                      <ArrowRight size={15} />
+                    </span>
                   </button>
                 </div>
 
                 <div className={styles.glyph} aria-hidden="true">
-                  <Icon size={56} strokeWidth={1.3} />
+                  <div className={styles.glyphContainer}>
+                    <Icon size={32} strokeWidth={1.8} />
+                  </div>
                 </div>
               </li>
             );

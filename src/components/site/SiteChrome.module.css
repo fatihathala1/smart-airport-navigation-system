@@ -278,6 +278,8 @@
 
 /* Footer Styling */
 .footer {
+  position: relative;
+  z-index: 30;
   padding: 24px 32px;
   color: #5e6f75;
   background: #f0f4f5;
