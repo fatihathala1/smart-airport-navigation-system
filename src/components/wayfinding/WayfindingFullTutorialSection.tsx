@@ -16,42 +16,51 @@ export function WayfindingFullTutorialSection({
   onOpenHelpModal,
 }: WayfindingFullTutorialSectionProps) {
   const store = useMapStore();
+  const lang = store.lang;
 
   const steps = [
     {
       num: "01",
-      tag: "Pencarian lokasi",
-      title: "Temukan gate, toko, restoran, atau musala",
+      tag: lang === "ID" ? "Pencarian lokasi" : "Find a location",
+      title: lang === "ID" ? "Temukan gate, toko, restoran, atau musala" : "Find gates, shops, restaurants, or prayer rooms",
       icon: Search,
-      desc: "Cari lokasi berdasarkan nama atau kategori. Setiap area pada denah dapat dipilih untuk membuka informasi tempat yang lebih lengkap.",
-      cta: "Buka pencarian",
+      desc: lang === "ID"
+        ? "Cari lokasi berdasarkan nama atau kategori. Setiap area pada denah dapat dipilih untuk membuka informasi tempat yang lebih lengkap."
+        : "Search by name or category. You can also select any area on the map to see more details.",
+      cta: lang === "ID" ? "Buka pencarian" : "Open search",
       onCta: () => { if (onOpenSearchModal) onOpenSearchModal(); else store.setIsSearchOpen(true); },
     },
     {
       num: "02",
-      tag: "Posisi awal",
-      title: "Tetapkan posisi melalui QR standee bandara",
+      tag: lang === "ID" ? "Posisi awal" : "Set your location",
+      title: lang === "ID" ? "Tetapkan posisi melalui QR standee bandara" : "Set your location with an airport QR stand",
       icon: QrCode,
-      desc: "Pindai QR pada standee terdekat untuk menetapkan titik awal secara otomatis tanpa bergantung pada akurasi GPS di dalam terminal.",
-      cta: "Simulasi scan QR",
+      desc: lang === "ID"
+        ? "Pindai QR pada standee terdekat untuk menetapkan titik awal secara otomatis tanpa bergantung pada akurasi GPS di dalam terminal."
+        : "Scan the nearest QR stand to set your starting point automatically. You do not need to use indoor GPS.",
+      cta: lang === "ID" ? "Simulasi scan QR" : "Try QR scan",
       onCta: () => { if (onOpenQrModal) onOpenQrModal(); },
     },
     {
       num: "03",
-      tag: "Perhitungan rute",
-      title: "Ikuti rute terpendek beserta estimasi waktu",
+      tag: lang === "ID" ? "Perhitungan rute" : "Plan your route",
+      title: lang === "ID" ? "Ikuti rute terpendek beserta estimasi waktu" : "Follow the shortest route and check the walking time",
       icon: Navigation,
-      desc: "Sistem menghitung jalur publik terpendek dari posisi awal menuju tujuan, kemudian menampilkan jarak dan estimasi waktu berjalan.",
-      cta: "Lihat panduan peta",
+      desc: lang === "ID"
+        ? "Sistem menghitung jalur publik terpendek dari posisi awal menuju tujuan, kemudian menampilkan jarak dan estimasi waktu berjalan."
+        : "The map finds the shortest public route from your starting point and shows the distance and walking time.",
+      cta: lang === "ID" ? "Lihat panduan peta" : "View map guide",
       onCta: () => { if (onOpenHelpModal) onOpenHelpModal(); },
     },
     {
       num: "04",
-      tag: "Lintas lantai",
-      title: "Temukan lift, tangga, dan fasilitas aksesibel",
+      tag: lang === "ID" ? "Lintas lantai" : "Change floors",
+      title: lang === "ID" ? "Temukan lift, tangga, dan fasilitas aksesibel" : "Find elevators, stairs, and accessible facilities",
       icon: Layers,
-      desc: "Saat tujuan berada di lantai berbeda, petunjuk perpindahan lantai muncul bersama akses cepat ke fasilitas publik terdekat.",
-      cta: "Kembali ke peta",
+      desc: lang === "ID"
+        ? "Saat tujuan berada di lantai berbeda, petunjuk perpindahan lantai muncul bersama akses cepat ke fasilitas publik terdekat."
+        : "If your destination is on another floor, the map shows where to change floors and which public facilities are nearby.",
+      cta: lang === "ID" ? "Kembali ke peta" : "Back to map",
       onCta: () => { window.scrollTo({ top: 0, behavior: "smooth" }); },
     },
   ];
@@ -67,11 +76,16 @@ export function WayfindingFullTutorialSection({
         <header className={styles.header} data-reveal-child>
           <div className={styles.headerGrid}>
             <h2 id="guide-title">
-              Gunakan peta dengan <span>jelas dan cepat.</span>
+              {lang === "ID" ? (
+                <>Gunakan peta dengan <span>jelas dan cepat.</span></>
+              ) : (
+                <>Use the map <span>quickly and easily.</span></>
+              )}
             </h2>
             <p>
-              Empat langkah inti untuk mencari lokasi, menetapkan posisi awal,
-              mengikuti rute, dan berpindah lantai di terminal.
+              {lang === "ID"
+                ? "Empat langkah inti untuk mencari lokasi, menetapkan posisi awal, mengikuti rute, dan berpindah lantai di terminal."
+                : "Four simple steps to find a place, set your starting point, follow a route, and change floors."}
             </p>
           </div>
         </header>
@@ -82,7 +96,7 @@ export function WayfindingFullTutorialSection({
             return (
               <li key={step.num} className={styles.step} data-reveal-child>
                 <div className={styles.index} aria-hidden="true">
-                  <span className={styles.stepLabel}>Langkah</span>
+                  <span className={styles.stepLabel}>{lang === "ID" ? "Langkah" : "Step"}</span>
                   <strong>{step.num}</strong>
                 </div>
 

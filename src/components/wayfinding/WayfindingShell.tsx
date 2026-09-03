@@ -24,8 +24,15 @@ import {
   Utensils,
   X,
 } from "lucide-react";
-import { categories, floors, qrLocations, routeNodes, spaces } from "@/data/demo-wayfinding";
+import { floors, qrLocations, routeNodes, spaces } from "@/data/demo-wayfinding";
 import { findGridRoute } from "@/lib/grid-route";
+import {
+  getCategoryLabel,
+  getQrLocationLabel,
+  getRouteInstruction,
+  getSpaceDescription,
+  getSpaceLabel,
+} from "@/lib/wayfinding-language";
 import { useMapStore } from "@/store/mapStore";
 import type { MapSpace, TerminalCode } from "@/types";
 import { MapStage } from "./MapStage";
@@ -81,33 +88,33 @@ const tDict = {
     appTitle: "JUA Interactive Wayfinding",
     appSubtitle: "Juanda International Airport — Terminal 1 & 2",
     yourLocation: "YOUR LOCATION",
-    qrOriginText: "Obtained from Static QR:",
-    changeOrigin: "Change Origin",
+    qrOriginText: "Set by QR code:",
+    changeOrigin: "Change Starting Point",
     searchPlaceholder: "Search gates, check-in, prayer rooms, ATMs, or shops...",
     floor: "Floor",
     terminal: "Terminal",
-    nearbyDirectory: "DIRECTORY NEAR YOU",
+    nearbyDirectory: "PLACES NEAR YOU",
     locations: "Locations",
     locationNotFound: "Location not found",
     tryOtherKeywords: "Try searching for gates, prayer rooms, or ATMs.",
-    getDirections: "Get Directions",
-    routeWayfinding: "WAYFINDING ROUTE",
-    directionsTitle: "Juanda Wayfinding Directions",
-    originLabel: "Starting Point (Origin)",
+    getDirections: "Show Directions",
+    routeWayfinding: "YOUR ROUTE",
+    directionsTitle: "Directions",
+    originLabel: "Starting Point",
     destinationLabel: "Destination",
     distance: "Distance",
-    estWalkTime: "Est. Walk Time",
-    startFrom: "Start From",
+    estWalkTime: "Walking Time",
+    startFrom: "Start",
     finalDestination: "Final Destination",
     routeUnavailable: "Route unavailable",
-    routeUnavailableDesc: "Selected origin and destination are not connected by public walkways.",
-    simModalTitle: "Airport QR Code Simulation",
-    simModalDesc: "Select an airport QR Standee location to test static positioning auto-start navigation:",
-    statusOpen: "Open (Operational)",
+    routeUnavailableDesc: "There is no public route between these two places.",
+    simModalTitle: "Try an Airport QR Code",
+    simModalDesc: "Choose a QR stand at Juanda Airport to set your starting point:",
+    statusOpen: "Open",
     statusClosed: "Temporarily Closed",
-    serviceHours: "Operating Hours",
+    serviceHours: "Opening Hours",
     location: "Location",
-    hours24: "24 Hours Operational",
+    hours24: "Open 24 Hours",
     scanQr: "Scan QR",
     whereAmI: "Where Am I?",
     resetMap: "Reset Map",
@@ -130,7 +137,7 @@ export function WayfindingShell() {
       const now = new Date();
       const daysID = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
       const monthsID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agust", "Sep", "Okt", "Nov", "Des"];
-      const daysEN = ["Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday"];
+      const daysEN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const monthsEN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
       const day = lang === "ID" ? daysID[now.getDay()] : daysEN[now.getDay()];
@@ -409,10 +416,10 @@ export function WayfindingShell() {
     return spaces.filter((space) => {
       const matchesFloor = space.floorId === store.floorId;
       const matchesCategory = store.category === "all" || space.category === store.category;
-      const haystack = `${space.label} ${space.code} ${space.tenant?.name ?? ""}`.toLocaleLowerCase("id-ID");
-      return matchesFloor && matchesCategory && haystack.includes(store.query.toLocaleLowerCase("id-ID"));
+      const haystack = `${space.label} ${getSpaceLabel(space, lang)} ${getCategoryLabel(space.category, lang)} ${space.code} ${space.tenant?.name ?? ""}`.toLocaleLowerCase();
+      return matchesFloor && matchesCategory && haystack.includes(store.query.toLocaleLowerCase());
     });
-  }, [store.floorId, store.category, store.query]);
+  }, [lang, store.floorId, store.category, store.query]);
 
   const selected = spaces.find((space) => space.id === store.selectedSpaceId) ?? null;
   const terminalSpaces = spaces.filter((space) => space.terminal === store.terminal && space.status === "ACTIVE");
@@ -475,7 +482,7 @@ export function WayfindingShell() {
             <p className="roamora-hero-subtitle">
               {lang === "ID"
                 ? "Temukan gate, musala, kuliner, dan dapatkan petunjuk arah di Terminal 1 & 2."
-                : "Find gates, lounges, dining, and get walking directions across Terminal 1 & 2."}
+                : "Find gates, prayer rooms, restaurants, shops, and walking directions in Terminals 1 and 2."}
             </p>
 
             <div className="roamora-hero-actions">
@@ -499,7 +506,7 @@ export function WayfindingShell() {
           {/* Roamora Floating Search & Navigation Card Widget */}
           <div
             className="roamora-floating-widget"
-            aria-label="Pencarian & Kontrol Navigasi"
+            aria-label={lang === "ID" ? "Pencarian dan kontrol navigasi" : "Search and navigation controls"}
             data-reveal-child
           >
             {/* Field 1: Where to? / Origin */}
@@ -508,11 +515,11 @@ export function WayfindingShell() {
                 <MapPin size={20} />
               </div>
               <div className="roamora-col-copy">
-                <span className="roamora-col-label">{lang === "ID" ? "Lokasi Anda?" : "Where to?"}</span>
+                <span className="roamora-col-label">{lang === "ID" ? "Lokasi Anda?" : "Your Location"}</span>
                 <strong className="roamora-col-val">
-                  {currentOriginSpace?.tenant?.name ??
-                    currentOriginSpace?.label ??
-                    `Terminal ${store.terminal} Entrance`}
+                  {currentOriginSpace
+                    ? getSpaceLabel(currentOriginSpace, lang)
+                    : `Terminal ${store.terminal} Entrance`}
                 </strong>
               </div>
             </div>
@@ -530,7 +537,7 @@ export function WayfindingShell() {
                   className="roamora-widget-input"
                   value={store.query}
                   onChange={(e) => store.setQuery(e.target.value)}
-                  placeholder={lang === "ID" ? "Cari gate, musala, ATM..." : "Search gates, lounges..."}
+                  placeholder={lang === "ID" ? "Cari gate, musala, ATM..." : "Search gates, prayer rooms, ATMs..."}
                 />
               </div>
               {store.query && (
@@ -607,7 +614,7 @@ export function WayfindingShell() {
                 document.getElementById("map-explorer")?.scrollIntoView({ behavior: "smooth" });
               }}
             >
-              <span>{lang === "ID" ? "Cari Rute" : "Search"}</span>
+              <span>{lang === "ID" ? "Cari Rute" : "Search Route"}</span>
               <Search size={16} />
             </button>
           </div>
@@ -616,8 +623,8 @@ export function WayfindingShell() {
         {/* Explore Section */}
         <section className="explore-section">
           <div className="explore-heading" data-scroll-reveal>
-            <span>JELAJAHI TERMINAL</span>
-            <h2>Mari Jelajahi!</h2>
+            <span>{lang === "ID" ? "JELAJAHI TERMINAL" : "EXPLORE THE TERMINAL"}</span>
+            <h2>{lang === "ID" ? "Mari Jelajahi!" : "Let’s Explore!"}</h2>
           </div>
 
           {/* Stitch UI Map Dashboard Stage Container */}
@@ -632,11 +639,11 @@ export function WayfindingShell() {
               >
                 <div>
                   <h2 className="stitch-loc-title">
-                    {selected?.tenant?.name ??
-                      selected?.label ??
-                      currentOriginSpace?.tenant?.name ??
-                      currentOriginSpace?.label ??
-                      `Terminal ${store.terminal} Entrance`}
+                    {selected
+                      ? getSpaceLabel(selected, lang)
+                      : currentOriginSpace
+                      ? getSpaceLabel(currentOriginSpace, lang)
+                      : `Terminal ${store.terminal} Entrance`}
                   </h2>
                   <p className="stitch-loc-sub">
                     {store.floorId.endsWith("L1")
@@ -716,7 +723,7 @@ export function WayfindingShell() {
 
                 {/* Journey Input Section */}
                 <section className="stitch-card journey-card">
-                  <h3>{lang === "ID" ? "Mulai Perjalanan" : "Start your Journey"}</h3>
+                  <h3>{lang === "ID" ? "Mulai Perjalanan" : "Start Your Trip"}</h3>
                   <div
                     className="journey-input-box"
                     onClick={() => setShowQrModal(true)}
@@ -725,8 +732,8 @@ export function WayfindingShell() {
                     <label>{lang === "ID" ? "Titik Awal (Origin)" : "Start Point"}</label>
                     <input
                       readOnly
-                      value={currentOriginSpace?.tenant?.name ?? currentOriginSpace?.label ?? `Terminal ${store.terminal} Entrance`}
-                      placeholder={lang === "ID" ? "Pilih Titik Awal" : "Area Location"}
+                      value={currentOriginSpace ? getSpaceLabel(currentOriginSpace, lang) : `Terminal ${store.terminal} Entrance`}
+                      placeholder={lang === "ID" ? "Pilih Titik Awal" : "Select a starting point"}
                     />
                   </div>
 
@@ -738,18 +745,18 @@ export function WayfindingShell() {
                     }}
                     title={lang === "ID" ? "Klik untuk mencari lokasi tujuan" : "Click to search destination"}
                   >
-                    <label>{lang === "ID" ? "Tujuan (Finish)" : "Finish Point"}</label>
+                    <label>{lang === "ID" ? "Tujuan (Finish)" : "Destination"}</label>
                     <input
                       readOnly
-                      value={selected?.tenant?.name ?? selected?.label ?? (store.query || (lang === "ID" ? "Pilih Lokasi Tujuan" : "Area Location"))}
-                      placeholder={lang === "ID" ? "Pilih Tujuan" : "Area Location"}
+                      value={selected ? getSpaceLabel(selected, lang) : (store.query || (lang === "ID" ? "Pilih Lokasi Tujuan" : "Select a destination"))}
+                      placeholder={lang === "ID" ? "Pilih Tujuan" : "Select a destination"}
                     />
                   </div>
                 </section>
 
                 {/* Detail Journey Timeline */}
                 <section className="stitch-card journey-timeline-card">
-                  <h3>{lang === "ID" ? "Rincian Rute" : "Detail Journey"}</h3>
+                  <h3>{lang === "ID" ? "Rincian Rute" : "Route Details"}</h3>
                   <div className="timeline-container">
                     <div className="timeline-line" />
                     <ul className="timeline-steps">
@@ -768,13 +775,14 @@ export function WayfindingShell() {
                                 }`}
                               />
                               <span>
-                                {spaceForNode?.tenant?.name ??
-                                  spaceForNode?.label ??
+                                {spaceForNode
+                                  ? getSpaceLabel(spaceForNode, lang)
+                                  :
                                   (idx === 0
-                                    ? currentOriginSpace?.label ?? "Pintu Masuk"
+                                    ? currentOriginSpace ? getSpaceLabel(currentOriginSpace, lang) : (lang === "ID" ? "Pintu Masuk" : "Entrance")
                                     : idx === store.route!.nodes.length - 1
-                                    ? selected?.label ?? "Tujuan"
-                                    : `Titik Rute ${idx + 1}`)}
+                                    ? selected ? getSpaceLabel(selected, lang) : (lang === "ID" ? "Tujuan" : "Destination")
+                                    : lang === "ID" ? `Titik Rute ${idx + 1}` : `Route Point ${idx + 1}`)}
                               </span>
                             </li>
                           );
@@ -783,12 +791,12 @@ export function WayfindingShell() {
                         <>
                           <li className="timeline-step">
                             <div className="step-dot origin" />
-                            <span>{currentOriginSpace?.tenant?.name ?? currentOriginSpace?.label ?? "Security 01"}</span>
+                            <span>{currentOriginSpace ? getSpaceLabel(currentOriginSpace, lang) : "Security 01"}</span>
                           </li>
                           {selected ? (
                             <li className="timeline-step">
                               <div className="step-dot active" />
-                              <span>{selected.tenant?.name ?? selected.label}</span>
+                              <span>{getSpaceLabel(selected, lang)}</span>
                             </li>
                           ) : (
                             <li className="timeline-step">
@@ -823,7 +831,9 @@ export function WayfindingShell() {
                 {(selected || store.routeStatus !== "idle") && (
                   <aside
                     className="detail-sheet"
-                    aria-label={store.routeStatus === "idle" ? "Detail lokasi" : "Detail rute"}
+                    aria-label={store.routeStatus === "idle"
+                      ? (lang === "ID" ? "Detail lokasi" : "Location details")
+                      : (lang === "ID" ? "Detail rute" : "Route details")}
                   >
                     <button
                       type="button"
@@ -832,7 +842,7 @@ export function WayfindingShell() {
                         store.selectSpace(null);
                         store.clearRoute();
                       }}
-                      aria-label="Tutup panel"
+                      aria-label={lang === "ID" ? "Tutup panel" : "Close panel"}
                     >
                       <X size={20} />
                     </button>
@@ -845,16 +855,16 @@ export function WayfindingShell() {
                             className="detail-location-icon"
                             style={{ backgroundImage: `url("${selected.icon}")` }}
                             role="img"
-                            aria-label={`Ikon ${selected.label}`}
+                            aria-label={lang === "ID" ? `Ikon ${getSpaceLabel(selected, lang)}` : `${getSpaceLabel(selected, lang)} icon`}
                           />
                         )}
                         <span className="detail-category">
                           <i style={{ background: selected.mapColor ?? "var(--accent)" }} />
-                          {categories.find((category) => category.id === selected.category)?.label ?? "Facility"}
+                          {getCategoryLabel(selected.category, lang)}
                         </span>
-                        <h1>{selected.tenant?.name ?? selected.label}</h1>
-                        {selected.tenant && <p className="space-subtitle">{selected.label}</p>}
-                        <p>{selected.description}</p>
+                        <h1>{getSpaceLabel(selected, lang)}</h1>
+                        {selected.tenant && <p className="space-subtitle">{getSpaceLabel(selected, lang)}</p>}
+                        <p>{getSpaceDescription(selected, lang)}</p>
                         <dl className="detail-facts">
                           <div>
                             <dt>Status</dt>
@@ -905,7 +915,7 @@ export function WayfindingShell() {
                           >
                             {terminalSpaces.map((space) => (
                               <option key={space.id} value={space.anchorNodeId}>
-                                {space.tenant?.name ?? space.label}
+                                {getSpaceLabel(space, lang)}
                               </option>
                             ))}
                           </select>
@@ -922,7 +932,7 @@ export function WayfindingShell() {
                           >
                             {terminalSpaces.map((space) => (
                               <option key={space.id} value={space.anchorNodeId}>
-                                {space.tenant?.name ?? space.label}
+                                {getSpaceLabel(space, lang)}
                               </option>
                             ))}
                           </select>
@@ -938,24 +948,24 @@ export function WayfindingShell() {
                               </div>
                               <div>
                                 <Clock3 size={19} />
-                                <strong>~{store.route.estimatedMinutes} Mnt</strong>
+                                <strong>~{store.route.estimatedMinutes} {lang === "ID" ? "Mnt" : "min"}</strong>
                                 <span>{t.estWalkTime}</span>
                               </div>
                             </div>
 
-                            <div className="route-progress" aria-label="Ringkasan rute">
+                            <div className="route-progress" aria-label={lang === "ID" ? "Ringkasan rute" : "Route summary"}>
                               <div>
                                 <span>A</span>
                                 <p>
                                   <small>{t.startFrom}</small>
-                                  <strong>{routeFrom?.tenant?.name ?? routeFrom?.label ?? "Main Entrance"}</strong>
+                                  <strong>{routeFrom ? getSpaceLabel(routeFrom, lang) : "Main Entrance"}</strong>
                                 </p>
                               </div>
                               <div>
                                 <span>B</span>
                                 <p>
                                   <small>{t.finalDestination}</small>
-                                  <strong>{routeTo?.tenant?.name ?? routeTo?.label ?? "Destination"}</strong>
+                                  <strong>{routeTo ? getSpaceLabel(routeTo, lang) : "Destination"}</strong>
                                 </p>
                               </div>
                             </div>
@@ -983,7 +993,7 @@ export function WayfindingShell() {
 
                             {store.route.connectorInstructions.map((instruction) => (
                               <p key={instruction} className="connector-note">
-                                <Navigation size={17} /> {instruction}
+                                <Navigation size={17} /> {getRouteInstruction(instruction, lang)}
                               </p>
                             ))}
                           </>
@@ -1146,7 +1156,7 @@ export function WayfindingShell() {
                 type="button"
                 className="modal-close"
                 onClick={() => setShowQrModal(false)}
-                aria-label="Tutup modal"
+                aria-label={lang === "ID" ? "Tutup modal" : "Close dialog"}
               >
                 <X size={18} />
               </button>
@@ -1163,7 +1173,7 @@ export function WayfindingShell() {
                   onClick={() => setSimulatedQrLocation(loc)}
                 >
                   <div>
-                    <strong>{loc.label}</strong>
+                    <strong>{getQrLocationLabel(loc.label, lang)}</strong>
                     <small>
                       {loc.terminal} •{" "}
                       {loc.floorId.endsWith("L1")

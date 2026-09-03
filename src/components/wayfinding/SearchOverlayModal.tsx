@@ -7,12 +7,12 @@ import {
   MapPin,
   Search,
   ShoppingBag,
-  Sparkles,
   Utensils,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { categories, routeNodes, spaces } from "@/data/demo-wayfinding";
+import { routeNodes, spaces } from "@/data/demo-wayfinding";
+import { getCategoryLabel, getSpaceLabel } from "@/lib/wayfinding-language";
 import { useMapStore } from "@/store/mapStore";
 import type { MapSpace } from "@/types";
 
@@ -31,7 +31,7 @@ export function SearchOverlayModal() {
   if (!store.isSearchOpen) return null;
 
   const quickCategories = [
-    { id: "all", label: lang === "ID" ? "Semua" : "All", icon: Sparkles },
+    { id: "all", label: lang === "ID" ? "Semua" : "All", icon: null },
     { id: "office", label: lang === "ID" ? "Kantor & Layanan" : "Services", icon: Building2 },
     { id: "food", label: lang === "ID" ? "Kuliner & Resto" : "Food & Beverage", icon: Utensils },
     { id: "shop", label: lang === "ID" ? "Toko & Retail" : "Shops", icon: ShoppingBag },
@@ -40,8 +40,8 @@ export function SearchOverlayModal() {
 
   const visibleSpaces = spaces.filter((space) => {
     const matchesCategory = store.category === "all" || space.category === store.category;
-    const haystack = `${space.label} ${space.code} ${space.tenant?.name ?? ""}`.toLocaleLowerCase("id-ID");
-    const queryMatch = !store.query || haystack.includes(store.query.toLocaleLowerCase("id-ID"));
+    const haystack = `${space.label} ${getSpaceLabel(space, lang)} ${getCategoryLabel(space.category, lang)} ${space.code} ${space.tenant?.name ?? ""}`.toLocaleLowerCase();
+    const queryMatch = !store.query || haystack.includes(store.query.toLocaleLowerCase());
     return matchesCategory && queryMatch;
   });
 
@@ -82,7 +82,7 @@ export function SearchOverlayModal() {
             type="button"
             className="modal-close"
             onClick={() => store.setIsSearchOpen(false)}
-            aria-label="Tutup pencarian"
+            aria-label={lang === "ID" ? "Tutup pencarian" : "Close search"}
           >
             <X size={18} />
           </button>
@@ -106,7 +106,7 @@ export function SearchOverlayModal() {
                 type="button"
                 className="search-input-clear-btn"
                 onClick={() => store.setQuery("")}
-                aria-label="Bersihkan pencarian"
+                aria-label={lang === "ID" ? "Bersihkan pencarian" : "Clear search"}
               >
                 <X size={16} />
               </button>
@@ -114,7 +114,7 @@ export function SearchOverlayModal() {
           </div>
 
           {/* Quick Categories */}
-          <div className="search-modal-cats" aria-label="Kategori pencarian">
+          <div className="search-modal-cats" aria-label={lang === "ID" ? "Kategori pencarian" : "Search categories"}>
             {quickCategories.map((cat) => {
               const Icon = cat.icon;
               const isActive = store.category === cat.id;
@@ -127,9 +127,11 @@ export function SearchOverlayModal() {
                   data-active={isActive}
                   onClick={() => store.setCategory(cat.id)}
                 >
-                  <span className="search-cat-icon" aria-hidden="true">
-                    <Icon size={15} />
-                  </span>
+                  {Icon && (
+                    <span className="search-cat-icon" aria-hidden="true">
+                      <Icon size={15} />
+                    </span>
+                  )}
                   <span>{cat.label}</span>
                 </button>
               );
@@ -153,7 +155,7 @@ export function SearchOverlayModal() {
         <div className="search-modal-results-area">
           {visibleSpaces.length > 0 ? (
             visibleSpaces.map((space) => {
-              const categoryObj = categories.find((c) => c.id === space.category);
+              const categoryLabel = getCategoryLabel(space.category, lang);
               const ResultIcon = resultCategoryIcons[space.category] ?? MapPin;
               return (
                 <button
@@ -168,11 +170,13 @@ export function SearchOverlayModal() {
                     </div>
                     <div className="search-result-copy">
                       <div className="search-result-heading">
-                        <span className="search-result-name">{space.tenant?.name ?? space.label}</span>
-                        <span className="search-result-code">{space.code}</span>
+                        <span className="search-result-name">{getSpaceLabel(space, lang)}</span>
+                        <span className="search-result-code" aria-label={`${lang === "ID" ? "Kode lokasi" : "Location code"}: ${space.code}`}>
+                          {space.code}
+                        </span>
                       </div>
                       <div className="search-result-meta">
-                        {space.terminal} • {space.floorId.endsWith("L1") ? (lang === "ID" ? "Lantai 1" : "Floor 1") : (lang === "ID" ? "Lantai 2" : "Floor 2")} • {categoryObj?.label || space.category}
+                        {space.terminal} • {space.floorId.endsWith("L1") ? (lang === "ID" ? "Lantai 1" : "Floor 1") : (lang === "ID" ? "Lantai 2" : "Floor 2")} • {categoryLabel}
                       </div>
                     </div>
                   </div>

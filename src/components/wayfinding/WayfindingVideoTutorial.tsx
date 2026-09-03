@@ -7,6 +7,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { useMapStore } from "@/store/mapStore";
 import styles from "./WayfindingVideoTutorial.module.css";
 
 interface WayfindingVideoTutorialProps {
@@ -18,6 +19,7 @@ export function WayfindingVideoTutorial({
   videoUrl = "",
   posterUrl = "/bg-journey.jpg",
 }: WayfindingVideoTutorialProps) {
+  const lang = useMapStore((state) => state.lang);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -45,10 +47,16 @@ export function WayfindingVideoTutorial({
       <div className="vts-header" data-reveal-child>
         <span className="vts-heading-mark" aria-hidden="true" />
         <h2 id="vts-title">
-          Pahami navigasi sebelum <span className="vts-title-accent">mulai berjalan.</span>
+          {lang === "ID" ? (
+            <>Pahami navigasi sebelum <span className="vts-title-accent">mulai berjalan.</span></>
+          ) : (
+            <>Learn the route before <span className="vts-title-accent">you start walking.</span></>
+          )}
         </h2>
         <p>
-          Pelajari cara mencari lokasi, menetapkan titik awal, dan mengikuti rute di Terminal Juanda melalui demonstrasi singkat ini.
+          {lang === "ID"
+            ? "Pelajari cara mencari lokasi, menetapkan titik awal, dan mengikuti rute di Terminal Juanda melalui demonstrasi singkat ini."
+            : "See how to find a place, set your starting point, and follow a route at Juanda Airport in this short video."}
         </p>
       </div>
 
@@ -89,21 +97,21 @@ export function WayfindingVideoTutorial({
                   <span className="vts-badge-hd">HD 1080p</span>
                   <span className="vts-badge-dur">
                     <Clock size={11} />
-                    01:30 Mnt
+                    {lang === "ID" ? "01:30 Mnt" : "01:30 min"}
                   </span>
                 </div>
 
                 {/* Center play */}
                 <div className="vts-play-ring">
-                  <div className="vts-play-btn" title="Putar Video Tutorial">
+                  <div className="vts-play-btn" title={lang === "ID" ? "Putar video tutorial" : "Play tutorial video"}>
                     <Play size={36} style={{ marginLeft: 4, color: "#fff" }} />
                   </div>
                 </div>
 
                 {/* Bottom caption */}
                 <div className="vts-poster-caption">
-                  <h3>Panduan Lengkap Navigasi Wayfinding</h3>
-                  <p>Klik untuk memutar video tutorial interaktif</p>
+                  <h3>{lang === "ID" ? "Panduan Lengkap Navigasi Wayfinding" : "Complete Airport Navigation Guide"}</h3>
+                  <p>{lang === "ID" ? "Klik untuk memutar video tutorial interaktif" : "Click to play the navigation tutorial"}</p>
                 </div>
               </div>
             )}
@@ -113,7 +121,7 @@ export function WayfindingVideoTutorial({
           <div className="vts-meta-bar">
             <div className="vts-meta-left">
               <div className="vts-meta-icon-dot" />
-              <span>Tutorial Resmi Navigasi Bandara Juanda</span>
+              <span>{lang === "ID" ? "Tutorial Resmi Navigasi Bandara Juanda" : "Official Juanda Airport Navigation Tutorial"}</span>
             </div>
             <div className="vts-meta-right">
               <button
@@ -124,10 +132,14 @@ export function WayfindingVideoTutorial({
                   setIsMuted(next);
                   if (videoRef.current) videoRef.current.muted = next;
                 }}
-                title={isMuted ? "Aktifkan Suara" : "Matikan Suara"}
+                title={isMuted
+                  ? (lang === "ID" ? "Aktifkan suara" : "Turn sound on")
+                  : (lang === "ID" ? "Matikan suara" : "Turn sound off")}
               >
                 {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                <span>{isMuted ? "Mute" : "Audio On"}</span>
+                <span>{isMuted
+                  ? (lang === "ID" ? "Senyap" : "Muted")
+                  : (lang === "ID" ? "Suara aktif" : "Sound on")}</span>
               </button>
             </div>
           </div>

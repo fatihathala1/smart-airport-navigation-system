@@ -8,6 +8,7 @@ import { MarkerLayer } from "@/components/map-layers/MarkerLayer";
 import { POILayer } from "@/components/map-layers/POILayer";
 import { RouteLayer } from "@/components/map-layers/RouteLayer";
 import { SpaceLayer } from "@/components/map-layers/SpaceLayer";
+import { useMapStore } from "@/store/mapStore";
 
 export function MapStage({
   terminal,
@@ -32,6 +33,7 @@ export function MapStage({
   onSelect: (space: MapSpace) => void;
   overview?: boolean;
 }) {
+  const lang = useMapStore((state) => state.lang);
   const layerRef = useRef<SVGGElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const transformRef = useRef(
@@ -135,13 +137,13 @@ export function MapStage({
   const floorMap = terminalMap.floorMaps[floorId];
 
   return (
-    <section className="map-stage" aria-label="Peta interaktif terminal">
+    <section className="map-stage" aria-label={lang === "ID" ? "Peta interaktif terminal" : "Interactive terminal map"}>
       <svg
         ref={svgRef}
         viewBox="0 0 1000 700"
         preserveAspectRatio="xMidYMid slice"
         role="application"
-        aria-label="Gunakan sentuhan atau mouse untuk menggeser dan memperbesar peta"
+        aria-label={lang === "ID" ? "Gunakan sentuhan atau mouse untuk menggeser dan memperbesar peta" : "Use touch or a mouse to move and zoom the map"}
         onWheel={(event) => {
           event.preventDefault();
           zoom(event.deltaY > 0 ? -0.25 : 0.25, clientToMap(event.clientX, event.clientY));
@@ -182,9 +184,9 @@ export function MapStage({
             imageHeight={floorMap.imageHeight}
             crop={floorMap.crop}
           />
-          <SpaceLayer spaces={spaces} selectedId={selectedId} onSelect={onSelect} />
+          <SpaceLayer spaces={spaces} selectedId={selectedId} onSelect={onSelect} lang={lang} />
           <RouteLayer route={route} floorId={floorId} />
-          <POILayer spaces={spaces} nodes={visibleNodes} selectedId={selectedId} onSelect={onSelect} />
+          <POILayer spaces={spaces} nodes={visibleNodes} selectedId={selectedId} onSelect={onSelect} lang={lang} />
           <MarkerLayer
             nodes={visibleNodes}
             routeNodes={route?.nodes.filter((node) => node.floorId === floorId)}
