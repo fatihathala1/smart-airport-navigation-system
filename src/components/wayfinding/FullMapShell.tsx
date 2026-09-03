@@ -58,6 +58,7 @@ const tDict = {
     temp: "Suhu",
     humidity: "Kelembapan",
     refreshNote: "Data diperbarui secara berkala",
+    scanQr: "Pindai QR",
     whereAmI: "Posisi Saya",
     resetMap: "Reset Peta",
   },
@@ -94,6 +95,7 @@ const tDict = {
     temp: "Temperature",
     humidity: "Humidity",
     refreshNote: "Data refreshes periodically",
+    scanQr: "Scan QR",
     whereAmI: "Where Am I?",
     resetMap: "Reset Map",
   },
@@ -443,7 +445,7 @@ export function FullMapShell() {
         {/* ── LAYER 1: Floating Footer Actions ── */}
         <footer className="fs-hud-footer">
           <button type="button" className="btn-action-blue" data-variant="primary" onClick={() => setShowQrModal(true)}>
-            <QrCode size={18} /><span>Scan QR</span>
+            <QrCode size={18} /><span>{t.scanQr}</span>
           </button>
           <div className="right-action-group">
             <button type="button" className="btn-action-blue" data-variant="secondary" onClick={() => {

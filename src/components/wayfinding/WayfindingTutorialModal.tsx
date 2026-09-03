@@ -1,18 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Compass,
-  Footprints,
-  Layers,
-  MapPin,
-  Navigation,
-  QrCode,
-  Search,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
+import { Layers, Navigation, QrCode, Search, X } from "lucide-react";
 import { useMapStore } from "@/store/mapStore";
+import styles from "./WayfindingTutorialModal.module.css";
 
 interface WayfindingTutorialModalProps {
   isOpen: boolean;
@@ -21,36 +13,37 @@ interface WayfindingTutorialModalProps {
   onOpenSearchModal?: () => void;
 }
 
-export function WayfindingTutorialModal({
-  isOpen,
-  onClose,
-  onOpenQrModal,
-  onOpenSearchModal,
-}: WayfindingTutorialModalProps) {
+const passengerQuestions = [
+  { name: "Nadia Putri", role: "Penumpang reguler · Terminal 1", question: "Lokasi apa yang paling sering ditanyakan penumpang?", rating: 5, likes: 128, avatarX: "0%", avatarY: "12.5%" },
+  { name: "Raka Mahendra", role: "Pengguna peta · Terminal 2", question: "Top 5 tempat yang paling sering dicari apa saja?", rating: 5, likes: 104, avatarX: "50%", avatarY: "12.5%" },
+  { name: "Dimas Prabowo", role: "Penumpang transit", question: "Area mana yang paling membuat penumpang bingung?", rating: 4, likes: 96, avatarX: "100%", avatarY: "12.5%" },
+  { name: "Aulia Rahman", role: "Pengunjung · Terminal 1", question: "Biasanya penumpang tersesat karena apa?", rating: 5, likes: 87, avatarX: "0%", avatarY: "87.5%" },
+  { name: "Fajar Nugraha", role: "Frequent flyer", question: "Kalau ada sistem navigasi digital, fitur apa yang paling membantu?", rating: 5, likes: 76, avatarX: "50%", avatarY: "87.5%" },
+  { name: "Sinta Larasati", role: "Penumpang keluarga", question: "Dimana posisi terbaik untuk memasang sistem wayfinding?", rating: 5, likes: 69, avatarX: "100%", avatarY: "87.5%" },
+];
+
+export function WayfindingTutorialModal({ isOpen, onClose, onOpenQrModal, onOpenSearchModal }: WayfindingTutorialModalProps) {
   const store = useMapStore();
   const lang = store.lang;
-  const [activeStep, setActiveStep] = useState<number>(0);
-
-  if (!isOpen) return null;
+  const [activeStep, setActiveStep] = useState(0);
+  const reviewRailRef = useRef<HTMLDivElement>(null);
+  const velocityRef = useRef(0);
+  const animationFrameRef = useRef<number | null>(null);
 
   const steps = [
     {
       id: "search",
-      badge: lang === "ID" ? "Langkah 1" : "Step 1",
-      title: lang === "ID" ? "Cari Lokasi atau Klik Denah" : "Search Location or Tap Map",
+      shortTitle: lang === "ID" ? "Cari lokasi" : "Find a location",
+      title: lang === "ID" ? "Cari lokasi atau pilih langsung pada denah" : "Search or select directly on the map",
       icon: Search,
-      iconBg: "linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(2, 132, 199, 0.3))",
-      iconColor: "#38bdf8",
-      description:
-        lang === "ID"
-          ? "Gunakan kolom pencarian di bagian atas atau ketuk langsung area polygon ruangan pada denah peta untuk melihat detail gate, resto, musala, ATM, atau layanan bandara."
-          : "Use the top search bar or tap directly on room polygons on the map floorplan to view details for gates, dining, prayer rooms, ATMs, or services.",
+      description: lang === "ID"
+        ? "Gunakan pencarian untuk menemukan gate, tenant, musala, ATM, dan layanan bandara. Setiap area pada denah juga dapat dipilih untuk membuka rincian tempat."
+        : "Use search to find gates, tenants, prayer rooms, ATMs, and airport services. Every map area can also be selected for details.",
       tips: [
-        lang === "ID" ? "Ketik nama tempat seperti 'Gate 1' atau 'Kedai Madura'" : "Type keywords like 'Gate 1' or 'Dining'",
-        lang === "ID" ? "Gunakan filter cepat seperti Kuliner, Mushola, atau Layanan" : "Filter quickly by F&B, Prayer, or Services",
+        lang === "ID" ? "Masukkan nama spesifik seperti Gate 1 atau Kedai Madura." : "Enter a specific name such as Gate 1 or a tenant.",
+        lang === "ID" ? "Gunakan kategori jika belum mengetahui nama tempat." : "Use categories when you do not know the place name.",
       ],
-      actionText: lang === "ID" ? "Buka Pencarian Lokasi" : "Open Search Overlay",
-      actionIcon: Search,
+      actionText: lang === "ID" ? "Buka pencarian lokasi" : "Open location search",
       onAction: () => {
         onClose();
         if (onOpenSearchModal) onOpenSearchModal();
@@ -59,183 +52,169 @@ export function WayfindingTutorialModal({
     },
     {
       id: "qr",
-      badge: lang === "ID" ? "Langkah 2" : "Step 2",
-      title: lang === "ID" ? "Scan QR Standee Fisik" : "Scan Airport QR Standee",
+      shortTitle: lang === "ID" ? "Tentukan posisi" : "Set your position",
+      title: lang === "ID" ? "Tetapkan posisi awal melalui QR standee" : "Set your starting point using a QR standee",
       icon: QrCode,
-      iconBg: "linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3))",
-      iconColor: "#10b981",
-      description:
-        lang === "ID"
-          ? "Posisikan posisi awal keberadaan Anda secara presisi dengan memindai kode QR yang terpasang di tiang/standee Bandara Juanda, atau pilih titik awal secara manual."
-          : "Set your accurate starting point by scanning physical QR standees located across Juanda Airport, or select your origin point manually.",
+      description: lang === "ID"
+        ? "Pindai QR pada standee terdekat untuk menetapkan terminal, lantai, dan posisi awal secara akurat tanpa mengandalkan GPS di dalam gedung."
+        : "Scan the nearest standee QR to set the correct terminal, floor, and starting position without relying on indoor GPS.",
       tips: [
-        lang === "ID" ? "Membantu sistem menentukan titik 'Where Am I?' lokasi Anda secara tepat" : "Helps the system establish your exact 'Where Am I?' starting pin",
-        lang === "ID" ? "Tidak perlu mengira-ngira di mana Anda berada saat ini" : "No need to guess where you currently stand",
+        lang === "ID" ? "Cari standee terdekat dari posisi Anda saat ini." : "Use the standee closest to your current position.",
+        lang === "ID" ? "Posisi dapat diganti secara manual jika QR tidak tersedia." : "Choose a starting point manually when a QR is unavailable.",
       ],
-      actionText: lang === "ID" ? "Simulasi Scan QR" : "Simulate QR Scan",
-      actionIcon: QrCode,
+      actionText: lang === "ID" ? "Simulasikan scan QR" : "Simulate QR scan",
       onAction: () => {
         onClose();
-        if (onOpenQrModal) onOpenQrModal();
+        onOpenQrModal?.();
       },
     },
     {
       id: "navigation",
-      badge: lang === "ID" ? "Langkah 3" : "Step 3",
-      title: lang === "ID" ? "Petunjuk Arah Rute Interaktif" : "Interactive Turn-by-Turn Route",
+      shortTitle: lang === "ID" ? "Ikuti rute" : "Follow the route",
+      title: lang === "ID" ? "Ikuti rute terpendek menuju tujuan" : "Follow the shortest route to your destination",
       icon: Navigation,
-      iconBg: "linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.3))",
-      iconColor: "#f59e0b",
-      description:
-        lang === "ID"
-          ? "Tekan 'Mulai Petunjuk Arah' pada tempat tujuan Anda. Algoritma Dijkstra akan menghitung rute terpendek, estimasi jarak jalan kaki, dan durasi tempuh secara akurat."
-          : "Tap 'Get Directions' on your target space. The Dijkstra engine calculates the shortest path, walking distance, and estimated walk duration.",
+      description: lang === "ID"
+        ? "Setelah memilih tujuan, peta menampilkan jalur yang harus diikuti beserta estimasi jarak dan waktu berjalan."
+        : "After choosing a destination, the map displays the route along with estimated distance and walking time.",
       tips: [
-        lang === "ID" ? "Garis rute biru bercahaya menunjukkan rute yang harus diikuti" : "Glowing blue route line highlights your turn-by-turn path",
-        lang === "ID" ? "Mendukung indikator instruksi prapenerbangan" : "Supports flight boarding gate navigation alerts",
+        lang === "ID" ? "Pastikan titik awal dan tujuan sudah benar sebelum memulai." : "Confirm the origin and destination before starting.",
+        lang === "ID" ? "Rute dapat dihitung ulang kapan saja ketika tujuan berubah." : "Recalculate the route whenever the destination changes.",
       ],
     },
     {
       id: "floors",
-      badge: lang === "ID" ? "Langkah 4" : "Step 4",
-      title: lang === "ID" ? "Navigasi Lintas Lantai & Fasilitas" : "Multi-Floor & Facility Navigation",
+      shortTitle: lang === "ID" ? "Berpindah lantai" : "Change floors",
+      title: lang === "ID" ? "Gunakan lift, tangga, dan fasilitas aksesibel" : "Use lifts, stairs, and accessible facilities",
       icon: Layers,
-      iconBg: "linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(126, 34, 206, 0.3))",
-      iconColor: "#c084fc",
-      description:
-        lang === "ID"
-          ? "Jika tujuan berada di lantai berbeda, sistem secara otomatis memberikan instruksi perpindahan melalui Lift (Elevator) atau Tangga (Stairs) beserta filter cepat fasilitas terdekat."
-          : "If your destination is on another floor, automatic transfer guidance directs you through Escalators, Elevators, or Stairs with nearby facility shortcuts.",
+      description: lang === "ID"
+        ? "Jika tujuan berada di lantai berbeda, peta menunjukkan titik perpindahan lantai dan fasilitas publik yang tersedia di sekitar rute."
+        : "For destinations on another floor, the map shows transfer points and public facilities available along the route.",
       tips: [
-        lang === "ID" ? "Gunakan tombol T1-L1 / T1-L2 untuk berpindah tampilan denah lantai" : "Use T1-L1 / T1-L2 pills to toggle floorplan views",
-        lang === "ID" ? "Akses cepat filter Toilet, Mushola, dan Child Care di panel samping" : "Quick filter buttons for Restrooms, Prayer Rooms, and Elevators",
+        lang === "ID" ? "Periksa indikator lantai sebelum mengikuti jalur berikutnya." : "Check the floor indicator before continuing.",
+        lang === "ID" ? "Gunakan filter fasilitas untuk menemukan lift atau tangga terdekat." : "Use facility filters to find the nearest lift or stairs.",
       ],
     },
   ];
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const rail = reviewRailRef.current;
+    if (!rail) return;
+
+    const animateMomentum = () => {
+      rail.scrollLeft += velocityRef.current;
+      velocityRef.current *= 0.88;
+      if (Math.abs(velocityRef.current) > 0.25) {
+        animationFrameRef.current = window.requestAnimationFrame(animateMomentum);
+      } else {
+        velocityRef.current = 0;
+        animationFrameRef.current = null;
+      }
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+      if (!delta) return;
+      const atStart = rail.scrollLeft <= 1;
+      const atEnd = rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - 1;
+      if ((delta < 0 && atStart) || (delta > 0 && atEnd)) return;
+      event.preventDefault();
+      velocityRef.current = Math.max(-36, Math.min(36, velocityRef.current + delta * 0.16));
+      if (animationFrameRef.current === null) {
+        animationFrameRef.current = window.requestAnimationFrame(animateMomentum);
+      }
+    };
+
+    rail.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      rail.removeEventListener("wheel", handleWheel);
+      if (animationFrameRef.current !== null) window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+      velocityRef.current = 0;
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
   const currentStep = steps[activeStep];
 
   return (
-    <div className="modal-overlay tutorial-modal-backdrop" onClick={onClose}>
-      <div className="modal-card tutorial-modal-card" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="modal-header tutorial-modal-header">
-          <div className="tutorial-modal-title-group">
-            <div className="tutorial-modal-badge-icon">
-              <Sparkles size={22} />
-            </div>
-            <div>
-              <h3>{lang === "ID" ? "Panduan Navigasi Peta Interaktif" : "Interactive Wayfinding Guide"}</h3>
-              <p>{lang === "ID" ? "Pelajari cara mudah menemukan lokasi & petunjuk arah di Bandara Juanda" : "Learn how to easily find locations & directions at Juanda Airport"}</p>
-            </div>
+    <div className={`modal-overlay ${styles.backdrop}`} onClick={onClose}>
+      <section className={styles.card} role="dialog" aria-modal="true" aria-labelledby="help-title" onClick={(event) => event.stopPropagation()}>
+        <header className={styles.header}>
+          <div>
+            <span className={styles.eyebrow}>{lang === "ID" ? "PUSAT BANTUAN" : "HELP CENTER"}</span>
+            <h2 id="help-title">{lang === "ID" ? "Panduan menggunakan peta" : "How to use the map"}</h2>
+            <p>{lang === "ID" ? "Empat langkah singkat untuk bernavigasi di Terminal Juanda." : "Four concise steps for navigating Juanda Airport."}</p>
           </div>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup panduan">
-            <X size={18} />
-          </button>
-        </div>
+          <button type="button" className={styles.close} onClick={onClose} aria-label="Tutup panduan"><X size={20} /></button>
+        </header>
 
-        {/* Step Tabs Navigation */}
-        <div className="tutorial-step-tabs">
-          {steps.map((step, idx) => {
-            const Icon = step.icon;
-            const isActive = activeStep === idx;
-            return (
-              <button
-                key={step.id}
-                type="button"
-                className="tutorial-step-tab-btn"
-                data-active={isActive}
-                onClick={() => setActiveStep(idx)}
-              >
-                <span className="step-num-badge">{idx + 1}</span>
-                <Icon size={16} />
-                <span className="step-tab-label">{step.badge}</span>
-              </button>
-            );
-          })}
-        </div>
+        <div className={styles.layout}>
+          <nav className={styles.stepNav} aria-label={lang === "ID" ? "Langkah panduan" : "Guide steps"}>
+            <span className={styles.navLabel}>{lang === "ID" ? "ALUR PENGGUNAAN" : "USAGE FLOW"}</span>
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = index === activeStep;
+              return (
+                <button key={step.id} type="button" className={styles.stepButton} data-active={isActive} aria-current={isActive ? "step" : undefined} onClick={() => setActiveStep(index)}>
+                  <Icon className={styles.stepIcon} size={28} strokeWidth={1.45} />
+                  <span><small>{String(index + 1).padStart(2, "0")}</small><strong>{step.shortTitle}</strong></span>
+                </button>
+              );
+            })}
+          </nav>
 
-        {/* Active Step Content */}
-        <div className="tutorial-step-body">
-          <div className="tutorial-step-hero">
-            <div
-              className="tutorial-step-icon-large"
-              style={{ background: currentStep.iconBg, color: currentStep.iconColor }}
-            >
-              <currentStep.icon size={32} />
-            </div>
-            <div>
-              <span className="tutorial-step-tag">{currentStep.badge}</span>
-              <h4 className="tutorial-step-title">{currentStep.title}</h4>
-            </div>
-          </div>
+          <div className={styles.content}>
+            <article className={styles.stepArticle} key={currentStep.id}>
+              <div className={styles.stepMeta}>
+                <span>{lang === "ID" ? `LANGKAH ${activeStep + 1}` : `STEP ${activeStep + 1}`}</span>
+                <span>{String(activeStep + 1).padStart(2, "0")} / 04</span>
+              </div>
+              <h3>{currentStep.title}</h3>
+              <p className={styles.description}>{currentStep.description}</p>
+              <div className={styles.notes}>
+                <h4>{lang === "ID" ? "Yang perlu diperhatikan" : "What to keep in mind"}</h4>
+                <ol>
+                  {currentStep.tips.map((tip, index) => <li key={tip}><span>{String(index + 1).padStart(2, "0")}</span><p>{tip}</p></li>)}
+                </ol>
+              </div>
+              {currentStep.onAction && <button type="button" className={styles.primaryAction} onClick={currentStep.onAction}>{currentStep.actionText}</button>}
+            </article>
 
-          <p className="tutorial-step-desc">{currentStep.description}</p>
-
-          <div className="tutorial-tips-box">
-            <h5>{lang === "ID" ? "💡 Tips Praktis:" : "💡 Quick Tips:"}</h5>
-            <ul>
-              {currentStep.tips.map((tip, i) => (
-                <li key={i}>
-                  <Footprints size={14} className="tip-bullet-icon" />
-                  <span>{tip}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {currentStep.onAction && (
-            <div className="tutorial-step-action-row">
-              <button type="button" className="tutorial-cta-btn" onClick={currentStep.onAction}>
-                <currentStep.actionIcon size={16} />
-                <span>{currentStep.actionText}</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Footer Controls */}
-        <div className="tutorial-modal-footer">
-          <div className="tutorial-footer-dots">
-            {steps.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                className="tutorial-dot-pill"
-                data-active={activeStep === i}
-                onClick={() => setActiveStep(i)}
-                aria-label={`Ke langkah ${i + 1}`}
-              />
-            ))}
-          </div>
-
-          <div className="tutorial-footer-buttons">
-            {activeStep > 0 && (
-              <button
-                type="button"
-                className="tutorial-nav-btn prev"
-                onClick={() => setActiveStep((prev) => Math.max(0, prev - 1))}
-              >
-                {lang === "ID" ? "Sebelumnya" : "Previous"}
-              </button>
-            )}
-
-            {activeStep < steps.length - 1 ? (
-              <button
-                type="button"
-                className="tutorial-nav-btn next"
-                onClick={() => setActiveStep((prev) => Math.min(steps.length - 1, prev + 1))}
-              >
-                {lang === "ID" ? "Langkah Berikutnya" : "Next Step"}
-              </button>
-            ) : (
-              <button type="button" className="tutorial-nav-btn finish" onClick={onClose}>
-                {lang === "ID" ? "Selesai & Mulai Peta" : "Finish & Open Map"}
-              </button>
-            )}
+            <section className={styles.questions} aria-labelledby="passenger-questions-title">
+              <div className={styles.questionsHeader}>
+                <div><span>{lang === "ID" ? "SUARA PENUMPANG" : "PASSENGER VOICES"}</span><h3 id="passenger-questions-title">{lang === "ID" ? "Pertanyaan yang paling sering muncul" : "Frequently raised questions"}</h3></div>
+                <p>{lang === "ID" ? "Geser untuk membaca" : "Scroll to read"}</p>
+              </div>
+              <div ref={reviewRailRef} className={styles.reviewRail} tabIndex={0} aria-label={lang === "ID" ? "Daftar pertanyaan penumpang" : "Passenger questions"}>
+                {passengerQuestions.map((review) => (
+                  <article className={styles.reviewCard} key={review.question}>
+                    <div className={styles.reviewIdentity}>
+                      <span className={styles.avatar} style={{ "--avatar-x": review.avatarX, "--avatar-y": review.avatarY } as CSSProperties} aria-hidden="true" />
+                      <div><strong>{review.name}</strong><small>{review.role}</small></div>
+                    </div>
+                    <div className={styles.rating} aria-label={`${review.rating} dari 5 bintang`}>
+                      {Array.from({ length: 5 }, (_, index) => <span key={index} data-filled={index < review.rating}>★</span>)}
+                    </div>
+                    <blockquote>“{review.question}”</blockquote>
+                    <footer><span>{lang === "ID" ? "Pertanyaan terverifikasi" : "Verified question"}</span><span>{lang === "ID" ? `Suka · ${review.likes}` : `Helpful · ${review.likes}`}</span></footer>
+                  </article>
+                ))}
+              </div>
+            </section>
           </div>
         </div>
-      </div>
+
+        <footer className={styles.footer}>
+          <span>{lang === "ID" ? `${activeStep + 1} dari 4 langkah` : `${activeStep + 1} of 4 steps`}</span>
+          <div>
+            {activeStep > 0 && <button type="button" className={styles.secondaryButton} onClick={() => setActiveStep((step) => step - 1)}>{lang === "ID" ? "Sebelumnya" : "Previous"}</button>}
+            {activeStep < steps.length - 1
+              ? <button type="button" className={styles.nextButton} onClick={() => setActiveStep((step) => step + 1)}>{lang === "ID" ? "Langkah berikutnya" : "Next step"}</button>
+              : <button type="button" className={styles.nextButton} onClick={onClose}>{lang === "ID" ? "Selesai" : "Done"}</button>}
+          </div>
+        </footer>
+      </section>
     </div>
   );
 }

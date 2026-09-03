@@ -23,7 +23,10 @@ export function SiteHeader() {
   };
 
   return (
-    <header className={`${styles.header} ${isMapPage ? styles.mapHeader : ""}`}>
+    <header
+      className={`${styles.header} ${isMapPage ? styles.mapHeader : ""}`}
+      data-home-intro={!isMapPage ? "" : undefined}
+    >
       <div className={styles.headerInner}>
         {/* InJourney Airports Logo */}
         <div className={styles.logoGroup}>

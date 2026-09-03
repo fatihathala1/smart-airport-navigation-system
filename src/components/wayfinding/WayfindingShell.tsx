@@ -12,9 +12,11 @@ import {
   ChevronRight,
   Clock3,
   Compass,
+  Crosshair,
   MapPin,
   Navigation,
   QrCode,
+  RotateCcw,
   Ruler,
   Search,
   ShoppingBag,
@@ -71,6 +73,9 @@ const tDict = {
     serviceHours: "Jam Layanan",
     location: "Lokasi",
     hours24: "24 Jam Operasional",
+    scanQr: "Pindai QR",
+    whereAmI: "Posisi Saya",
+    resetMap: "Reset Peta",
   },
   EN: {
     appTitle: "JUA Interactive Wayfinding",
@@ -103,6 +108,9 @@ const tDict = {
     serviceHours: "Operating Hours",
     location: "Location",
     hours24: "24 Hours Operational",
+    scanQr: "Scan QR",
+    whereAmI: "Where Am I?",
+    resetMap: "Reset Map",
   },
 };
 
@@ -142,7 +150,10 @@ export function WayfindingShell() {
       const scope = pageRef.current;
       if (!scope) return;
 
-      const sections = gsap.utils.toArray<HTMLElement>("[data-scroll-reveal]", scope);
+      const allSections = gsap.utils.toArray<HTMLElement>("[data-scroll-reveal]", scope);
+      const heroSection = scope.querySelector<HTMLElement>(".roamora-hero");
+      const sections = allSections.filter((section) => section !== heroSection);
+      const homeHeader = scope.querySelector<HTMLElement>("[data-home-intro]");
       const liftWindow = scope.querySelector<HTMLElement>("[data-lift-window]");
       const media = gsap.matchMedia();
 
@@ -155,12 +166,72 @@ export function WayfindingShell() {
           const { reduceMotion } = context.conditions as { reduceMotion: boolean };
 
           if (reduceMotion) {
-            sections.forEach((section) => {
+            allSections.forEach((section) => {
               const children = section.querySelectorAll<HTMLElement>("[data-reveal-child]");
-              gsap.set(children.length ? children : section, { clearProps: "all" });
+              gsap.set(section, { clearProps: "all" });
+              if (children.length) gsap.set(children, { clearProps: "all" });
             });
+            if (homeHeader) gsap.set(homeHeader, { clearProps: "all" });
             if (liftWindow) gsap.set(liftWindow, { clearProps: "all" });
             return;
+          }
+
+          // The first viewport plays as soon as Home mounts, without waiting for
+          // the user to cross a ScrollTrigger boundary.
+          if (heroSection) {
+            const heroChildren = Array.from(
+              heroSection.querySelectorAll<HTMLElement>("[data-reveal-child]")
+            );
+            const intro = gsap.timeline();
+
+            intro.fromTo(
+              heroSection,
+              {
+                autoAlpha: 0,
+                scale: 1.012,
+                transformOrigin: "center center",
+                willChange: "transform, opacity",
+              },
+              {
+                autoAlpha: 1,
+                scale: 1,
+                duration: 1.6,
+                ease: "power2.out",
+                clearProps: "transform,opacity,visibility,willChange",
+              }
+            );
+
+            if (homeHeader) {
+              intro.fromTo(
+                homeHeader,
+                { autoAlpha: 0, y: -20, willChange: "transform, opacity" },
+                {
+                  autoAlpha: 1,
+                  y: 0,
+                  duration: 1.35,
+                  ease: "power3.out",
+                  clearProps: "transform,opacity,visibility,willChange",
+                },
+                0.12
+              );
+            }
+
+            if (heroChildren.length) {
+              intro.fromTo(
+                heroChildren,
+                { autoAlpha: 0, y: 42, scale: 0.985, willChange: "transform, opacity" },
+                {
+                  autoAlpha: 1,
+                  y: 0,
+                  scale: 1,
+                  duration: 1.5,
+                  stagger: 0.22,
+                  ease: "power3.out",
+                  clearProps: "transform,opacity,visibility,willChange",
+                },
+                0.28
+              );
+            }
           }
 
           sections.forEach((section, index) => {
@@ -169,12 +240,27 @@ export function WayfindingShell() {
             );
             const targets = children.length ? children : [section];
 
-            const hide = (direction: 1 | -1) => {
+            const prepareHidden = (direction: 1 | -1) => {
               gsap.killTweensOf(targets);
               gsap.set(targets, {
                 autoAlpha: 0,
                 y: 34 * direction,
                 scale: 0.992,
+              });
+            };
+
+            const fadeOut = (direction: 1 | -1) => {
+              gsap.killTweensOf(targets);
+              gsap.to(targets, {
+                autoAlpha: 0,
+                y: 28 * direction,
+                scale: 0.994,
+                duration: 1.15,
+                stagger: children.length
+                  ? { each: 0.07, from: direction === 1 ? "start" : "end" }
+                  : 0,
+                ease: "power2.out",
+                overwrite: "auto",
               });
             };
 
@@ -192,28 +278,28 @@ export function WayfindingShell() {
                   autoAlpha: 1,
                   y: 0,
                   scale: 1,
-                  duration: 0.82,
+                  duration: 1.45,
                   stagger: children.length
-                    ? { each: 0.085, from: direction === 1 ? "start" : "end" }
+                    ? { each: 0.14, from: direction === 1 ? "start" : "end" }
                     : 0,
-                  ease: "power3.out",
+                  ease: "power2.out",
                   overwrite: "auto",
                   onComplete: () => gsap.set(targets, { clearProps: "willChange" }),
                 }
               );
             };
 
-            hide(1);
+            prepareHidden(1);
 
             ScrollTrigger.create({
               trigger: section,
-              start: "clamp(top 86%)",
-              end: "clamp(bottom 14%)",
+              start: "clamp(top 88%)",
+              end: "clamp(bottom 12%)",
               refreshPriority: index,
               onEnter: () => reveal(1),
               onEnterBack: () => reveal(-1),
-              onLeave: () => hide(-1),
-              onLeaveBack: () => hide(1),
+              onLeave: () => fadeOut(-1),
+              onLeaveBack: () => fadeOut(1),
             });
           });
 
@@ -241,8 +327,8 @@ export function WayfindingShell() {
                   autoAlpha: 1,
                   y: 0,
                   scale: 1,
-                  duration: 1.05,
-                  ease: "power4.out",
+                  duration: 1.45,
+                  ease: "power3.out",
                   overwrite: "auto",
                   onComplete: () => gsap.set(liftWindow, { clearProps: "willChange" }),
                 }
@@ -375,7 +461,11 @@ export function WayfindingShell() {
 
       <main className="wayfinding-shell">
         {/* Roamora Hero Section */}
-        <section className="roamora-hero" data-scroll-reveal>
+        <section
+          className="roamora-hero"
+          data-scroll-reveal
+          style={{ opacity: 0, visibility: "hidden" }}
+        >
           <div className="roamora-hero-backdrop" />
           <div className="roamora-hero-content" data-reveal-child>
             <h1 className="roamora-hero-title">
@@ -995,7 +1085,7 @@ export function WayfindingShell() {
                 onClick={() => setShowQrModal(true)}
               >
                 <QrCode size={18} />
-                <span>Scan QR</span>
+                <span>{t.scanQr}</span>
               </button>
 
               <div className="right-action-group">
@@ -1009,7 +1099,8 @@ export function WayfindingShell() {
                     }
                   }}
                 >
-                  <span>Where Am I?</span>
+                  <Crosshair size={17} />
+                  <span>{t.whereAmI}</span>
                 </button>
 
                 <button
@@ -1022,8 +1113,8 @@ export function WayfindingShell() {
                     store.setCategory("all");
                   }}
                 >
-                  <Navigation size={16} />
-                  <span>Reset Map</span>
+                  <RotateCcw size={16} />
+                  <span>{t.resetMap}</span>
                 </button>
               </div>
             </footer>
