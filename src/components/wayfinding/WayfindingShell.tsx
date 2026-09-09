@@ -474,18 +474,20 @@ export function WayfindingShell() {
           style={{ opacity: 0, visibility: "hidden" }}
         >
           <div className="roamora-hero-backdrop" />
-          <div className="roamora-hero-content" data-reveal-child>
-            <h1 className="roamora-hero-title">
-              Explore <span className="roamora-blue-text">Juanda Airport</span>
-            </h1>
+          <div className="roamora-hero-content">
+            <div className="roamora-hero-copy" data-reveal-child>
+              <h1 className="roamora-hero-title">
+                Explore <span className="roamora-blue-text">Juanda Airport</span>
+              </h1>
 
-            <p className="roamora-hero-subtitle">
-              {lang === "ID"
-                ? "Temukan gate, musala, kuliner, dan dapatkan petunjuk arah di Terminal 1 & 2."
-                : "Find gates, prayer rooms, restaurants, shops, and walking directions in Terminals 1 and 2."}
-            </p>
+              <p className="roamora-hero-subtitle">
+                {lang === "ID"
+                  ? "Temukan gate, musala, kuliner, dan dapatkan petunjuk arah di Terminal 1 & 2."
+                  : "Find gates, prayer rooms, restaurants, shops, and walking directions in Terminals 1 and 2."}
+              </p>
+            </div>
 
-            <div className="roamora-hero-actions">
+            <div className="roamora-hero-actions" data-reveal-child>
               <button
                 type="button"
                 className="roamora-cta-btn"
@@ -501,14 +503,13 @@ export function WayfindingShell() {
                 </span>
               </button>
             </div>
-          </div>
 
-          {/* Roamora Floating Search & Navigation Card Widget */}
-          <div
-            className="roamora-floating-widget"
-            aria-label={lang === "ID" ? "Pencarian dan kontrol navigasi" : "Search and navigation controls"}
-            data-reveal-child
-          >
+            {/* Search & Navigation Card Widget */}
+            <div
+              className="roamora-floating-widget"
+              aria-label={lang === "ID" ? "Pencarian dan kontrol navigasi" : "Search and navigation controls"}
+              data-reveal-child
+            >
             {/* Field 1: Where to? / Origin */}
             <div className="roamora-widget-col" onClick={() => setShowQrModal(true)} title={lang === "ID" ? "Klik untuk ganti posisi QR awal" : "Click to change QR origin"}>
               <div className="roamora-col-icon">
@@ -617,6 +618,8 @@ export function WayfindingShell() {
               <span>{lang === "ID" ? "Cari Rute" : "Search Route"}</span>
               <Search size={16} />
             </button>
+            </div>
+
           </div>
         </section>
 

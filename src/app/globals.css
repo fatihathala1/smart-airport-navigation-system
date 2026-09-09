@@ -37,14 +37,16 @@ button:active { transform: translateY(1px); }
 .roamora-hero {
   position: relative;
   width: 100%;
-  min-height: 680px;
-  padding: 110px 24px 180px;
+  min-height: clamp(760px, 100svh, 920px);
+  margin: 0;
+  padding: 150px 32px 64px;
+  border-radius: 34px 34px 0 0;
   background: url('/bg-home.jpg') center 35% / cover no-repeat;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  overflow: visible;
+  overflow: hidden;
   z-index: 10;
 }
 
@@ -52,17 +54,25 @@ button:active { transform: translateY(1px); }
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(10, 28, 33, 0.55) 0%, rgba(2, 132, 199, 0.18) 65%, rgba(2, 132, 199, 0.72) 95%, #0284c7 100%);
+  background: linear-gradient(180deg, rgba(10, 28, 33, 0.62) 0%, rgba(10, 28, 33, 0.34) 42%, rgba(2, 132, 199, 0.28) 72%, rgba(2, 132, 199, 0.8) 96%, #0284c7 100%);
 }
 
 .roamora-hero-content {
   position: relative;
   z-index: 2;
-  max-width: 860px;
+  width: min(1280px, 100%);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+}
+
+.roamora-hero-copy {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
 .roamora-badge {
@@ -86,11 +96,13 @@ button:active { transform: translateY(1px); }
 }
 
 .roamora-hero-title {
-  margin: 4px 0 0;
-  font-size: clamp(38px, 5.8vw, 72px);
+  max-width: 850px;
+  margin: 0;
+  font-size: clamp(50px, 5.35vw, 84px);
   font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1.05;
+  letter-spacing: -0.062em;
+  line-height: 1;
+  text-align: center;
   color: #ffffff;
 }
 
@@ -98,29 +110,35 @@ button:active { transform: translateY(1px); }
   background: linear-gradient(90deg, #0ea5e9 0%, #7dd3fc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  display: inline-block;
+  display: block;
+  margin-top: 10px;
 }
 
 .roamora-hero-subtitle {
   margin: 0;
-  max-width: 680px;
+  max-width: none;
   color: rgba(255, 255, 255, 0.94);
-  font-size: clamp(14px, 1.7vw, 17px);
-  line-height: 1.6;
+  font-size: clamp(15px, 1.25vw, 19px);
+  line-height: 1.45;
   font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 .roamora-hero-actions {
-  margin-top: 10px;
+  width: 100%;
+  margin-top: 22px;
+  display: flex;
+  justify-content: center;
 }
 
 .roamora-cta-btn {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  min-height: 54px;
-  padding: 0 30px;
+  min-height: 52px;
+  padding: 0 8px 0 24px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
@@ -139,8 +157,8 @@ button:active { transform: translateY(1px); }
 }
 
 .roamora-cta-arrow {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -152,9 +170,8 @@ button:active { transform: translateY(1px); }
 .roamora-floating-widget {
   position: relative;
   z-index: 5;
-  margin-top: 220px;
-  margin-bottom: -160px;
-  width: min(1200px, calc(100% - 32px));
+  margin: clamp(48px, 7vh, 72px) auto 0;
+  width: min(1200px, 100%);
   display: flex;
   align-items: center;
   padding: 12px 16px;
@@ -537,10 +554,41 @@ button:active { transform: translateY(1px); }
   .workspace { grid-template-columns: minmax(0, 1fr); }
   .search-panel { grid-template-columns: 180px minmax(0, 1fr); }
   .result-row { flex-basis: 240px; }
-  .roamora-floating-widget { margin-top: 96px; }
+  .roamora-hero { min-height: 820px; padding: 126px 20px 60px; }
+  .roamora-hero-copy { width: min(760px, 100%); }
+  .roamora-floating-widget {
+    inset: auto;
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    border-radius: 24px;
+  }
+  .roamora-widget-divider { display: none; }
+  .roamora-search-submit-btn { grid-column: 1 / -1; }
 }
 
 @media (max-width: 767px) {
+  .roamora-hero { min-height: auto; padding: 112px 12px 52px; }
+  .roamora-hero-content { min-height: 0; }
+  .roamora-hero-copy { width: 100%; gap: 14px; }
+  .roamora-hero-title { font-size: clamp(36px, 12vw, 52px); }
+  .roamora-blue-text { margin-top: 6px; }
+  .roamora-hero-subtitle { max-width: 34rem; font-size: 14px; white-space: normal; }
+  .roamora-floating-widget {
+    position: relative;
+    inset: auto;
+    order: initial;
+    width: 100%;
+    margin-top: 24px;
+    grid-template-columns: 1fr;
+    padding: 10px;
+    border-radius: 22px;
+  }
+  .roamora-widget-col { padding: 9px 12px; }
+  .roamora-search-submit-btn { grid-column: auto; width: 100%; }
+  .roamora-hero-actions { order: initial; width: 100%; margin-top: 18px; justify-content: center; }
+  .roamora-cta-btn { min-height: 48px; padding: 0 24px; }
   .explore-section { padding-top: 36px; }
   .explore-heading, .insights-heading, .insights-grid { width: calc(100% - 24px); }
   .explore-heading { margin-bottom: 28px; }

@@ -4,11 +4,12 @@
   left: 0;
   right: 0;
   z-index: 40;
-  min-height: 80px;
+  min-height: 110px;
   border-bottom: none;
-  background: transparent;
+  background: url("/header-juanda-ribbon.svg") left top / 500px 110px no-repeat;
   backdrop-filter: none;
   box-shadow: none;
+  overflow: hidden;
 }
 
 .mapHeader {
@@ -16,20 +17,63 @@
   top: auto !important;
   left: auto !important;
   right: auto !important;
-  background: #15222c !important;
+  background:
+    url("/header-juanda-ribbon.svg") left top / 500px 100% no-repeat,
+    #0756a8 !important;
   border-bottom: 1px solid rgba(145, 166, 183, 0.16) !important;
   z-index: 50 !important;
   min-height: 72px !important;
 }
 
 .headerInner {
-  width: min(1700px, calc(100% - 48px));
-  min-height: 80px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 110px;
   margin: 0 auto;
+  padding: 0 40px 0 92px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.mapHeader .headerInner {
+  width: 100%;
+  min-height: 72px;
+  margin-top: 0;
+  padding: 0 24px 0 90px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.navCard {
+  margin-left: auto;
+  padding: 7px 9px 7px 22px;
+  display: flex;
+  align-items: center;
+  gap: clamp(32px, 4vw, 64px);
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.mapHeader .navCard {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .logoLink {
@@ -42,26 +86,30 @@
 .logoGroup {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   min-width: 0;
 }
 
 .logoDivider {
   width: 1px;
-  height: 34px;
-  background: rgba(255, 255, 255, 0.45);
+  height: 30px;
+  flex: 0 0 auto;
+  background: rgba(24, 47, 59, 0.48);
 }
 
-.headerLogo {
-  width: auto;
-  height: 48px;
+.headerAirportLogo {
+  width: clamp(150px, 13vw, 170px);
+  height: auto;
   object-fit: contain;
+  transform: translateY(4px);
+  filter: brightness(0) saturate(100%) invert(16%) sepia(16%) saturate(857%) hue-rotate(154deg) brightness(91%) contrast(89%);
 }
 
-.juandaLogo {
+.toDjuandaLogo {
   width: auto;
-  height: 42px;
+  height: 35px;
   object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(16%) sepia(16%) saturate(857%) hue-rotate(154deg) brightness(91%) contrast(89%);
 }
 
 .brandContainer {
@@ -122,7 +170,7 @@
 .navMenu {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 8px;
 }
 
 .navLink {
@@ -133,26 +181,38 @@
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  padding: 6px 0;
+  min-height: 40px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
   position: relative;
   transition: all 0.18s ease;
 }
 
-.navLink:hover, .navLink[data-active="true"] {
+.navLink:hover {
+  color: #ffffff;
+  background: transparent;
+}
+
+.navLink[data-active="true"] {
   color: #ffffff;
   font-weight: 700;
+  background: transparent;
+  box-shadow: none;
 }
 
 .navLink[data-active="true"]::after {
   content: "";
   position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
+  right: 16px;
+  bottom: 1px;
+  left: 16px;
   height: 3px;
   border-radius: 999px;
   background: #38bdf8;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.72);
 }
 
 .searchNavBtn {
@@ -280,43 +340,173 @@
 .footer {
   position: relative;
   z-index: 30;
-  padding: 24px 32px;
-  color: #5e6f75;
-  background: #f0f4f5;
-  border-top: 1px solid #dfe7e9;
+  padding: 0;
+  color: #ffffff;
+  background: #0756a8;
+  border-top: 0;
   font-size: 12px;
 }
 
-.footerInner {
+.footerMain {
   width: min(1700px, calc(100% - 40px));
   margin: 0 auto;
-  display: flex;
+  padding: 32px 0 28px;
+  display: grid;
+  grid-template-columns: minmax(210px, 1.05fr) minmax(230px, 1.15fr) minmax(170px, 0.8fr) minmax(260px, 1.1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
+  gap: 28px;
 }
 
-.footerLeft {
+.footerBrand {
   display: flex;
   align-items: center;
-  gap: 12px;
+}
+
+.footerLogoSurface {
+  width: min(210px, 100%);
+  padding: 0;
+  background: transparent;
 }
 
 .footerLogo {
-  height: 28px;
-  width: auto;
+  display: block;
+  width: 100%;
+  height: auto;
   object-fit: contain;
-  opacity: 0.85;
+}
+
+.footerAddress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 28px;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  font-style: normal;
+  line-height: 1.5;
+}
+
+.footerAddress strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.footerAddress a,
+.footerContact a {
+  width: fit-content;
+  color: inherit;
+  text-decoration: none;
+}
+
+.footerAddress a:hover,
+.footerContact a:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.footerContact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.footerContact > svg {
+  flex: 0 0 auto;
+  color: #ffffff;
+}
+
+.footerContact div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.footerContact span {
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.footerContact a {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.footerBottomBar {
+  width: 100%;
+  background: #0756a8;
+}
+
+.footerBottom {
+  width: min(1700px, calc(100% - 40px));
+  min-height: 64px;
+  margin: 0 auto;
+  padding: 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  border-top: 0;
 }
 
 .footerText {
-  color: #5e6f75;
+  color: #ffffff;
   font-weight: 500;
+  white-space: nowrap;
+}
+
+.socialLinks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.socialLink {
+  min-height: 32px;
+  padding: 4px 8px 4px 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  color: #ffffff;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.socialMark {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+
+  color: #0756a8;
+  background: #ffffff;
+}
+
+.socialIcon {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.socialLink:hover {
+  color: #ffffff;
+  background: transparent;
+  text-decoration: underline;
 }
 
 .adminSecretLink {
-  color: #8a989c;
+  color: rgba(255, 255, 255, 0.82);
   font-size: 11px;
   text-decoration: none;
   font-weight: 500;
@@ -324,17 +514,67 @@
 }
 
 .adminSecretLink:hover {
-  color: #008ca2;
+  color: #ffffff;
   text-decoration: underline;
 }
 
-@media (max-width: 640px) {
-  .headerInner {
-    width: calc(100% - 24px);
-    min-height: 56px;
+@media (max-width: 900px) {
+  .navMenu {
+    display: none;
   }
-  .headerLogo {
-    height: 36px;
+
+  .navCard {
+    padding-left: 9px;
+  }
+}
+
+@media (max-width: 1050px) {
+  .footerMain {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .footerAddress {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .footerBottom {
+    flex-wrap: wrap;
+  }
+
+  .socialLinks {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    min-height: 86px;
+    background-size: 300px 86px;
+  }
+
+  .mapHeader {
+    background-size: 300px 100%, auto !important;
+  }
+
+  .headerInner {
+    width: 100%;
+    min-height: 86px;
+    margin-top: 0;
+    padding: 0 12px 0 64px;
+    gap: 10px;
+  }
+
+  .mapHeader .headerInner {
+    width: 100%;
+    min-height: 60px;
+    padding: 0 12px 0 52px;
+  }
+  .headerAirportLogo {
+    width: 112px;
+    transform: translateY(2px);
   }
 
   .logoGroup {
@@ -345,8 +585,8 @@
     height: 26px;
   }
 
-  .juandaLogo {
-    height: 30px;
+  .toDjuandaLogo {
+    height: 23px;
   }
   .languageSwitch button {
     min-width: 38px;
@@ -354,9 +594,31 @@
     font-size: 11px;
     padding: 0 8px;
   }
-  .footerInner {
-    flex-direction: column;
+  .footerMain {
+    width: calc(100% - 32px);
+    padding: 26px 0 22px;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .footerLogoSurface {
+    width: 180px;
+  }
+
+  .footerBottom {
+    width: calc(100% - 32px);
     align-items: flex-start;
-    gap: 10px;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px 0 22px;
+  }
+
+  .footerText {
+    white-space: normal;
+  }
+
+  .socialLinks {
+    order: initial;
+    justify-content: flex-start;
   }
 }
