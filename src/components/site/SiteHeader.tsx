@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMapStore } from "@/store/mapStore";
 import styles from "./SiteChrome.module.css";
 
@@ -11,9 +11,7 @@ export function SiteHeader() {
   const currentLang = store.lang;
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const isMapPage = pathname === "/map";
-  const isHelpPage = isMapPage && searchParams.get("help") === "true";
 
   const handleSearchClick = () => {
     if (!isMapPage) {
@@ -38,7 +36,7 @@ export function SiteHeader() {
               src="/juanda-international-airport-logo-white-injourney.png"
               width={500}
               height={145}
-              sizes="(max-width: 580px) 170px, 230px"
+              sizes="(max-width: 640px) 170px, 230px"
               priority
               alt="Juanda International Airport by InJourney Airports"
             />
@@ -54,50 +52,44 @@ export function SiteHeader() {
           />
         </div>
 
-        <div className={styles.navCard}>
-          {/* Navigation */}
-          <nav className={styles.navMenu} aria-label="Main Navigation">
-            <Link href="/" className={styles.navLink} data-active={pathname === "/"}>
-              Home
-            </Link>
-            <Link
-              href="/map"
-              className={styles.navLink}
-              data-active={isMapPage && !store.isSearchOpen && !isHelpPage}
-            >
-              Map
-            </Link>
+        {/* Navigation */}
+        <nav className={styles.navMenu} aria-label="Main Navigation">
+          <Link href="/" className={styles.navLink} data-active={pathname === "/"}>
+            Home
+          </Link>
+          <Link href="/map" className={styles.navLink} data-active={isMapPage && !store.isSearchOpen}>
+            Map
+          </Link>
+          <button
+            type="button"
+            className={styles.navLink}
+            data-active={store.isSearchOpen}
+            onClick={handleSearchClick}
+          >
+            Search
+          </button>
+          <Link href="/map?help=true" className={styles.navLink}>
+            Help
+          </Link>
+        </nav>
+
+        {/* Language Switcher */}
+        <div className={styles.headerRightArea}>
+          <div className={styles.languageSwitch} aria-label="Select language">
             <button
               type="button"
-              className={styles.navLink}
-              data-active={store.isSearchOpen}
-              onClick={handleSearchClick}
+              aria-pressed={currentLang === "ID"}
+              onClick={() => store.setLang("ID")}
             >
-              Search
+              ID
             </button>
-            <Link href="/map?help=true" className={styles.navLink} data-active={isHelpPage}>
-              Help
-            </Link>
-          </nav>
-
-          {/* Language Switcher */}
-          <div className={styles.headerRightArea}>
-            <div className={styles.languageSwitch} aria-label="Select language">
-              <button
-                type="button"
-                aria-pressed={currentLang === "ID"}
-                onClick={() => store.setLang("ID")}
-              >
-                ID
-              </button>
-              <button
-                type="button"
-                aria-pressed={currentLang === "EN"}
-                onClick={() => store.setLang("EN")}
-              >
-                EN
-              </button>
-            </div>
+            <button
+              type="button"
+              aria-pressed={currentLang === "EN"}
+              onClick={() => store.setLang("EN")}
+            >
+              EN
+            </button>
           </div>
         </div>
       </div>
