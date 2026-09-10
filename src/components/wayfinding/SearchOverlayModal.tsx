@@ -11,10 +11,11 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { routeNodes, spaces } from "@/data/demo-wayfinding";
+import { spaces } from "@/data/demo-wayfinding";
 import { getCategoryLabel, getSpaceLabel } from "@/lib/wayfinding-language";
 import { useMapStore } from "@/store/mapStore";
-import type { MapSpace } from "@/types";
+import type { MapSpace, TerminalCode } from "@/types";
+import { facilityShortcuts, findFacilities } from "@/lib/facility-search";
 
 const resultCategoryIcons: Record<string, LucideIcon> = {
   entrance: MapPin,
@@ -35,32 +36,16 @@ export function SearchOverlayModal() {
     { id: "office", label: lang === "ID" ? "Kantor & Layanan" : "Services", icon: Building2 },
     { id: "food", label: lang === "ID" ? "Kuliner & Resto" : "Food & Beverage", icon: Utensils },
     { id: "shop", label: lang === "ID" ? "Toko & Retail" : "Shops", icon: ShoppingBag },
-    { id: "prayer", label: lang === "ID" ? "Mushola" : "Prayer Room", icon: Compass },
+    ...facilityShortcuts.filter((item) => item.id !== "food").map((item) => ({ id: item.id, label: item[lang], icon: null })),
   ];
 
-  const visibleSpaces = spaces.filter((space) => {
-    const matchesCategory = store.category === "all" || space.category === store.category;
-    const haystack = `${space.label} ${getSpaceLabel(space, lang)} ${getCategoryLabel(space.category, lang)} ${space.code} ${space.tenant?.name ?? ""}`.toLocaleLowerCase();
-    const queryMatch = !store.query || haystack.includes(store.query.toLocaleLowerCase());
-    return matchesCategory && queryMatch;
-  });
+  const visibleSpaces = findFacilities(spaces, store.terminal, store.category, store.query);
 
   const handleSelectSpace = (space: MapSpace) => {
-    store.selectSpace(space.id);
-    if (space.floorId !== store.floorId) store.setFloorId(space.floorId);
     if (space.terminal !== store.terminal) store.setTerminal(space.terminal);
-
-    // Pan map to space anchor node
-    const node = routeNodes.find((n) => n.id === space.anchorNodeId);
-    if (node) {
-      window.dispatchEvent(
-        new CustomEvent("wayfinding:pan-to", {
-          detail: { x: node.x, y: node.y, scale: 2.2 },
-        })
-      );
-    }
-
-    // Close search overlay
+    store.clearRoute();
+    store.setFloorId(space.floorId);
+    store.selectSpace(space.id);
     store.setIsSearchOpen(false);
   };
 
@@ -125,7 +110,8 @@ export function SearchOverlayModal() {
                   className="search-cat-pill"
                   data-category={cat.id}
                   data-active={isActive}
-                  onClick={() => store.setCategory(cat.id)}
+                  aria-pressed={isActive}
+                  onClick={() => { store.setCategory(cat.id); store.setQuery(""); }}
                 >
                   {Icon && (
                     <span className="search-cat-icon" aria-hidden="true">
@@ -145,9 +131,13 @@ export function SearchOverlayModal() {
                 ? `${visibleSpaces.length} lokasi ditemukan`
                 : `${visibleSpaces.length} locations found`}
             </span>
-            <span className="search-results-floor">
-              {store.terminal} • {store.floorId.endsWith("L1") ? (lang === "ID" ? "Lantai 1" : "Floor 1") : (lang === "ID" ? "Lantai 2" : "Floor 2")}
-            </span>
+            <label className="search-results-floor">
+              <span className="sr-only">{lang === "ID" ? "Terminal pencarian" : "Search terminal"}</span>
+              <select aria-label={lang === "ID" ? "Terminal pencarian" : "Search terminal"} value={store.terminal} onChange={(event) => store.setTerminal(event.target.value as TerminalCode)} style={{ background: "#243b4d", color: "white", border: "1px solid #547084", borderRadius: 6, padding: 8 }}>
+                <option value="T1">Terminal 1</option><option value="T2">Terminal 2</option>
+              </select>
+              {lang === "ID" ? " - Semua lantai" : " - All floors"}
+            </label>
           </div>
         </div>
 

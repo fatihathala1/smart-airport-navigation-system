@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   ChevronRight,
   Clock3,
-  Compass,
   Crosshair,
   Navigation,
   QrCode,
@@ -14,10 +13,12 @@ import {
   Ruler,
   X,
 } from "lucide-react";
-import { categories, qrLocations, routeNodes, spaces } from "@/data/demo-wayfinding";
+import { categories, floors, qrLocations, routeNodes, spaces } from "@/data/demo-wayfinding";
+import { facilityShortcuts, findFacilities, readMapSearch } from "@/lib/facility-search";
+import { getCategoryLabel, getSpaceLabel } from "@/lib/wayfinding-language";
 import { findGridRoute } from "@/lib/grid-route";
 import { useMapStore } from "@/store/mapStore";
-import type { MapSpace } from "@/types";
+import type { MapSpace, TerminalCode } from "@/types";
 import { MapStage } from "./MapStage";
 import { SearchOverlayModal } from "./SearchOverlayModal";
 import { WayfindingTutorialModal } from "./WayfindingTutorialModal";
@@ -105,9 +106,16 @@ export function FullMapShell() {
   const searchParams = useSearchParams();
   const [showQrModal, setShowQrModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const originDialog = useRef<HTMLDialogElement>(null);
+  const [pendingDestination, setPendingDestination] = useState<MapSpace | null>(null);
   const [currentTime, setCurrentTime] = useState("");
   const [currentDateStr, setCurrentDateStr] = useState("");
   const store = useMapStore();
+  useEffect(() => {
+    if (pendingDestination) originDialog.current?.showModal();
+    else originDialog.current?.close();
+  }, [pendingDestination]);
+
   const lang = store.lang;
   const t = tDict[lang];
 
@@ -145,21 +153,31 @@ export function FullMapShell() {
     actions.setCurrentNodeId(location.nodeId);
   }, [searchParams]);
 
-  const visibleSpaces = useMemo(() => {
-    return spaces.filter((space) => {
-      const matchesFloor = space.floorId === store.floorId;
-      const matchesCategory = store.category === "all" || space.category === store.category;
-      const haystack = `${space.label} ${space.code} ${space.tenant?.name ?? ""}`.toLocaleLowerCase("id-ID");
-      return matchesFloor && matchesCategory && haystack.includes(store.query.toLocaleLowerCase("id-ID"));
-    });
-  }, [store.floorId, store.category, store.query]);
+  useEffect(() => {
+    if (!["terminal", "category", "q", "directory"].some((key) => searchParams.has(key))) return;
+    const actions = useMapStore.getState();
+    const filter = readMapSearch(searchParams, actions.terminal);
+    const qr = qrLocations.find((item) => item.locationId === searchParams.get("location"));
+    const terminal = qr?.terminal ?? filter.terminal;
+    actions.setTerminal(terminal);
+    actions.selectSpace(null);
+    actions.clearRoute();
+    actions.setQuery(filter.query);
+    actions.setCategory(filter.category);
+    const matches = findFacilities(spaces, terminal, filter.category, filter.query);
+    const currentFloor = useMapStore.getState().floorId;
+    if (!matches.some((space) => space.floorId === currentFloor) && matches[0]) actions.setFloorId(matches[0].floorId);
+    actions.setIsSearchOpen(searchParams.get("directory") === "true");
+  }, [searchParams]);
+
+  const matchingSpaces = useMemo(() => findFacilities(spaces, store.terminal, store.category, store.query), [store.terminal, store.category, store.query]);
+  const visibleSpaces = useMemo(() => matchingSpaces.filter((space) => space.floorId === store.floorId), [matchingSpaces, store.floorId]);
 
   const selected = spaces.find((s) => s.id === store.selectedSpaceId) ?? null;
   const terminalSpaces = spaces.filter((s) => s.terminal === store.terminal && s.status === "ACTIVE");
   const currentOriginSpace =
     terminalSpaces.find((s) => s.anchorNodeId === store.fromNodeId) ??
-    terminalSpaces.find((s) => s.anchorNodeId === store.currentNodeId) ??
-    terminalSpaces[0];
+    terminalSpaces.find((s) => s.anchorNodeId === store.currentNodeId);
   const routeFrom = terminalSpaces.find((s) => s.anchorNodeId === store.fromNodeId);
   const routeTo = terminalSpaces.find((s) => s.anchorNodeId === store.toNodeId);
 
@@ -173,15 +191,26 @@ export function FullMapShell() {
   };
 
   const startDirections = (space: MapSpace) => {
-    const from = store.currentNodeId ?? `${store.terminal}-ENTRANCE-NODE`;
+    const from = store.fromNodeId ?? store.currentNodeId;
+    if (!from) { setPendingDestination(space); return; }
     store.setFromNodeId(from);
     store.setToNodeId(space.anchorNodeId);
     computeRoute(from, space.anchorNodeId);
   };
 
   const selectSpace = (space: MapSpace) => {
+    store.clearRoute();
     store.selectSpace(space.id);
     if (space.floorId !== store.floorId) store.setFloorId(space.floorId);
+  };
+
+  const changeCategory = (category: string) => {
+    store.selectSpace(null);
+    store.clearRoute();
+    store.setCategory(category);
+    store.setQuery("");
+    const matches = findFacilities(spaces, store.terminal, category);
+    if (!matches.some((space) => space.floorId === store.floorId) && matches[0]) store.setFloorId(matches[0].floorId);
   };
 
   const setSimulatedQrLocation = (loc: (typeof qrLocations)[0]) => {
@@ -225,7 +254,7 @@ export function FullMapShell() {
           >
             <div>
               <h2 className="stitch-loc-title">
-                {selected?.tenant?.name ?? selected?.label ?? currentOriginSpace?.tenant?.name ?? currentOriginSpace?.label ?? `Terminal ${store.terminal} Entrance`}
+                {selected?.tenant?.name ?? selected?.label ?? currentOriginSpace?.tenant?.name ?? currentOriginSpace?.label ?? (lang === "ID" ? "Pilih titik awal" : "Choose starting point")}
               </h2>
               <p className="stitch-loc-sub">
                 {store.floorId.endsWith("L1") ? (lang === "ID" ? "Lantai 1" : "1st Floor") : (lang === "ID" ? "Lantai 2" : "2nd Floor")}
@@ -282,7 +311,7 @@ export function FullMapShell() {
             <h3>{t.startJourney}</h3>
             <button type="button" className="journey-input-box" onClick={() => setShowQrModal(true)} title={lang === "ID" ? "Klik untuk ganti posisi QR awal" : "Click to change QR start location"}>
               <span className="journey-field-label">{t.originInput}</span>
-              <span className="journey-field-value">{currentOriginSpace?.tenant?.name ?? currentOriginSpace?.label ?? `Terminal ${store.terminal} Entrance`}</span>
+              <span className="journey-field-value">{currentOriginSpace?.tenant?.name ?? currentOriginSpace?.label ?? (lang === "ID" ? "Pilih titik awal" : "Choose starting point")}</span>
               <ChevronRight size={15} />
             </button>
             <button type="button" className="journey-input-box" onClick={() => store.setIsSearchOpen(true)} title={lang === "ID" ? "Pilih lokasi di peta" : "Select location on map"}>
@@ -312,7 +341,7 @@ export function FullMapShell() {
                   <>
                     <li className="timeline-step">
                       <div className="step-dot origin" />
-                      <span>{currentOriginSpace?.tenant?.name ?? currentOriginSpace?.label ?? "Pintu Masuk T1"}</span>
+                      <span>{currentOriginSpace?.tenant?.name ?? currentOriginSpace?.label ?? (lang === "ID" ? "Pilih titik awal" : "Choose starting point")}</span>
                     </li>
                     {selected ? (
                       <li className="timeline-step">
@@ -333,35 +362,41 @@ export function FullMapShell() {
         </aside>
 
         {/* ── LAYER 1: RIGHT Sidebar – Fasilitas Lantai Ini ── */}
-        <aside className="fs-sidebar-right">
-          <div className="stitch-card legend-card">
-            <h3>{t.onThisFloor}</h3>
-            <p>{t.tapToFind}</p>
-            <div className="floor-poi-buttons">
-              <button type="button" className="poi-filter-btn" data-active={store.query === (lang === "ID" ? "toilet" : "restroom")} aria-pressed={store.query === (lang === "ID" ? "toilet" : "restroom")} onClick={() => { store.setCategory("all"); store.setQuery(lang === "ID" ? "toilet" : "restroom"); }}>
-                <div className="icon-badge"><div className="square-dot" /></div>
-                <span>{lang === "ID" ? "Rest Rooms" : "Restrooms"}</span>
-              </button>
-              <button type="button" className="poi-filter-btn" data-active={store.query === (lang === "ID" ? "layanan" : "child")} aria-pressed={store.query === (lang === "ID" ? "layanan" : "child")} onClick={() => { store.setCategory("office"); store.setQuery(lang === "ID" ? "layanan" : "child"); }}>
-                <div className="icon-badge"><div className="circle-dot" /></div>
-                <span>Child Care Area</span>
-              </button>
-              <button type="button" className="poi-filter-btn" data-active={store.query === (lang === "ID" ? "tangga" : "stairs")} aria-pressed={store.query === (lang === "ID" ? "tangga" : "stairs")} onClick={() => { store.setCategory("all"); store.setQuery(lang === "ID" ? "tangga" : "stairs"); }}>
-                <div className="icon-badge">
-                  <svg className="w-3.5 h-3.5 transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M4 8h16M4 16h16" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                  </svg>
-                </div>
-                <span>Stairs</span>
-              </button>
-              <button type="button" className="poi-filter-btn" data-active={store.query === (lang === "ID" ? "lift" : "elevator")} aria-pressed={store.query === (lang === "ID" ? "lift" : "elevator")} onClick={() => { store.setCategory("all"); store.setQuery(lang === "ID" ? "lift" : "elevator"); }}>
-                <div className="icon-badge"><div className="elevator-ic" /></div>
-                <span>Elevators</span>
-              </button>
-              <button type="button" className="poi-filter-btn" data-active={store.category === "prayer"} aria-pressed={store.category === "prayer"} onClick={() => { store.setCategory("prayer"); store.setQuery(""); }}>
-                <div className="icon-badge"><Compass size={14} /></div>
-                <span>{lang === "ID" ? "Mushola" : "Prayer Room"}</span>
-              </button>
+        <aside className="fs-sidebar-right" aria-label={lang === "ID" ? "Direktori fasilitas" : "Facility directory"}>
+          <div className={`stitch-card legend-card ${styles.directory}`}>
+            <h3>{lang === "ID" ? "Cari fasilitas" : "Find facilities"}</h3>
+            <label>Terminal
+              <select aria-label="Terminal" value={store.terminal} onChange={(event) => { store.setTerminal(event.target.value as TerminalCode); }}>
+                <option value="T1">Terminal 1</option><option value="T2">Terminal 2</option>
+              </select>
+            </label>
+            <label>{lang === "ID" ? "Lantai peta" : "Map floor"}
+              <select value={store.floorId} onChange={(event) => { store.selectSpace(null); store.setFloorId(event.target.value); }}>
+                {floors.filter((floor) => floor.terminal === store.terminal).map((floor) => <option key={floor.id} value={floor.id}>{lang === "ID" ? floor.label : `Floor ${floor.number}`}</option>)}
+              </select>
+            </label>
+            <label>{lang === "ID" ? "Fasilitas" : "Facility"}
+              <select value={store.category} onChange={(event) => changeCategory(event.target.value)}>
+                <option value="all">{lang === "ID" ? "Semua fasilitas" : "All facilities"}</option>
+                {facilityShortcuts.map((item) => <option key={item.id} value={item.id}>{item[lang]}</option>)}
+                <option value="shop">{getCategoryLabel("shop", lang)}</option>
+                <option value="office">{getCategoryLabel("office", lang)}</option>
+                <option value="entrance">{getCategoryLabel("entrance", lang)}</option>
+              </select>
+            </label>
+            <p role="status">{getCategoryLabel(store.category, lang)} &middot; {matchingSpaces.length} {lang === "ID" ? "lokasi di" : "locations in"} {store.terminal}</p>
+            <p>{lang === "ID" ? "Daftar mencakup semua lantai. Pilih lokasi untuk melihatnya di peta." : "Results include all floors. Select a location to view it on the map."}</p>
+            {store.query && <button type="button" className={styles.result} onClick={() => store.setQuery("")}>{lang === "ID" ? "Hapus kata pencarian" : "Clear search"}: {store.query} <X size={14} /></button>}
+            <div className={styles.results}>
+              {matchingSpaces.map((space) => <button type="button" className={styles.result} key={space.id} aria-pressed={store.selectedSpaceId === space.id} onClick={() => selectSpace(space)}>
+                <strong>{getSpaceLabel(space, lang)}</strong>
+                <small>{lang === "ID" ? "Lantai" : "Floor"} {space.floorId.endsWith("L1") ? "1" : "2"}{space.status !== "ACTIVE" ? (lang === "ID" ? " - Tutup sementara" : " - Temporarily closed") : ""}</small>
+              </button>)}
+              {!matchingSpaces.length && <div className={styles.empty}>
+                <strong>{lang === "ID" ? "Lokasi belum tersedia" : "Locations not yet available"}</strong>
+                <p>{lang === "ID" ? "Belum ada lokasi yang sesuai dalam data terminal ini. Coba kategori atau terminal lain." : "No matching locations are listed for this terminal. Try another category or terminal."}</p>
+                <button type="button" className={styles.result} onClick={() => changeCategory("all")}>{lang === "ID" ? "Lihat semua fasilitas" : "View all facilities"}</button>
+              </div>}
             </div>
           </div>
         </aside>
@@ -444,18 +479,13 @@ export function FullMapShell() {
 
         {/* ── LAYER 1: Floating Footer Actions ── */}
         <footer className="fs-hud-footer">
-          <button type="button" className="btn-action-blue" data-variant="primary" onClick={() => setShowQrModal(true)}>
+          <button type="button" className="btn-action-blue" data-variant="primary" aria-label={t.scanQr} onClick={() => setShowQrModal(true)}>
             <QrCode size={18} /><span>{t.scanQr}</span>
           </button>
           <div className="right-action-group">
-            <button type="button" className="btn-action-blue" data-variant="secondary" onClick={() => {
-              // Use currentNodeId, or fall back to the terminal entrance
-              const nodeId = store.currentNodeId ?? `${store.terminal}-ENTRANCE-NODE`;
-
-              // Ensure the current node is set in the store (shows the blue origin pin)
-              if (!store.currentNodeId) {
-                store.setCurrentNodeId(nodeId);
-              }
+            <button type="button" className="btn-action-blue" data-variant="secondary" aria-label={t.whereAmI} onClick={() => {
+              const nodeId = store.currentNodeId ?? store.fromNodeId;
+              if (!nodeId) { setShowQrModal(true); return; }
 
               // Find the node position in the routeNodes list
               const node = routeNodes.find((n) => n.id === nodeId);
@@ -475,7 +505,7 @@ export function FullMapShell() {
             }}>
               <Crosshair size={17} /><span>{t.whereAmI}</span>
             </button>
-            <button type="button" className="btn-action-blue" data-variant="secondary" onClick={() => {
+            <button type="button" className="btn-action-blue" data-variant="secondary" aria-label={t.resetMap} onClick={() => {
               store.selectSpace(null); store.clearRoute(); store.setQuery(""); store.setCategory("all");
             }}>
               <RotateCcw size={16} /><span>{t.resetMap}</span>
@@ -484,6 +514,21 @@ export function FullMapShell() {
         </footer>
 
       </main>
+
+      <dialog ref={originDialog} className={styles.originDialog} aria-labelledby="origin-dialog-title" onCancel={() => setPendingDestination(null)}>
+        <button type="button" className="modal-close" onClick={() => setPendingDestination(null)} aria-label={lang === "ID" ? "Tutup pilihan titik awal" : "Close starting point selection"}><X size={20} /></button>
+        <h2 id="origin-dialog-title">{lang === "ID" ? "Pilih titik awal" : "Choose your starting point"}</h2>
+        <p>{lang === "ID" ? "Posisimu belum diketahui. Pilih lokasi awal untuk menuju" : "Your position is not set. Choose a starting point to reach"} {pendingDestination && getSpaceLabel(pendingDestination, lang)}.</p>
+        <div className={styles.results}>
+          {terminalSpaces.map((space) => <button type="button" key={space.id} className={styles.result} onClick={() => {
+            if (!pendingDestination) return;
+            store.setFromNodeId(space.anchorNodeId);
+            store.setToNodeId(pendingDestination.anchorNodeId);
+            computeRoute(space.anchorNodeId, pendingDestination.anchorNodeId);
+            setPendingDestination(null);
+          }}><strong>{getSpaceLabel(space, lang)}</strong><small>{lang === "ID" ? "Lantai" : "Floor"} {space.floorId.endsWith("L1") ? "1" : "2"}</small></button>)}
+        </div>
+      </dialog>
 
       {/* QR Modal */}
       {showQrModal && (

@@ -8,6 +8,10 @@ const categoryLabels: Record<string, { ID: string; EN: string }> = {
   food: { ID: "Makanan & Minuman", EN: "Food & Drink" },
   shop: { ID: "Toko & Retail", EN: "Shops" },
   prayer: { ID: "Musala", EN: "Prayer Room" },
+  restroom: { ID: "Toilet", EN: "Restrooms" },
+  atm: { ID: "ATM", EN: "ATMs" },
+  lounge: { ID: "Lounge", EN: "Lounges" },
+  assistance: { ID: "Bantuan", EN: "Assistance" },
 };
 
 const officeNames: Record<string, string> = {

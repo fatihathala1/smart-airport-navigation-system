@@ -1,42 +1,31 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import {
-  AlertTriangle,
   ArrowRight,
   Building2,
-  ChevronRight,
-  Clock3,
   Compass,
-  Crosshair,
   MapPin,
-  Navigation,
   QrCode,
-  RotateCcw,
-  Ruler,
   Search,
   ShoppingBag,
   Sparkles,
   Utensils,
   X,
 } from "lucide-react";
-import { floors, qrLocations, routeNodes, spaces } from "@/data/demo-wayfinding";
-import { findGridRoute } from "@/lib/grid-route";
+import { floors, qrLocations, spaces } from "@/data/demo-wayfinding";
+import { facilityShortcuts, mapSearchHref } from "@/lib/facility-search";
 import {
-  getCategoryLabel,
   getQrLocationLabel,
-  getRouteInstruction,
-  getSpaceDescription,
   getSpaceLabel,
 } from "@/lib/wayfinding-language";
 import { useMapStore } from "@/store/mapStore";
-import type { MapSpace, TerminalCode } from "@/types";
-import { MapStage } from "./MapStage";
-import { SearchOverlayModal } from "./SearchOverlayModal";
+import type { TerminalCode } from "@/types";
+import { FacilityShortcuts } from "./FacilityShortcuts";
 import { WayfindingFullTutorialSection } from "./WayfindingFullTutorialSection";
 import { WayfindingTutorialModal } from "./WayfindingTutorialModal";
 import { WayfindingVideoTutorial } from "./WayfindingVideoTutorial";
@@ -47,110 +36,26 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
 }
 
-// Bilingual Translations Dictionary
 const tDict = {
   ID: {
-    appTitle: "JUA Interactive Wayfinding",
-    appSubtitle: "Bandara Internasional Juanda — Terminal 1 & 2",
-    yourLocation: "LOKASI ANDA",
-    qrOriginText: "Diperoleh dari Static QR:",
-    changeOrigin: "Ganti Titik Awal",
-    searchPlaceholder: "Cari gate, check-in, musala, ATM, atau toko...",
-    floor: "Lantai",
-    terminal: "Terminal",
-    nearbyDirectory: "DIREKTORI DEKAT ANDA",
-    locations: "Lokasi",
-    locationNotFound: "Lokasi tidak ditemukan",
-    tryOtherKeywords: "Coba cari kata kunci lain seperti gate, musala, atau ATM.",
-    getDirections: "Mulai Petunjuk Arah",
-    routeWayfinding: "RUTE WAYFINDING",
-    directionsTitle: "Petunjuk Arah Juanda",
-    originLabel: "Titik Awal (Origin)",
-    destinationLabel: "Tujuan (Destination)",
-    distance: "Jarak Tempuh",
-    estWalkTime: "Estimasi Jalan",
-    startFrom: "Mulai Dari",
-    finalDestination: "Tujuan Akhir",
-    routeUnavailable: "Rute tidak tersedia",
-    routeUnavailableDesc: "Pilihan lokasi awal dan tujuan tidak terhubung jalur publik.",
     simModalTitle: "Simulasi QR Code Bandara",
-    simModalDesc: "Pilih salah satu titik QR Standee di Bandara Juanda untuk menguji navigasi berbasis titik lokasi awal otomatis (Static Positioning):",
-    statusOpen: "Buka (Operasional)",
-    statusClosed: "Tutup Sementara",
-    serviceHours: "Jam Layanan",
-    location: "Lokasi",
-    hours24: "24 Jam Operasional",
-    scanQr: "Pindai QR",
-    whereAmI: "Posisi Saya",
-    resetMap: "Reset Peta",
+    simModalDesc: "Pilih titik QR standee untuk menetapkan terminal, lantai, dan titik awal navigasi.",
   },
   EN: {
-    appTitle: "JUA Interactive Wayfinding",
-    appSubtitle: "Juanda International Airport — Terminal 1 & 2",
-    yourLocation: "YOUR LOCATION",
-    qrOriginText: "Set by QR code:",
-    changeOrigin: "Change Starting Point",
-    searchPlaceholder: "Search gates, check-in, prayer rooms, ATMs, or shops...",
-    floor: "Floor",
-    terminal: "Terminal",
-    nearbyDirectory: "PLACES NEAR YOU",
-    locations: "Locations",
-    locationNotFound: "Location not found",
-    tryOtherKeywords: "Try searching for gates, prayer rooms, or ATMs.",
-    getDirections: "Show Directions",
-    routeWayfinding: "YOUR ROUTE",
-    directionsTitle: "Directions",
-    originLabel: "Starting Point",
-    destinationLabel: "Destination",
-    distance: "Distance",
-    estWalkTime: "Walking Time",
-    startFrom: "Start",
-    finalDestination: "Final Destination",
-    routeUnavailable: "Route unavailable",
-    routeUnavailableDesc: "There is no public route between these two places.",
     simModalTitle: "Try an Airport QR Code",
-    simModalDesc: "Choose a QR stand at Juanda Airport to set your starting point:",
-    statusOpen: "Open",
-    statusClosed: "Temporarily Closed",
-    serviceHours: "Opening Hours",
-    location: "Location",
-    hours24: "Open 24 Hours",
-    scanQr: "Scan QR",
-    whereAmI: "Where Am I?",
-    resetMap: "Reset Map",
+    simModalDesc: "Choose a QR stand to set your terminal, floor, and starting point.",
   },
 };
 
 export function WayfindingShell() {
   const pageRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [showQrModal, setShowQrModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
-  const [currentTime, setCurrentTime] = useState("");
-  const [currentDateStr, setCurrentDateStr] = useState("");
   const store = useMapStore();
   const lang = store.lang;
   const t = tDict[lang];
-
-  useEffect(() => {
-    const update = () => {
-      const now = new Date();
-      const daysID = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-      const monthsID = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agust", "Sep", "Okt", "Nov", "Des"];
-      const daysEN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const monthsEN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-      const day = lang === "ID" ? daysID[now.getDay()] : daysEN[now.getDay()];
-      const month = lang === "ID" ? monthsID[now.getMonth()] : monthsEN[now.getMonth()];
-      const dateNum = now.getDate();
-
-      setCurrentDateStr(`${day}, ${dateNum} ${month}`);
-      setCurrentTime(now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }));
-    };
-    update();
-    const timer = setInterval(update, 1000);
-    return () => clearInterval(timer);
-  }, [lang]);
 
   useGSAP(
     () => {
@@ -393,7 +298,7 @@ export function WayfindingShell() {
       { id: "office", label: lang === "ID" ? "Kantor & Layanan" : "Offices & Services", icon: Building2 },
       { id: "food", label: lang === "ID" ? "Makanan & Minuman" : "Food & Beverage", icon: Utensils },
       { id: "shop", label: lang === "ID" ? "Toko & Fashion" : "Shops & Apparel", icon: ShoppingBag },
-      { id: "prayer", label: lang === "ID" ? "Mushola" : "Prayer Room", icon: Compass },
+      ...facilityShortcuts.filter((item) => item.id !== "food").map((item) => ({ id: item.id, label: item[lang], icon: Compass })),
     ],
     [lang]
   );
@@ -412,45 +317,10 @@ export function WayfindingShell() {
 
   const terminalFloors = floors.filter((floor) => floor.terminal === store.terminal);
 
-  const visibleSpaces = useMemo(() => {
-    return spaces.filter((space) => {
-      const matchesFloor = space.floorId === store.floorId;
-      const matchesCategory = store.category === "all" || space.category === store.category;
-      const haystack = `${space.label} ${getSpaceLabel(space, lang)} ${getCategoryLabel(space.category, lang)} ${space.code} ${space.tenant?.name ?? ""}`.toLocaleLowerCase();
-      return matchesFloor && matchesCategory && haystack.includes(store.query.toLocaleLowerCase());
-    });
-  }, [lang, store.floorId, store.category, store.query]);
+  const currentOriginSpace = spaces.find((space) => space.anchorNodeId === store.currentNodeId);
 
-  const selected = spaces.find((space) => space.id === store.selectedSpaceId) ?? null;
-  const terminalSpaces = spaces.filter((space) => space.terminal === store.terminal && space.status === "ACTIVE");
-
-  const currentOriginSpace =
-    terminalSpaces.find((space) => space.anchorNodeId === store.fromNodeId) ??
-    terminalSpaces.find((space) => space.anchorNodeId === store.currentNodeId) ??
-    terminalSpaces[0];
-
-  const routeFrom = terminalSpaces.find((space) => space.anchorNodeId === store.fromNodeId);
-  const routeTo = terminalSpaces.find((space) => space.anchorNodeId === store.toNodeId);
-
-  const computeRoute = (fromId: string, toId: string) => {
-    const result = findGridRoute(
-      routeNodes.find((node) => node.id === fromId),
-      routeNodes.find((node) => node.id === toId)
-    );
-    store.setRoute(result, result ? "ready" : "no-route");
-    if (result?.nodes[0]) store.setFloorId(result.nodes[0].floorId);
-  };
-
-  const startDirections = (space: MapSpace) => {
-    const from = store.currentNodeId ?? `${store.terminal}-ENTRANCE-NODE`;
-    store.setFromNodeId(from);
-    store.setToNodeId(space.anchorNodeId);
-    computeRoute(from, space.anchorNodeId);
-  };
-
-  const selectSpace = (space: MapSpace) => {
-    store.selectSpace(space.id);
-    if (space.floorId !== store.floorId) store.setFloorId(space.floorId);
+  const openSearch = () => {
+    router.push(mapSearchHref(store.terminal, store.category, store.query, true));
   };
 
   const setSimulatedQrLocation = (loc: (typeof qrLocations)[0]) => {
@@ -460,7 +330,6 @@ export function WayfindingShell() {
     setShowQrModal(false);
   };
 
-  const routeFloorIds = [...new Set(store.route?.nodes.map((node) => node.floorId) ?? [])];
 
   return (
     <div ref={pageRef} className="wayfinding-page">
@@ -492,9 +361,7 @@ export function WayfindingShell() {
                 type="button"
                 className="roamora-cta-btn"
                 onClick={() => {
-                  const target = visibleSpaces[0];
-                  if (target) selectSpace(target);
-                  document.getElementById("map-explorer")?.scrollIntoView({ behavior: "smooth" });
+                  document.getElementById("facility-shortcuts")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
                 }}
               >
                 <span>{lang === "ID" ? "Jelajahi Sekarang" : "Explore Now"}</span>
@@ -520,7 +387,7 @@ export function WayfindingShell() {
                 <strong className="roamora-col-val">
                   {currentOriginSpace
                     ? getSpaceLabel(currentOriginSpace, lang)
-                    : `Terminal ${store.terminal} Entrance`}
+                    : (lang === "ID" ? "Pilih titik awal" : "Choose starting point")}
                 </strong>
               </div>
             </div>
@@ -538,6 +405,8 @@ export function WayfindingShell() {
                   className="roamora-widget-input"
                   value={store.query}
                   onChange={(e) => store.setQuery(e.target.value)}
+                  aria-label={lang === "ID" ? "Cari tujuan" : "Search destination"}
+                  onKeyDown={(event) => { if (event.key === "Enter") openSearch(); }}
                   placeholder={lang === "ID" ? "Cari gate, musala, ATM..." : "Search gates, prayer rooms, ATMs..."}
                 />
               </div>
@@ -559,6 +428,7 @@ export function WayfindingShell() {
                 <span className="roamora-col-label">{lang === "ID" ? "Terminal & Lantai" : "Terminal & Floor"}</span>
                 <div className="roamora-inline-switches">
                   <select
+                    aria-label={lang === "ID" ? "Terminal pencarian" : "Search terminal"}
                     value={store.terminal}
                     onChange={(e) => store.setTerminal(e.target.value as TerminalCode)}
                     className="roamora-widget-select"
@@ -567,6 +437,7 @@ export function WayfindingShell() {
                     <option value="T2">Terminal 2</option>
                   </select>
                   <select
+                    aria-label={lang === "ID" ? "Lantai awal peta" : "Initial map floor"}
                     value={store.floorId}
                     onChange={(e) => store.setFloorId(e.target.value)}
                     className="roamora-widget-select"
@@ -591,6 +462,7 @@ export function WayfindingShell() {
               <div className="roamora-col-copy">
                 <span className="roamora-col-label">{lang === "ID" ? "Kategori POI" : "Categories"}</span>
                 <select
+                  aria-label={lang === "ID" ? "Kategori pencarian" : "Search category"}
                   value={store.category}
                   onChange={(e) => store.setCategory(e.target.value)}
                   className="roamora-widget-select"
@@ -608,14 +480,9 @@ export function WayfindingShell() {
             <button
               type="button"
               className="roamora-search-submit-btn"
-              onClick={() => {
-                if (visibleSpaces.length > 0) {
-                  selectSpace(visibleSpaces[0]);
-                }
-                document.getElementById("map-explorer")?.scrollIntoView({ behavior: "smooth" });
-              }}
+              onClick={openSearch}
             >
-              <span>{lang === "ID" ? "Cari Rute" : "Search Route"}</span>
+              <span>{lang === "ID" ? "Cari Lokasi" : "Find Locations"}</span>
               <Search size={16} />
             </button>
             </div>
@@ -625,519 +492,12 @@ export function WayfindingShell() {
 
         {/* Explore Section */}
         <section className="explore-section">
-          <div className="explore-heading" data-scroll-reveal>
-            <span>{lang === "ID" ? "JELAJAHI TERMINAL" : "EXPLORE THE TERMINAL"}</span>
-            <h2>{lang === "ID" ? "Mari Jelajahi!" : "Let’s Explore!"}</h2>
-          </div>
+          <FacilityShortcuts />
 
-          {/* Stitch UI Map Dashboard Stage Container */}
-          <div className="stitch-dashboard-container" id="map-explorer" data-scroll-reveal>
-            {/* Header Section */}
-            <header className="stitch-header" data-reveal-child>
-              {/* Location / Space Selector Badge */}
-              <div
-                className="stitch-location-badge"
-                onClick={() => setShowQrModal(true)}
-                title={lang === "ID" ? "Klik untuk memilih posisi awal" : "Click to select origin point"}
-              >
-                <div>
-                  <h2 className="stitch-loc-title">
-                    {selected
-                      ? getSpaceLabel(selected, lang)
-                      : currentOriginSpace
-                      ? getSpaceLabel(currentOriginSpace, lang)
-                      : `Terminal ${store.terminal} Entrance`}
-                  </h2>
-                  <p className="stitch-loc-sub">
-                    {store.floorId.endsWith("L1")
-                      ? lang === "ID"
-                        ? "Lantai 1"
-                        : "1st Floor"
-                      : lang === "ID"
-                      ? "Lantai 2"
-                      : "2nd Floor"}
-                  </p>
-                </div>
-                <ChevronRight size={18} className="stitch-arrow-icon" />
-              </div>
-
-              {/* Date, Time & How do I use this? Button */}
-              <div className="stitch-header-right">
-                <div className="stitch-time-block">
-                  <div className="stitch-date-label">
-                    <span>{currentDateStr.split(",")[0] || "Thursday"}</span>
-                    <small>{currentDateStr.split(",")[1] || "September 28"}</small>
-                  </div>
-                  <div className="stitch-time-display">
-                    <span className="pulse-dot" />
-                    <h1>{currentTime || "3:27 PM"}</h1>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="stitch-help-btn"
-                  onClick={() => setShowHelpModal(true)}
-                  title={lang === "ID" ? "Panduan penggunaan peta" : "Map user guide"}
-                >
-                  <span>{lang === "ID" ? "Cara Pakai\nPeta?" : "How do I\nuse this?"}</span>
-                  <div className="help-icon-circle">
-                    <ArrowRight size={14} />
-                  </div>
-                </button>
-              </div>
-            </header>
-
-            {/* Main Dashboard Layout Grid */}
-            <div className="stitch-main-grid" data-reveal-child>
-              {/* Left Sidebar */}
-              <aside className="stitch-sidebar-left">
-                {/* Air Quality Widget */}
-                <section className="stitch-card air-quality-card">
-                  <div className="card-header">
-                    <h3>Indoor Air Quality</h3>
-                    <span className="status-excellent">{lang === "ID" ? "Sangat Baik" : "Excellent"}</span>
-                  </div>
-
-                  <div className="air-bar-track">
-                    <div className="bar-seg bg-cyan" />
-                    <div className="bar-seg bg-green" />
-                    <div className="bar-seg bg-yellow" />
-                    <div className="bar-seg bg-red" />
-                    <div className="bar-pointer" />
-                  </div>
-
-                  <div className="air-metrics">
-                    <div>
-                      <p>{lang === "ID" ? "Suhu" : "Temperature"}</p>
-                      <strong>24°C / 75°F</strong>
-                    </div>
-                    <div className="metric-divider" />
-                    <div>
-                      <p>{lang === "ID" ? "Kelembapan" : "Humidity"}</p>
-                      <strong>56%</strong>
-                    </div>
-                  </div>
-
-                  <p className="refresh-note">
-                    {lang === "ID" ? "Data diperbarui secara berkala" : "Data refreshes periodically"}
-                  </p>
-                </section>
-
-                {/* Journey Input Section */}
-                <section className="stitch-card journey-card">
-                  <h3>{lang === "ID" ? "Mulai Perjalanan" : "Start Your Trip"}</h3>
-                  <div
-                    className="journey-input-box"
-                    onClick={() => setShowQrModal(true)}
-                    title={lang === "ID" ? "Klik untuk ganti posisi QR awal" : "Click to change QR start location"}
-                  >
-                    <label>{lang === "ID" ? "Titik Awal (Origin)" : "Start Point"}</label>
-                    <input
-                      readOnly
-                      value={currentOriginSpace ? getSpaceLabel(currentOriginSpace, lang) : `Terminal ${store.terminal} Entrance`}
-                      placeholder={lang === "ID" ? "Pilih Titik Awal" : "Select a starting point"}
-                    />
-                  </div>
-
-                  <div
-                    className="journey-input-box"
-                    onClick={() => {
-                      const input = document.querySelector('.roamora-widget-input') as HTMLInputElement;
-                      input?.focus();
-                    }}
-                    title={lang === "ID" ? "Klik untuk mencari lokasi tujuan" : "Click to search destination"}
-                  >
-                    <label>{lang === "ID" ? "Tujuan (Finish)" : "Destination"}</label>
-                    <input
-                      readOnly
-                      value={selected ? getSpaceLabel(selected, lang) : (store.query || (lang === "ID" ? "Pilih Lokasi Tujuan" : "Select a destination"))}
-                      placeholder={lang === "ID" ? "Pilih Tujuan" : "Select a destination"}
-                    />
-                  </div>
-                </section>
-
-                {/* Detail Journey Timeline */}
-                <section className="stitch-card journey-timeline-card">
-                  <h3>{lang === "ID" ? "Rincian Rute" : "Route Details"}</h3>
-                  <div className="timeline-container">
-                    <div className="timeline-line" />
-                    <ul className="timeline-steps">
-                      {store.routeStatus === "ready" && store.route ? (
-                        store.route.nodes.map((node, idx) => {
-                          const spaceForNode = spaces.find((s) => s.anchorNodeId === node.id);
-                          return (
-                            <li key={node.id} className="timeline-step">
-                              <div
-                                className={`step-dot ${
-                                  idx === 0
-                                    ? "origin"
-                                    : idx === store.route!.nodes.length - 1
-                                    ? "active"
-                                    : "mid"
-                                }`}
-                              />
-                              <span>
-                                {spaceForNode
-                                  ? getSpaceLabel(spaceForNode, lang)
-                                  :
-                                  (idx === 0
-                                    ? currentOriginSpace ? getSpaceLabel(currentOriginSpace, lang) : (lang === "ID" ? "Pintu Masuk" : "Entrance")
-                                    : idx === store.route!.nodes.length - 1
-                                    ? selected ? getSpaceLabel(selected, lang) : (lang === "ID" ? "Tujuan" : "Destination")
-                                    : lang === "ID" ? `Titik Rute ${idx + 1}` : `Route Point ${idx + 1}`)}
-                              </span>
-                            </li>
-                          );
-                        })
-                      ) : (
-                        <>
-                          <li className="timeline-step">
-                            <div className="step-dot origin" />
-                            <span>{currentOriginSpace ? getSpaceLabel(currentOriginSpace, lang) : "Security 01"}</span>
-                          </li>
-                          {selected ? (
-                            <li className="timeline-step">
-                              <div className="step-dot active" />
-                              <span>{getSpaceLabel(selected, lang)}</span>
-                            </li>
-                          ) : (
-                            <li className="timeline-step">
-                              <div className="step-dot mid" />
-                              <span style={{ opacity: 0.65 }}>
-                                {lang === "ID" ? "Pilih tujuan di peta" : "Select destination on map"}
-                              </span>
-                            </li>
-                          )}
-                        </>
-                      )}
-                    </ul>
-                  </div>
-                </section>
-              </aside>
-
-              {/* Center Interactive Vector Map Canvas */}
-              <div className="stitch-map-stage-wrapper">
-                <MapStage
-                  terminal={store.terminal}
-                  floorId={store.floorId}
-                  spaces={visibleSpaces}
-                  selectedId={store.selectedSpaceId}
-                  route={store.route}
-                  fromId={store.fromNodeId}
-                  toId={store.toNodeId}
-                  currentId={store.currentNodeId}
-                  onSelect={selectSpace}
-                />
-
-                {/* Interactive Floating Details & Wayfinding Sheet inside Map Stage */}
-                {(selected || store.routeStatus !== "idle") && (
-                  <aside
-                    className="detail-sheet"
-                    aria-label={store.routeStatus === "idle"
-                      ? (lang === "ID" ? "Detail lokasi" : "Location details")
-                      : (lang === "ID" ? "Detail rute" : "Route details")}
-                  >
-                    <button
-                      type="button"
-                      className="sheet-close"
-                      onClick={() => {
-                        store.selectSpace(null);
-                        store.clearRoute();
-                      }}
-                      aria-label={lang === "ID" ? "Tutup panel" : "Close panel"}
-                    >
-                      <X size={20} />
-                    </button>
-
-                    {store.routeStatus === "idle" && selected && (
-                      <>
-                        <span className="space-code">{selected.code}</span>
-                        {selected.icon && (
-                          <span
-                            className="detail-location-icon"
-                            style={{ backgroundImage: `url("${selected.icon}")` }}
-                            role="img"
-                            aria-label={lang === "ID" ? `Ikon ${getSpaceLabel(selected, lang)}` : `${getSpaceLabel(selected, lang)} icon`}
-                          />
-                        )}
-                        <span className="detail-category">
-                          <i style={{ background: selected.mapColor ?? "var(--accent)" }} />
-                          {getCategoryLabel(selected.category, lang)}
-                        </span>
-                        <h1>{getSpaceLabel(selected, lang)}</h1>
-                        {selected.tenant && <p className="space-subtitle">{getSpaceLabel(selected, lang)}</p>}
-                        <p>{getSpaceDescription(selected, lang)}</p>
-                        <dl className="detail-facts">
-                          <div>
-                            <dt>Status</dt>
-                            <dd>{selected.status === "ACTIVE" ? t.statusOpen : t.statusClosed}</dd>
-                          </div>
-                          <div>
-                            <dt>{t.serviceHours}</dt>
-                            <dd>{selected.tenant?.hours ?? t.hours24}</dd>
-                          </div>
-                          <div>
-                            <dt>{t.location}</dt>
-                            <dd>
-                              {selected.terminal} •{" "}
-                              {selected.floorId.endsWith("L1")
-                                ? lang === "ID"
-                                  ? "Lantai 1"
-                                  : "Floor 1"
-                                : lang === "ID"
-                                ? "Lantai 2"
-                                : "Floor 2"}
-                            </dd>
-                          </div>
-                        </dl>
-                        <button
-                          type="button"
-                          className="primary-action"
-                          onClick={() => startDirections(selected)}
-                          disabled={selected.status !== "ACTIVE"}
-                        >
-                          <Navigation size={19} /> {t.getDirections} <ChevronRight size={17} />
-                        </button>
-                      </>
-                    )}
-
-                    {store.routeStatus !== "idle" && (
-                      <>
-                        <span className="space-code">{t.routeWayfinding}</span>
-                        <h1>{t.directionsTitle}</h1>
-
-                        <label className="route-field">
-                          <span>{t.originLabel}</span>
-                          <select
-                            value={store.fromNodeId ?? ""}
-                            onChange={(event) => {
-                              store.setFromNodeId(event.target.value);
-                              if (store.toNodeId) computeRoute(event.target.value, store.toNodeId);
-                            }}
-                          >
-                            {terminalSpaces.map((space) => (
-                              <option key={space.id} value={space.anchorNodeId}>
-                                {getSpaceLabel(space, lang)}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <label className="route-field">
-                          <span>{t.destinationLabel}</span>
-                          <select
-                            value={store.toNodeId ?? ""}
-                            onChange={(event) => {
-                              store.setToNodeId(event.target.value);
-                              if (store.fromNodeId) computeRoute(store.fromNodeId, event.target.value);
-                            }}
-                          >
-                            {terminalSpaces.map((space) => (
-                              <option key={space.id} value={space.anchorNodeId}>
-                                {getSpaceLabel(space, lang)}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
-                        {store.routeStatus === "ready" && store.route ? (
-                          <>
-                            <div className="route-metrics">
-                              <div>
-                                <Ruler size={19} />
-                                <strong>{store.route.totalDistanceMeters} m</strong>
-                                <span>{t.distance}</span>
-                              </div>
-                              <div>
-                                <Clock3 size={19} />
-                                <strong>~{store.route.estimatedMinutes} {lang === "ID" ? "Mnt" : "min"}</strong>
-                                <span>{t.estWalkTime}</span>
-                              </div>
-                            </div>
-
-                            <div className="route-progress" aria-label={lang === "ID" ? "Ringkasan rute" : "Route summary"}>
-                              <div>
-                                <span>A</span>
-                                <p>
-                                  <small>{t.startFrom}</small>
-                                  <strong>{routeFrom ? getSpaceLabel(routeFrom, lang) : "Main Entrance"}</strong>
-                                </p>
-                              </div>
-                              <div>
-                                <span>B</span>
-                                <p>
-                                  <small>{t.finalDestination}</small>
-                                  <strong>{routeTo ? getSpaceLabel(routeTo, lang) : "Destination"}</strong>
-                                </p>
-                              </div>
-                            </div>
-
-                            {routeFloorIds.length > 1 && (
-                              <div className="route-floor-tabs">
-                                {routeFloorIds.map((id) => (
-                                  <button
-                                    key={id}
-                                    type="button"
-                                    aria-pressed={store.floorId === id}
-                                    onClick={() => store.setFloorId(id)}
-                                  >
-                                    {id.endsWith("L1")
-                                      ? lang === "ID"
-                                        ? "Lantai 1"
-                                        : "Floor 1"
-                                      : lang === "ID"
-                                      ? "Lantai 2"
-                                      : "Floor 2"}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-
-                            {store.route.connectorInstructions.map((instruction) => (
-                              <p key={instruction} className="connector-note">
-                                <Navigation size={17} /> {getRouteInstruction(instruction, lang)}
-                              </p>
-                            ))}
-                          </>
-                        ) : (
-                          <div className="empty-state no-route">
-                            <AlertTriangle size={24} />
-                            <strong>{t.routeUnavailable}</strong>
-                            <span>{t.routeUnavailableDesc}</span>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </aside>
-                )}
-              </div>
-
-              {/* Right Sidebar - On This Floor POI Filters */}
-              <aside className="stitch-sidebar-right">
-                <div className="stitch-card legend-card">
-                  <h3>{lang === "ID" ? "Fasilitas Lantai Ini" : "On This Floor"}</h3>
-                  <p>{lang === "ID" ? "Ketuk untuk mencari di peta." : "Tap to find on map."}</p>
-
-                  <div className="floor-poi-buttons">
-                    <button
-                      type="button"
-                      className="poi-filter-btn"
-                      onClick={() => {
-                        store.setCategory("all");
-                        store.setQuery(lang === "ID" ? "toilet" : "restroom");
-                      }}
-                    >
-                      <div className="icon-badge"><div className="square-dot" /></div>
-                      <span>{lang === "ID" ? "Rest Rooms" : "Rest Rooms"}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="poi-filter-btn"
-                      onClick={() => {
-                        store.setCategory("office");
-                        store.setQuery(lang === "ID" ? "layanan" : "child");
-                      }}
-                    >
-                      <div className="icon-badge"><div className="circle-dot" /></div>
-                      <span>{lang === "ID" ? "Child Care Area" : "Child Care Area"}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="poi-filter-btn"
-                      onClick={() => {
-                        store.setCategory("all");
-                        store.setQuery(lang === "ID" ? "tangga" : "stairs");
-                      }}
-                    >
-                      <div className="icon-badge">
-                        <svg className="w-3.5 h-3.5 transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path d="M4 8h16M4 16h16" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-                        </svg>
-                      </div>
-                      <span>{lang === "ID" ? "Stairs" : "Stairs"}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="poi-filter-btn"
-                      onClick={() => {
-                        store.setCategory("all");
-                        store.setQuery(lang === "ID" ? "lift" : "elevator");
-                      }}
-                    >
-                      <div className="icon-badge">
-                        <div className="elevator-ic" />
-                      </div>
-                      <span>{lang === "ID" ? "Elevators" : "Elevators"}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="poi-filter-btn"
-                      onClick={() => {
-                        store.setCategory("prayer");
-                        store.setQuery("");
-                      }}
-                    >
-                      <div className="icon-badge"><Compass size={14} /></div>
-                      <span>{lang === "ID" ? "Mushola" : "Prayer Room"}</span>
-                    </button>
-                  </div>
-                </div>
-              </aside>
-            </div>
-
-            {/* Bottom Action Footer Bar */}
-            <footer className="stitch-footer-actions" data-reveal-child>
-              <button
-                type="button"
-                className="btn-action-blue"
-                onClick={() => setShowQrModal(true)}
-              >
-                <QrCode size={18} />
-                <span>{t.scanQr}</span>
-              </button>
-
-              <div className="right-action-group">
-                <button
-                  type="button"
-                  className="btn-action-blue"
-                  onClick={() => {
-                    if (store.currentNodeId) {
-                      const originSpace = spaces.find((s) => s.anchorNodeId === store.currentNodeId);
-                      if (originSpace) selectSpace(originSpace);
-                    }
-                  }}
-                >
-                  <Crosshair size={17} />
-                  <span>{t.whereAmI}</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="btn-action-blue"
-                  onClick={() => {
-                    store.selectSpace(null);
-                    store.clearRoute();
-                    store.setQuery("");
-                    store.setCategory("all");
-                  }}
-                >
-                  <RotateCcw size={16} />
-                  <span>{t.resetMap}</span>
-                </button>
-              </div>
-            </footer>
-          </div>
-
-          {/* ── Scroll Stack: Tutorial pins, video card slides up over it ── */}
           <div className="section-overlap-stack">
             {/* Tutorial section — position:sticky inside, freezes in place */}
             <WayfindingFullTutorialSection
-              onOpenSearchModal={() => store.setIsSearchOpen(true)}
+              onOpenSearchModal={openSearch}
               onOpenQrModal={() => setShowQrModal(true)}
               onOpenHelpModal={() => setShowHelpModal(true)}
             />
@@ -1201,11 +561,8 @@ export function WayfindingShell() {
         isOpen={showHelpModal}
         onClose={() => setShowHelpModal(false)}
         onOpenQrModal={() => setShowQrModal(true)}
+        onOpenSearchModal={openSearch}
       />
-
-      {/* Search Overlay Modal */}
-      <SearchOverlayModal />
-
       <SiteFooter />
     </div>
   );

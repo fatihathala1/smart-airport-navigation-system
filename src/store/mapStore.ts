@@ -5,6 +5,7 @@ export type LanguageCode = "ID" | "EN";
 
 interface WayfindingState {
   terminal: TerminalCode;
+  terminalSelected: boolean;
   floorId: string;
   query: string;
   category: string;
@@ -33,6 +34,7 @@ interface WayfindingState {
 
 export const useMapStore = create<WayfindingState>((set) => ({
   terminal: "T1",
+  terminalSelected: false,
   floorId: "T1-L1",
   query: "",
   category: "all",
@@ -46,8 +48,9 @@ export const useMapStore = create<WayfindingState>((set) => ({
   isSearchOpen: false,
 
   setTerminal: (terminal) =>
-    set({
+    set((state) => state.terminal === terminal ? { terminalSelected: true } : {
       terminal,
+      terminalSelected: true,
       floorId: `${terminal}-L1`,
       selectedSpaceId: null,
       fromNodeId: null,
