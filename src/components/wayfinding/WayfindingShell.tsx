@@ -12,14 +12,12 @@ import {
   MapPin,
   QrCode,
   Search,
-  ShoppingBag,
-  Sparkles,
-  Utensils,
   X,
 } from "lucide-react";
 import { floors, qrLocations, spaces } from "@/data/demo-wayfinding";
-import { facilityShortcuts, mapSearchHref } from "@/lib/facility-search";
+import { mapSearchHref, poiCategoryIds } from "@/lib/facility-search";
 import {
+  getCategoryLabel,
   getQrLocationLabel,
   getSpaceLabel,
 } from "@/lib/wayfinding-language";
@@ -65,7 +63,6 @@ export function WayfindingShell() {
       const allSections = gsap.utils.toArray<HTMLElement>("[data-scroll-reveal]", scope);
       const heroSection = scope.querySelector<HTMLElement>(".roamora-hero");
       const sections = allSections.filter((section) => section !== heroSection);
-      const homeHeader = scope.querySelector<HTMLElement>("[data-home-intro]");
       const liftWindow = scope.querySelector<HTMLElement>("[data-lift-window]");
       const media = gsap.matchMedia();
 
@@ -83,7 +80,6 @@ export function WayfindingShell() {
               gsap.set(section, { clearProps: "all" });
               if (children.length) gsap.set(children, { clearProps: "all" });
             });
-            if (homeHeader) gsap.set(homeHeader, { clearProps: "all" });
             if (liftWindow) gsap.set(liftWindow, { clearProps: "all" });
             return;
           }
@@ -112,21 +108,6 @@ export function WayfindingShell() {
                 clearProps: "transform,opacity,visibility,willChange",
               }
             );
-
-            if (homeHeader) {
-              intro.fromTo(
-                homeHeader,
-                { autoAlpha: 0, y: -20, willChange: "transform, opacity" },
-                {
-                  autoAlpha: 1,
-                  y: 0,
-                  duration: 1.35,
-                  ease: "power3.out",
-                  clearProps: "transform,opacity,visibility,willChange",
-                },
-                0.12
-              );
-            }
 
             if (heroChildren.length) {
               intro.fromTo(
@@ -293,13 +274,7 @@ export function WayfindingShell() {
 
   // Quick POI Dock Items bilingual
   const quickDockItems = useMemo(
-    () => [
-      { id: "all", label: lang === "ID" ? "Semua" : "All", icon: Sparkles },
-      { id: "office", label: lang === "ID" ? "Kantor & Layanan" : "Offices & Services", icon: Building2 },
-      { id: "food", label: lang === "ID" ? "Makanan & Minuman" : "Food & Beverage", icon: Utensils },
-      { id: "shop", label: lang === "ID" ? "Toko & Fashion" : "Shops & Apparel", icon: ShoppingBag },
-      ...facilityShortcuts.filter((item) => item.id !== "food").map((item) => ({ id: item.id, label: item[lang], icon: Compass })),
-    ],
+    () => poiCategoryIds.map((id) => ({ id, label: getCategoryLabel(id, lang) })),
     [lang]
   );
 

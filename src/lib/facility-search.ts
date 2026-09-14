@@ -10,8 +10,20 @@ export const facilityShortcuts = [
   { id: "assistance", ID: "Bantuan", EN: "Assistance" },
 ] as const;
 
+export const poiCategoryIds = [
+  "all",
+  "office",
+  "food",
+  "shop",
+  "restroom",
+  "prayer",
+  "atm",
+  "lounge",
+  "assistance",
+] as const;
+
 export function isMapCategory(value: string): boolean {
-  return ["all", "entrance", "office", "food", "shop", "prayer", ...facilityShortcuts.map((item) => item.id)].includes(value);
+  return value === "entrance" || poiCategoryIds.some((category) => category === value);
 }
 
 export function matchesFacility(space: MapSpace, category: string): boolean {

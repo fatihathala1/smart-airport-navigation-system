@@ -25,6 +25,13 @@
   min-height: 72px !important;
 }
 
+.homeHeader {
+  min-height: 106px !important;
+  margin-bottom: -34px;
+  background-size: 500px 72px, auto !important;
+  z-index: 9 !important;
+}
+
 .headerInner {
   position: relative;
   z-index: 1;
@@ -557,6 +564,11 @@
 
   .mapHeader {
     background-size: 300px 100%, auto !important;
+  }
+
+  .homeHeader {
+    min-height: 94px !important;
+    background-size: 300px 60px, auto !important;
   }
 
   .headerInner {

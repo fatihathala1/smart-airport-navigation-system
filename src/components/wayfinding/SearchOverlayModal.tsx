@@ -1,29 +1,12 @@
 "use client";
 
-import {
-  Building2,
-  ChevronRight,
-  Compass,
-  MapPin,
-  Search,
-  ShoppingBag,
-  Utensils,
-  X,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ChevronRight, MapPin, Search, X } from "lucide-react";
 import { spaces } from "@/data/demo-wayfinding";
 import { getCategoryLabel, getSpaceLabel } from "@/lib/wayfinding-language";
 import { useMapStore } from "@/store/mapStore";
 import type { MapSpace, TerminalCode } from "@/types";
-import { facilityShortcuts, findFacilities } from "@/lib/facility-search";
-
-const resultCategoryIcons: Record<string, LucideIcon> = {
-  entrance: MapPin,
-  office: Building2,
-  food: Utensils,
-  shop: ShoppingBag,
-  prayer: Compass,
-};
+import { findFacilities, poiCategoryIds } from "@/lib/facility-search";
+import { facilityCategoryIcons, getFacilityCategoryIcon } from "./facility-category-icons";
 
 export function SearchOverlayModal() {
   const store = useMapStore();
@@ -31,13 +14,11 @@ export function SearchOverlayModal() {
 
   if (!store.isSearchOpen) return null;
 
-  const quickCategories = [
-    { id: "all", label: lang === "ID" ? "Semua" : "All", icon: null },
-    { id: "office", label: lang === "ID" ? "Kantor & Layanan" : "Services", icon: Building2 },
-    { id: "food", label: lang === "ID" ? "Kuliner & Resto" : "Food & Beverage", icon: Utensils },
-    { id: "shop", label: lang === "ID" ? "Toko & Retail" : "Shops", icon: ShoppingBag },
-    ...facilityShortcuts.filter((item) => item.id !== "food").map((item) => ({ id: item.id, label: item[lang], icon: null })),
-  ];
+  const quickCategories = poiCategoryIds.map((id) => ({
+    id,
+    label: getCategoryLabel(id, lang),
+    icon: facilityCategoryIcons[id],
+  }));
 
   const visibleSpaces = findFacilities(spaces, store.terminal, store.category, store.query);
 
@@ -131,13 +112,17 @@ export function SearchOverlayModal() {
                 ? `${visibleSpaces.length} lokasi ditemukan`
                 : `${visibleSpaces.length} locations found`}
             </span>
-            <label className="search-results-floor">
-              <span className="sr-only">{lang === "ID" ? "Terminal pencarian" : "Search terminal"}</span>
-              <select aria-label={lang === "ID" ? "Terminal pencarian" : "Search terminal"} value={store.terminal} onChange={(event) => store.setTerminal(event.target.value as TerminalCode)} style={{ background: "#243b4d", color: "white", border: "1px solid #547084", borderRadius: 6, padding: 8 }}>
+            <div className="search-results-context">
+              <select
+                className="search-terminal-select"
+                aria-label={lang === "ID" ? "Terminal pencarian" : "Search terminal"}
+                value={store.terminal}
+                onChange={(event) => store.setTerminal(event.target.value as TerminalCode)}
+              >
                 <option value="T1">Terminal 1</option><option value="T2">Terminal 2</option>
               </select>
-              {lang === "ID" ? " - Semua lantai" : " - All floors"}
-            </label>
+              <span>{lang === "ID" ? "Semua lantai" : "All floors"}</span>
+            </div>
           </div>
         </div>
 
@@ -146,7 +131,7 @@ export function SearchOverlayModal() {
           {visibleSpaces.length > 0 ? (
             visibleSpaces.map((space) => {
               const categoryLabel = getCategoryLabel(space.category, lang);
-              const ResultIcon = resultCategoryIcons[space.category] ?? MapPin;
+              const ResultIcon = getFacilityCategoryIcon(space.category) ?? MapPin;
               return (
                 <button
                   type="button"

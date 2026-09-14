@@ -43,10 +43,10 @@ export const floors = [
 
 export const categories = [
   { id: "all", label: "Semua" },
-  { id: "office", label: "Kantor" },
+  { id: "office", label: "Kantor & Layanan" },
   { id: "food", label: "Makanan & Minuman" },
-  { id: "shop", label: "Toko Pakaian" },
-  { id: "prayer", label: "Mushola" },
+  { id: "shop", label: "Toko & Fashion" },
+  { id: "prayer", label: "Musala" },
 ];
 
 type RawDestination = DestinationPoint & { room?: GridRoom };

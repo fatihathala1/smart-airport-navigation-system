@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { categories, floors, qrLocations, routeNodes, spaces } from "@/data/demo-wayfinding";
-import { facilityShortcuts, findFacilities, readMapSearch } from "@/lib/facility-search";
+import { findFacilities, poiCategoryIds, readMapSearch } from "@/lib/facility-search";
 import { getCategoryLabel, getSpaceLabel } from "@/lib/wayfinding-language";
 import { findGridRoute } from "@/lib/grid-route";
 import { useMapStore } from "@/store/mapStore";
@@ -377,11 +377,7 @@ export function FullMapShell() {
             </label>
             <label>{lang === "ID" ? "Fasilitas" : "Facility"}
               <select value={store.category} onChange={(event) => changeCategory(event.target.value)}>
-                <option value="all">{lang === "ID" ? "Semua fasilitas" : "All facilities"}</option>
-                {facilityShortcuts.map((item) => <option key={item.id} value={item.id}>{item[lang]}</option>)}
-                <option value="shop">{getCategoryLabel("shop", lang)}</option>
-                <option value="office">{getCategoryLabel("office", lang)}</option>
-                <option value="entrance">{getCategoryLabel("entrance", lang)}</option>
+                {poiCategoryIds.map((id) => <option key={id} value={id}>{getCategoryLabel(id, lang)}</option>)}
               </select>
             </label>
             <p role="status">{getCategoryLabel(store.category, lang)} &middot; {matchingSpaces.length} {lang === "ID" ? "lokasi di" : "locations in"} {store.terminal}</p>

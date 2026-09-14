@@ -37,9 +37,9 @@ button:active { transform: translateY(1px); }
 .roamora-hero {
   position: relative;
   width: 100%;
-  min-height: clamp(760px, 100svh, 920px);
+  min-height: clamp(688px, calc(100svh - 72px), 848px);
   margin: 0;
-  padding: 150px 32px 64px;
+  padding: 78px 32px 64px;
   border-radius: 34px 34px 0 0;
   background: url('/bg-home.jpg') center 35% / cover no-repeat;
   display: flex;
@@ -554,7 +554,7 @@ button:active { transform: translateY(1px); }
   .workspace { grid-template-columns: minmax(0, 1fr); }
   .search-panel { grid-template-columns: 180px minmax(0, 1fr); }
   .result-row { flex-basis: 240px; }
-  .roamora-hero { min-height: 820px; padding: 126px 20px 60px; }
+  .roamora-hero { min-height: 748px; padding: 54px 20px 60px; }
   .roamora-hero-copy { width: min(760px, 100%); }
   .roamora-floating-widget {
     inset: auto;
@@ -569,7 +569,7 @@ button:active { transform: translateY(1px); }
 }
 
 @media (max-width: 767px) {
-  .roamora-hero { min-height: auto; padding: 112px 12px 52px; }
+  .roamora-hero { min-height: auto; padding: 52px 12px; }
   .roamora-hero-content { min-height: 0; }
   .roamora-hero-copy { width: 100%; gap: 14px; }
   .roamora-hero-title { font-size: clamp(36px, 12vw, 52px); }
@@ -2781,13 +2781,14 @@ button:active { transform: translateY(1px); }
 .search-cat-pill {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 9px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.8);
   font-size: 13px;
   font-weight: 600;
-  padding: 7px 13px;
+  min-height: 48px;
+  padding: 7px 14px 7px 8px;
   border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
@@ -2798,29 +2799,18 @@ button:active { transform: translateY(1px); }
 .search-cat-icon {
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
-  color: #a8bac7;
+  width: 22px;
+  height: 22px;
+  color: #38bdf8;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  flex-shrink: 0;
 }
 
-.search-cat-pill[data-category="entrance"] .search-cat-icon {
-  color: #38c9f2;
-}
-
-.search-cat-pill[data-category="office"] .search-cat-icon {
-  color: #c1ced7;
-}
-
-.search-cat-pill[data-category="food"] .search-cat-icon {
-  color: #f4b942;
-}
-
-.search-cat-pill[data-category="shop"] .search-cat-icon {
-  color: #e879d2;
-}
-
-.search-cat-pill[data-category="prayer"] .search-cat-icon {
-  color: #4fd197;
+.search-cat-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .search-cat-pill:hover {
@@ -2838,6 +2828,7 @@ button:active { transform: translateY(1px); }
 
 .search-cat-pill[data-active="true"] .search-cat-icon {
   color: #ffffff;
+  background: transparent;
 }
 
 .search-modal-results-info {
@@ -2851,14 +2842,32 @@ button:active { transform: translateY(1px); }
   padding-top: 2px;
 }
 
-.search-results-floor {
-  padding: 3px 10px;
+.search-results-context {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   color: #c3d0d9;
-  background: #283844;
-  border: 1px solid rgba(145, 166, 183, 0.16);
-  border-radius: 999px;
+  background: transparent;
+  border: 0;
   font-size: 12px;
   font-weight: 600;
+}
+
+.search-terminal-select {
+  min-height: 42px;
+  padding: 0 12px;
+  color: #ffffff;
+  background: #243b4d;
+  border: 1px solid #547084;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.search-terminal-select:hover {
+  background: #2b475c;
+  border-color: #6f91a9;
 }
 .search-modal-results-area {
   flex: 1;
@@ -2924,37 +2933,18 @@ button:active { transform: translateY(1px); }
 .search-result-icon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 26px;
+  height: 26px;
   flex: 0 0 auto;
-  color: #00c6f4;
-  background: rgba(0, 198, 244, 0.11);
-  border: 1px solid rgba(0, 198, 244, 0.28);
-  border-radius: 10px;
+  color: #38bdf8;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
-.search-result-icon[data-category="office"] {
-  color: #b8c7d1;
-  background: rgba(184, 199, 209, 0.1);
-  border-color: rgba(184, 199, 209, 0.24);
-}
-
-.search-result-icon[data-category="food"] {
-  color: #f4b942;
-  background: rgba(244, 185, 66, 0.11);
-  border-color: rgba(244, 185, 66, 0.28);
-}
-
-.search-result-icon[data-category="shop"] {
-  color: #e879d2;
-  background: rgba(232, 121, 210, 0.11);
-  border-color: rgba(232, 121, 210, 0.28);
-}
-
-.search-result-icon[data-category="prayer"] {
-  color: #4fd197;
-  background: rgba(79, 209, 151, 0.11);
-  border-color: rgba(79, 209, 151, 0.28);
+.search-result-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .search-result-copy {
@@ -3050,6 +3040,16 @@ button:active { transform: translateY(1px); }
   .search-result-item {
     padding: 14px;
     gap: 12px;
+  }
+
+  .search-modal-results-info {
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .search-results-context {
+    margin-left: auto;
   }
 
   .search-result-left {

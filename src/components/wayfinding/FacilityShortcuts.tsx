@@ -2,14 +2,13 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Banknote, Building2, CircleHelp, Compass, Sofa, Toilet, Utensils, X } from "lucide-react";
+import { ArrowRight, Building2, X } from "lucide-react";
 import { spaces } from "@/data/demo-wayfinding";
 import { facilityShortcuts, findFacilities, mapSearchHref } from "@/lib/facility-search";
 import { useMapStore } from "@/store/mapStore";
 import type { TerminalCode } from "@/types";
 import styles from "./FacilityShortcuts.module.css";
-
-const icons = { restroom: Toilet, prayer: Compass, food: Utensils, atm: Banknote, lounge: Sofa, assistance: CircleHelp };
+import { facilityCategoryIcons } from "./facility-category-icons";
 
 export function FacilityShortcuts() {
   const store = useMapStore();
@@ -42,7 +41,7 @@ export function FacilityShortcuts() {
       </div>
       <div className={styles.grid} data-reveal-child>
         {facilityShortcuts.map((item) => {
-          const Icon = icons[item.id];
+          const Icon = facilityCategoryIcons[item.id];
           const count = findFacilities(spaces, store.terminal, item.id).length;
           return (
             <button key={item.id} type="button" className={styles.card} onClick={() => {

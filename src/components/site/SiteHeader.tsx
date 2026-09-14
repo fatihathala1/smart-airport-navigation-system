@@ -12,6 +12,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const isMapPage = pathname === "/map";
+  const isHomePage = pathname === "/";
 
   const handleSearchClick = () => {
     if (!isMapPage) {
@@ -23,10 +24,7 @@ export function SiteHeader() {
   };
 
   return (
-    <header
-      className={`${styles.header} ${isMapPage ? styles.mapHeader : ""}`}
-      data-home-intro={!isMapPage ? "" : undefined}
-    >
+    <header className={`${styles.header} ${styles.mapHeader} ${isHomePage ? styles.homeHeader : ""}`}>
       <div className={styles.headerInner}>
         {/* Juanda International Airport by InJourney Airports */}
         <div className={styles.logoGroup}>

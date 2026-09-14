@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spaces } from "../src/data/demo-wayfinding";
-import { facilityShortcuts, findFacilities, mapSearchHref, readMapSearch } from "../src/lib/facility-search";
+import { facilityShortcuts, findFacilities, mapSearchHref, poiCategoryIds, readMapSearch } from "../src/lib/facility-search";
+import { getCategoryLabel } from "../src/lib/wayfinding-language";
 import { useMapStore } from "../src/store/mapStore";
 
 test("facility shortcuts round-trip through a refreshable URL for both terminals", () => {
@@ -12,6 +13,20 @@ test("facility shortcuts round-trip through a refreshable URL for both terminals
       assert.deepEqual(readMapSearch(url.searchParams, "T1"), { terminal, category: shortcut.id, query: "" });
     }
   }
+});
+
+test("POI and search menus share one ordered set of category names", () => {
+  assert.deepEqual(poiCategoryIds.map((id) => getCategoryLabel(id, "ID")), [
+    "Semua",
+    "Kantor & Layanan",
+    "Makanan & Minuman",
+    "Toko & Fashion",
+    "Toilet",
+    "Musala",
+    "ATM",
+    "Lounge",
+    "Bantuan",
+  ]);
 });
 
 test("directory isolates the selected terminal while including facilities on both floors", () => {
