@@ -25,7 +25,6 @@ import { useMapStore } from "@/store/mapStore";
 import type { TerminalCode } from "@/types";
 import { FacilityShortcuts } from "./FacilityShortcuts";
 import { WayfindingFullTutorialSection } from "./WayfindingFullTutorialSection";
-import { WayfindingTutorialModal } from "./WayfindingTutorialModal";
 import { WayfindingVideoTutorial } from "./WayfindingVideoTutorial";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -50,7 +49,6 @@ export function WayfindingShell() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showQrModal, setShowQrModal] = useState(false);
-  const [showHelpModal, setShowHelpModal] = useState(false);
   const store = useMapStore();
   const lang = store.lang;
   const t = tDict[lang];
@@ -474,7 +472,6 @@ export function WayfindingShell() {
             <WayfindingFullTutorialSection
               onOpenSearchModal={openSearch}
               onOpenQrModal={() => setShowQrModal(true)}
-              onOpenHelpModal={() => setShowHelpModal(true)}
             />
             {/* Video section — position:relative, z-index:10 — slides UP over tutorial */}
             <WayfindingVideoTutorial />
@@ -531,13 +528,6 @@ export function WayfindingShell() {
         </div>
       )}
 
-      {/* Tutorial & Help Modal */}
-      <WayfindingTutorialModal
-        isOpen={showHelpModal}
-        onClose={() => setShowHelpModal(false)}
-        onOpenQrModal={() => setShowQrModal(true)}
-        onOpenSearchModal={openSearch}
-      />
       <SiteFooter />
     </div>
   );

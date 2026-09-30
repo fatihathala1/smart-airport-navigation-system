@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
+  ArrowRight,
   Play,
   Clock,
   Volume2,
@@ -20,11 +22,16 @@ export function WayfindingVideoTutorial({
   posterUrl = "/bg-journey.jpg",
 }: WayfindingVideoTutorialProps) {
   const lang = useMapStore((state) => state.lang);
+  const router = useRouter();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   function handlePlay() {
+    if (!videoUrl) {
+      router.push("/help");
+      return;
+    }
     if (videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
@@ -55,8 +62,8 @@ export function WayfindingVideoTutorial({
         </h2>
         <p>
           {lang === "ID"
-            ? "Pelajari cara mencari lokasi, menetapkan titik awal, dan mengikuti rute di Terminal Juanda melalui demonstrasi singkat ini."
-            : "See how to find a place, set your starting point, and follow a route at Juanda Airport in this short video."}
+            ? "Pelajari cara mencari lokasi, menetapkan titik awal, dan mengikuti rute melalui panduan interaktif."
+            : "Learn how to find a place, set your starting point, and follow a route with the interactive guide."}
         </p>
       </div>
 
@@ -91,27 +98,25 @@ export function WayfindingVideoTutorial({
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => e.key === "Enter" && handlePlay()}
+                aria-label={videoUrl ? (lang === "ID" ? "Putar video tutorial" : "Play tutorial video") : (lang === "ID" ? "Buka halaman panduan" : "Open help guide")}
               >
                 {/* Top badges */}
                 <div className="vts-poster-topbar">
-                  <span className="vts-badge-hd">HD 1080p</span>
-                  <span className="vts-badge-dur">
-                    <Clock size={11} />
-                    {lang === "ID" ? "01:30 Mnt" : "01:30 min"}
-                  </span>
+                  <span className="vts-badge-hd">{videoUrl ? "HD 1080p" : (lang === "ID" ? "PANDUAN INTERAKTIF" : "INTERACTIVE GUIDE")}</span>
+                  <span className="vts-badge-dur"><Clock size={11} />{videoUrl ? "01:30" : (lang === "ID" ? "±2 menit" : "about 2 min")}</span>
                 </div>
 
                 {/* Center play */}
                 <div className="vts-play-ring">
-                  <div className="vts-play-btn" title={lang === "ID" ? "Putar video tutorial" : "Play tutorial video"}>
-                    <Play size={36} style={{ marginLeft: 4, color: "#fff" }} />
+                  <div className="vts-play-btn" aria-hidden="true">
+                    {videoUrl ? <Play size={36} style={{ marginLeft: 4, color: "#fff" }} /> : <ArrowRight size={36} color="#fff" />}
                   </div>
                 </div>
 
                 {/* Bottom caption */}
                 <div className="vts-poster-caption">
                   <h3>{lang === "ID" ? "Panduan Lengkap Navigasi Wayfinding" : "Complete Airport Navigation Guide"}</h3>
-                  <p>{lang === "ID" ? "Klik untuk memutar video tutorial interaktif" : "Click to play the navigation tutorial"}</p>
+                  <p>{videoUrl ? (lang === "ID" ? "Klik untuk memutar video tutorial" : "Click to play the tutorial") : (lang === "ID" ? "Buka panduan langkah demi langkah" : "Open the step-by-step guide")}</p>
                 </div>
               </div>
             )}
@@ -121,9 +126,9 @@ export function WayfindingVideoTutorial({
           <div className="vts-meta-bar">
             <div className="vts-meta-left">
               <div className="vts-meta-icon-dot" />
-              <span>{lang === "ID" ? "Tutorial Resmi Navigasi Bandara Juanda" : "Official Juanda Airport Navigation Tutorial"}</span>
+              <span>{lang === "ID" ? "Panduan penggunaan peta" : "Map usage guide"}</span>
             </div>
-            <div className="vts-meta-right">
+            {videoUrl && <div className="vts-meta-right">
               <button
                 type="button"
                 className="vts-mute-btn"
@@ -141,7 +146,7 @@ export function WayfindingVideoTutorial({
                   ? (lang === "ID" ? "Senyap" : "Muted")
                   : (lang === "ID" ? "Suara aktif" : "Sound on")}</span>
               </button>
-            </div>
+            </div>}
           </div>
         </div>
       </div>

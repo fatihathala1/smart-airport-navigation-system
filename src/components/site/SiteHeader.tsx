@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { CircleHelp } from "lucide-react";
 import { useMapStore } from "@/store/mapStore";
 import styles from "./SiteChrome.module.css";
 
@@ -66,13 +67,16 @@ export function SiteHeader() {
           >
             Search
           </button>
-          <Link href="/map?help=true" className={styles.navLink}>
+          <Link href="/help" className={styles.navLink} data-active={pathname === "/help"}>
             Help
           </Link>
         </nav>
 
         {/* Language Switcher */}
         <div className={styles.headerRightArea}>
+          <Link href="/help" className={styles.mobileHelpLink} aria-label={currentLang === "ID" ? "Bantuan — panduan penggunaan" : "Help — usage guide"} aria-current={pathname === "/help" ? "page" : undefined}>
+            <CircleHelp size={20} strokeWidth={2} />
+          </Link>
           <div className={styles.languageSwitch} aria-label="Select language">
             <button
               type="button"
