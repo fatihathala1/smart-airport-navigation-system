@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   ChevronRight,
@@ -21,7 +21,6 @@ import { useMapStore } from "@/store/mapStore";
 import type { MapSpace, TerminalCode } from "@/types";
 import { MapStage } from "./MapStage";
 import { SearchOverlayModal } from "./SearchOverlayModal";
-import { WayfindingTutorialModal } from "./WayfindingTutorialModal";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import styles from "./FullMapShell.module.css";
 
@@ -103,9 +102,9 @@ const tDict = {
 };
 
 export function FullMapShell() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [showQrModal, setShowQrModal] = useState(false);
-  const [showHelpModal, setShowHelpModal] = useState(false);
   const originDialog = useRef<HTMLDialogElement>(null);
   const [pendingDestination, setPendingDestination] = useState<MapSpace | null>(null);
   const [currentTime, setCurrentTime] = useState("");
@@ -121,9 +120,8 @@ export function FullMapShell() {
 
   useEffect(() => {
     if (searchParams.get("help") !== "true") return;
-    const timer = window.setTimeout(() => setShowHelpModal(true), 0);
-    return () => window.clearTimeout(timer);
-  }, [searchParams]);
+    router.replace("/help");
+  }, [router, searchParams]);
 
   useEffect(() => {
     const update = () => {
@@ -549,13 +547,6 @@ export function FullMapShell() {
           </div>
         </div>
       )}
-
-      {/* Tutorial & Help Modal */}
-      <WayfindingTutorialModal
-        isOpen={showHelpModal}
-        onClose={() => setShowHelpModal(false)}
-        onOpenQrModal={() => setShowQrModal(true)}
-      />
 
       {/* Search Overlay Modal */}
       <SearchOverlayModal />

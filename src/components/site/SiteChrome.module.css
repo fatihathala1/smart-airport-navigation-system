@@ -269,6 +269,24 @@
   gap: 14px;
 }
 
+.mobileHelpLink {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #0756a8;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(7, 40, 70, 0.12);
+  text-decoration: none;
+}
+
+.mobileHelpLink[aria-current="page"] {
+  color: #ffffff;
+  background: #0284c7;
+}
+
 .languageSwitch {
   display: flex;
   align-items: center;
@@ -528,6 +546,10 @@
 @media (max-width: 900px) {
   .navMenu {
     display: none;
+  }
+
+  .mobileHelpLink {
+    display: inline-flex;
   }
 
   .navCard {

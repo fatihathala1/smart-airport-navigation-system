@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { ArrowRight, Layers, Navigation, QrCode, Search } from "lucide-react";
 import { useMapStore } from "@/store/mapStore";
 import styles from "./WayfindingFullTutorialSection.module.css";
@@ -7,14 +8,13 @@ import styles from "./WayfindingFullTutorialSection.module.css";
 interface WayfindingFullTutorialSectionProps {
   onOpenSearchModal?: () => void;
   onOpenQrModal?: () => void;
-  onOpenHelpModal?: () => void;
 }
 
 export function WayfindingFullTutorialSection({
   onOpenSearchModal,
   onOpenQrModal,
-  onOpenHelpModal,
 }: WayfindingFullTutorialSectionProps) {
+  const router = useRouter();
   const store = useMapStore();
   const lang = store.lang;
 
@@ -33,11 +33,11 @@ export function WayfindingFullTutorialSection({
     {
       num: "02",
       tag: lang === "ID" ? "Posisi awal" : "Set your location",
-      title: lang === "ID" ? "Tetapkan posisi melalui QR standee bandara" : "Set your location with an airport QR stand",
+      title: lang === "ID" ? "Coba titik awal melalui simulasi QR" : "Try a starting point with the QR simulation",
       icon: QrCode,
       desc: lang === "ID"
-        ? "Pindai QR pada standee terdekat untuk menetapkan titik awal secara otomatis tanpa bergantung pada akurasi GPS di dalam terminal."
-        : "Scan the nearest QR stand to set your starting point automatically. You do not need to use indoor GPS.",
+        ? "Pilih titik standee contoh untuk menetapkan titik awal. Peta saat ini menggunakan data simulasi, bukan pemindaian QR bandara secara langsung."
+        : "Choose a sample standee point to set your start. The current map uses demo data, not live airport QR scanning.",
       cta: lang === "ID" ? "Simulasi scan QR" : "Try QR scan",
       onCta: () => { if (onOpenQrModal) onOpenQrModal(); },
     },
@@ -50,18 +50,18 @@ export function WayfindingFullTutorialSection({
         ? "Sistem menghitung jalur publik terpendek dari posisi awal menuju tujuan, kemudian menampilkan jarak dan estimasi waktu berjalan."
         : "The map finds the shortest public route from your starting point and shows the distance and walking time.",
       cta: lang === "ID" ? "Lihat panduan peta" : "View map guide",
-      onCta: () => { if (onOpenHelpModal) onOpenHelpModal(); },
+      onCta: () => router.push("/help"),
     },
     {
       num: "04",
       tag: lang === "ID" ? "Lintas lantai" : "Change floors",
-      title: lang === "ID" ? "Temukan lift, tangga, dan fasilitas aksesibel" : "Find elevators, stairs, and accessible facilities",
+      title: lang === "ID" ? "Periksa lantai dan fasilitas sekitar" : "Check floors and nearby facilities",
       icon: Layers,
       desc: lang === "ID"
-        ? "Saat tujuan berada di lantai berbeda, petunjuk perpindahan lantai muncul bersama akses cepat ke fasilitas publik terdekat."
-        : "If your destination is on another floor, the map shows where to change floors and which public facilities are nearby.",
-      cta: lang === "ID" ? "Kembali ke peta" : "Back to map",
-      onCta: () => { window.scrollTo({ top: 0, behavior: "smooth" }); },
+        ? "Gunakan pemilih lantai untuk melihat lokasi tujuan dan filter fasilitas untuk menjelajahi area yang sedang ditampilkan."
+        : "Use the floor selector to view your destination and facility filters to explore the area currently shown.",
+      cta: lang === "ID" ? "Buka peta" : "Open map",
+      onCta: () => router.push("/map"),
     },
   ];
 
