@@ -3,7 +3,7 @@ import { HelpPage } from "@/components/wayfinding/HelpPage";
 
 export const metadata: Metadata = {
   title: "Panduan Penggunaan | Juanda Airport Wayfinding",
-  description: "Panduan langkah demi langkah untuk mencari lokasi, menetapkan titik awal, dan mengikuti rute di peta Juanda.",
+  description: "Panduan menggunakan peta Juanda dan alur penumpang dari area Departure, check-in, lantai 2, hingga gate dan pesawat.",
 };
 
 export default function Page() {

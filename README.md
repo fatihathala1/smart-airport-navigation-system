@@ -1,8 +1,10 @@
 # Juanda Airport Wayfinding — InJourney Airports
 
-Web wayfinding responsif untuk membantu pengunjung Bandar Udara Internasional Juanda mencari lokasi dan mendapatkan rute di Terminal 1 dan Terminal 2. Halaman publik langsung membuka peta. Pengunjung tidak perlu login.
+Web wayfinding responsif untuk Bandar Udara Internasional Juanda. Halaman **Home** menampilkan pratinjau peta 3D, dan halaman **Maps** (`/map`) menampilkan peta 3D interaktif Terminal 1 lantai dasar. Pengunjung tidak perlu login. Kode dan data peta 2D lama masih tersimpan sebagai referensi, tetapi tidak dipakai oleh kedua halaman publik tersebut.
 
-> Status data: seluruh lokasi, space, tenant, jarak, jam, dan QR yang aktif pada demo saat ini adalah data contoh. SVG existing dari repository dipertahankan sebagai baseline visual, tetapi belum dinyatakan sebagai denah operasional resmi.
+> Status data: model peta 3D berasal dari proyek [`glb-to-website`](https://github.com/AqillaRamadhani20/glb-to-website). Rute viewer sekarang dihitung dari permukaan dan penghalang pada GLB, bukan graph SVG. Cakupannya baru Terminal 1 lantai dasar dan belum dinyatakan sebagai panduan operasional resmi. Data tenant, QR, dan model domain/admin dalam repositori ini masih berupa demo atau fondasi pengembangan; tidak otomatis terhubung ke viewer 3D.
+
+Lihat [panduan integrasi peta 3D](docs/integrasi-peta-3d.md) untuk lokasi file yang perlu diubah saat revisi model, jalur, tampilan, atau penambahan lantai 2.
 
 ## Tujuan produk
 
@@ -12,7 +14,9 @@ Web wayfinding responsif untuk membantu pengunjung Bandar Udara Internasional Ju
 - Memberi admin kewenangan sesuai role: Super Admin global dan Airport Admin operasional.
 - Menyediakan fondasi data yang dapat divalidasi bersama tim Juanda.
 
-## Inovasi inti
+## Fondasi domain dan admin yang masih tersedia
+
+Fitur-fitur di bawah adalah fondasi aplikasi sebelumnya; tidak semuanya tampil pada viewer 3D publik saat ini.
 
 1. Setiap `Space` permanen dapat diklik dan menampilkan detail.
 2. Tenant ditempatkan lewat `SpaceAssignment`; pergantian tenant tidak mengubah geometri.
@@ -72,17 +76,20 @@ Detail keputusan ada di [docs/architecture.md](docs/architecture.md).
 │   ├── migrations/              baseline PostgreSQL untuk domain model v2
 │   ├── schema.prisma            source of truth data model
 │   └── seed.ts                  seed demo yang berlabel jelas
-├── public/map/                  SVG T1/T2 existing, statusnya baseline belum tervalidasi
+├── public/map/                  aset peta 2D lama, tidak ditampilkan di Home/Maps
+├── public/models/               GLB peta 3D Terminal 1 lantai dasar
+├── public/navigation/           SVG graph lama (arsip, tidak dipakai viewer 3D)
 ├── src/
 │   ├── app/
 │   │   ├── admin/               portal admin terproteksi
 │   │   ├── api/route/           endpoint routing publik
 │   │   ├── api/tenants/[id]/    mutation tenant dengan RBAC dan ownership
 │   │   ├── auth/signin/         login admin, tanpa signup publik
-│   │   └── page.tsx             entry public map
+│   │   ├── map/page.tsx         halaman Maps 3D
+│   │   └── page.tsx             halaman Home dengan pratinjau 3D
 │   ├── components/
-│   │   ├── map-layers/          basemap, space, POI, route, marker
-│   │   └── wayfinding/          shell UI dan map viewport
+│   │   ├── map3d/               viewer 3D dan pratinjau Home
+│   │   └── wayfinding/          Home, Help, dan komponen 2D lama
 │   ├── data/                    fixture demo UI, bukan data resmi
 │   ├── lib/                     auth, RBAC, Dijkstra, Prisma, validation, storage
 │   ├── store/                   state map Zustand
@@ -98,15 +105,14 @@ Detail keputusan ada di [docs/architecture.md](docs/architecture.md).
 
 ```text
 Buka /
-  -> pilih T1 atau T2
-  -> pilih lantai atau kategori
-  -> cari atau klik space
-  -> baca detail
-  -> pilih Petunjuk Arah
-  -> lihat FROM, TO, garis rute, jarak, ETA, dan instruksi lintas lantai
+  -> lihat pratinjau 3D dan buka Maps
+  -> cari kode building T1-GF-* atau klik objek pada model
+  -> tekan Start Here atau Set Start untuk memilih titik awal
+  -> pilih building tujuan dan tekan Route Here
+  -> lihat jalur, jarak, serta petunjuk navigasi
 ```
 
-Jika QR valid, contoh `/?location=demo-t1-arrival`, titik asal diisi otomatis. QR tidak valid menghasilkan pesan kontekstual dan pengguna tetap dapat memilih asal manual.
+Pemilihan titik awal pada viewer 3D dilakukan manual. QR dan navigasi lintas lantai belum tersedia pada halaman Maps saat ini.
 
 ## Role dan permission
 
@@ -123,7 +129,9 @@ Jika QR valid, contoh `/?location=demo-t1-arrival`, titik asal diisi otomatis. Q
 
 Tidak ada public admin signup. Akun admin dibuat melalui proses Super Admin. Super Admin memiliki akses global ke seluruh konfigurasi sistem, sedangkan Airport Admin memegang operasional tenant. Deployment ini khusus Bandara Juanda, sehingga Airport Admin dapat mengelola seluruh tenant Juanda.
 
-## Arsitektur layer peta
+## Arsitektur layer peta 2D lama
+
+Bagian ini mendokumentasikan implementasi 2D yang masih ada di kode, bukan peta publik yang sekarang ditampilkan. Viewer 3D memakai GLB di `public/models/`; rutenya dihitung dari area lantai dan penghalang pada model. SVG di `public/navigation/` tetap ada sebagai arsip, tetapi tidak digunakan oleh viewer 3D.
 
 Urutan render bersifat eksplisit:
 
@@ -137,7 +145,7 @@ Nama tenant tidak ditulis ke static SVG. `Space.code` tetap stabil walaupun tena
 
 ## Routing Dijkstra
 
-`src/lib/dijkstra.ts` membuat adjacency list dari `RouteNode` dan `RouteEdge`, lalu memakai min-heap untuk memilih jarak kumulatif terendah.
+`src/lib/dijkstra.ts` melayani fondasi routing domain 2D/API lama. Viewer 3D di halaman Maps memakai graph dan algoritme rutenya sendiri pada `src/lib/map3d/navigation-graph.ts`.
 
 - Weight utama: `distanceMeters`.
 - `BIDIRECTIONAL` membuat adjacency dua arah.
@@ -229,7 +237,8 @@ Perintah `npm run dev` bind ke seluruh interface jaringan dan menampilkan dua UR
 Rute penting:
 
 - `http://localhost:3000/`
-- `http://localhost:3000/?location=demo-t1-arrival`
+- `http://localhost:3000/map`
+- `http://localhost:3000/help`
 - `http://localhost:3000/admin`
 - `http://localhost:3000/auth/signin`
 

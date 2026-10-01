@@ -1,0 +1,1592 @@
+.map3d-root {
+  --font-sans: Inter, "Segoe UI", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --ink: #17232b;
+  --muted: #6f7c84;
+  --line: rgba(39, 55, 64, 0.12);
+  --panel: rgba(248, 249, 247, 0.88);
+  --panel-solid: #f7f8f6;
+  --accent: #e76f43;
+  --green: #39b77a;
+}
+
+.map3d-root * {
+  box-sizing: border-box;
+}
+
+.map3d-root {
+  width: 100%;
+  min-height: calc(100dvh - 72px);
+  margin: 0;
+  overflow: clip;
+  background: #dfe3e2;
+  color: var(--ink);
+  font-family: var(--font-sans), Arial, sans-serif;
+}
+
+.map3d-root button, .map3d-root input {
+  font: inherit;
+}
+
+.map3d-root button {
+  color: inherit;
+}
+
+.map3d-root .viewer-shell {
+  position: relative;
+  width: 100%;
+  height: calc(100dvh - 72px);
+  min-height: 528px;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.94), rgba(235, 238, 236, 0.78) 38%, transparent 68%),
+    linear-gradient(140deg, #d9dedd 0%, #eef0ee 48%, #cbd1d0 100%);
+}
+
+.map3d-root .map-home-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.map3d-root .map-home-link:hover {
+  background: #fff;
+}
+
+.map3d-root .viewer-shell::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(31, 47, 55, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 47, 55, 0.035) 1px, transparent 1px);
+  background-size: 52px 52px;
+  content: "";
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 82%);
+}
+
+.map3d-root .canvas-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.map3d-root .canvas-stage canvas {
+  display: block;
+  touch-action: none;
+  outline: none;
+}
+
+.map3d-root .topbar {
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 100%;
+  min-height: 60px;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  padding: 0 26px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(247, 248, 246, 0.88);
+  backdrop-filter: blur(18px);
+}
+
+.map3d-root .brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.map3d-root .brand-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid rgba(231, 111, 67, 0.38);
+  border-radius: 50%;
+  color: var(--accent);
+}
+
+.map3d-root .brand-lockup p, .map3d-root .brand-lockup h1, .map3d-root .object-panel h2 {
+  margin: 0;
+}
+
+.map3d-root .brand-lockup p {
+  margin-bottom: 3px;
+  color: var(--accent);
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.map3d-root .brand-lockup h1 {
+  font-size: 16px;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+}
+
+.map3d-root .model-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.09em;
+}
+
+.map3d-root .model-status strong {
+  margin-left: 5px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.map3d-root .status-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 4px rgba(57, 183, 122, 0.11);
+}
+
+.map3d-root .camera-actions {
+  display: flex;
+  justify-self: end;
+  gap: 7px;
+}
+
+.map3d-root .action-button {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.56);
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.map3d-root .action-button:hover:not(:disabled) {
+  border-color: rgba(231, 111, 67, 0.4);
+  background: #fff;
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.map3d-root .action-button:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
+.map3d-root .action-button-wide {
+  width: auto;
+  gap: 8px;
+  padding: 0 13px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.map3d-root .search-panel, .map3d-root .object-panel, .map3d-root .legend-bar, .map3d-root .coordinate-readout {
+  position: absolute;
+  z-index: 8;
+}
+
+.map3d-root .search-panel {
+  top: 106px;
+  left: 24px;
+  width: min(300px, calc(100vw - 48px));
+  display: block;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.map3d-root .section-kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 9px 2px;
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.map3d-root .search-field {
+  position: relative;
+  display: flex;
+  height: 48px;
+  min-height: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid rgba(35, 51, 60, 0.12);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 12px 34px rgba(41, 53, 58, 0.09);
+  backdrop-filter: blur(18px);
+  transition: 160ms ease;
+}
+
+.map3d-root .search-field:focus-within {
+  border-color: rgba(231, 111, 67, 0.5);
+  box-shadow: 0 15px 38px rgba(41, 53, 58, 0.13);
+}
+
+.map3d-root .search-field > svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.map3d-root .search-field input {
+  flex: 1 1 auto;
+  width: 0;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.map3d-root .search-field input::placeholder {
+  color: #96a0a5;
+}
+
+.map3d-root .search-field button, .map3d-root .object-panel-head button {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  min-width: 0;
+  min-height: 0;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.map3d-root .search-field button:hover, .map3d-root .object-panel-head button:hover {
+  background: rgba(27, 41, 49, 0.06);
+  color: var(--ink);
+}
+
+.map3d-root .search-results {
+  overflow: hidden;
+  margin-top: 7px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(248, 249, 247, 0.96);
+  box-shadow: 0 18px 44px rgba(40, 52, 57, 0.15);
+  backdrop-filter: blur(20px);
+}
+
+.map3d-root .search-results button {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 8px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map3d-root .search-results button:hover {
+  background: rgba(29, 45, 53, 0.055);
+}
+
+.map3d-root .result-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.035);
+}
+
+.map3d-root .search-results button > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.map3d-root .search-results strong {
+  overflow: hidden;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map3d-root .search-results small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.map3d-root .search-results svg {
+  color: #9aa3a8;
+}
+
+.map3d-root .empty-result {
+  margin: 0;
+  padding: 13px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.map3d-root .gesture-guide {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding-left: 3px;
+}
+
+.map3d-root .gesture-guide > div {
+  display: grid;
+  grid-template-columns: 18px auto;
+  align-items: center;
+  column-gap: 8px;
+}
+
+.map3d-root .gesture-guide svg {
+  grid-row: 1 / span 2;
+  color: #77838a;
+}
+
+.map3d-root .right-click-icon {
+  transform: scaleX(-1);
+}
+
+.map3d-root .gesture-guide span {
+  color: #89949a;
+  font-family: var(--font-mono), monospace;
+  font-size: 7px;
+  letter-spacing: 0.09em;
+}
+
+.map3d-root .gesture-guide strong {
+  margin-top: 1px;
+  color: #47565e;
+  font-size: 9px;
+  font-weight: 560;
+}
+
+.map3d-root .object-panel {
+  right: 24px;
+  bottom: 78px;
+  width: min(340px, calc(100vw - 48px));
+  min-height: 76px;
+  overflow: hidden;
+  border: 1px solid rgba(37, 52, 60, 0.12);
+  border-radius: 15px;
+  background: var(--panel);
+  box-shadow: 0 22px 50px rgba(35, 49, 56, 0.13);
+  backdrop-filter: blur(20px);
+}
+
+.map3d-root .object-panel.is-visible {
+  animation: panel-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.map3d-root .empty-selection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 18px;
+  color: var(--muted);
+}
+
+.map3d-root .empty-selection > svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+.map3d-root .empty-selection > div {
+  display: grid;
+  gap: 3px;
+}
+
+.map3d-root .empty-selection strong {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.map3d-root .empty-selection span {
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.map3d-root .object-panel-head {
+  display: grid;
+  grid-template-columns: 9px 1fr auto;
+  align-items: start;
+  gap: 11px;
+  padding: 18px 18px 15px;
+  border-bottom: 1px solid var(--line);
+}
+
+.map3d-root .selected-marker {
+  width: 9px;
+  height: 9px;
+  margin-top: 4px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(24, 37, 44, 0.05);
+}
+
+.map3d-root .object-panel-head span, .map3d-root .position-block > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.13em;
+}
+
+.map3d-root .object-panel-head h2 {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono), monospace;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.map3d-root .object-details {
+  margin: 0;
+  padding: 7px 18px;
+}
+
+.map3d-root .object-details > div {
+  display: grid;
+  grid-template-columns: 105px 1fr;
+  align-items: start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(37, 52, 60, 0.075);
+}
+
+.map3d-root .object-details > div:last-child {
+  border-bottom: 0;
+}
+
+.map3d-root .object-details dt {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.map3d-root .object-details dd {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 570;
+  line-height: 1.45;
+}
+
+.map3d-root .object-name-value {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono), monospace;
+}
+
+.map3d-root .status-value {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.map3d-root .status-value span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.map3d-root .position-block {
+  padding: 12px 18px 17px;
+  border-top: 1px solid var(--line);
+  background: rgba(224, 228, 226, 0.34);
+}
+
+.map3d-root .coordinates {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.map3d-root .coordinate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 8px 9px;
+  border: 1px solid rgba(37, 52, 60, 0.08);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-mono), monospace;
+  font-size: 8px;
+}
+
+.map3d-root .coordinate span {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.map3d-root .coordinate strong {
+  overflow: hidden;
+  font-weight: 560;
+  text-overflow: ellipsis;
+}
+
+.map3d-root .legend-bar {
+  bottom: 20px;
+  left: 24px;
+  display: flex;
+  max-width: calc(100vw - 440px);
+  align-items: center;
+  gap: 16px;
+  padding: 11px 14px;
+  border: 1px solid rgba(37, 52, 60, 0.1);
+  border-radius: 10px;
+  background: rgba(247, 248, 246, 0.84);
+  box-shadow: 0 12px 34px rgba(41, 53, 58, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.map3d-root .legend-title {
+  padding-right: 13px;
+  border-right: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.map3d-root .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #55636a;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.map3d-root .legend-item i {
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgba(24, 37, 44, 0.08);
+  border-radius: 50%;
+}
+
+.map3d-root .coordinate-readout {
+  right: 26px;
+  bottom: 25px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #879198;
+  font-family: var(--font-mono), monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+.map3d-root .coordinate-readout strong {
+  color: #4f5e66;
+  font-weight: 700;
+}
+
+.map3d-root .loading-overlay {
+  position: absolute;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  width: 260px;
+  height: max-content;
+  margin: auto;
+  grid-template-columns: 38px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(247, 248, 246, 0.94);
+  box-shadow: 0 22px 60px rgba(38, 51, 56, 0.16);
+  backdrop-filter: blur(20px);
+}
+
+.map3d-root .loader-mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(231, 111, 67, 0.3);
+  border-radius: 50%;
+  color: var(--accent);
+  animation: loader-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes loader-pulse {
+  50% {
+    transform: scale(0.92);
+    opacity: 0.65;
+  }
+}
+
+.map3d-root .loader-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono), monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+.map3d-root .loader-copy span {
+  color: var(--muted);
+}
+
+.map3d-root .loader-copy strong {
+  color: var(--ink);
+  font-size: 9px;
+}
+
+.map3d-root .loader-track {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(31, 47, 55, 0.1);
+}
+
+.map3d-root .loader-track div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 180ms ease;
+}
+
+.map3d-root .debug-toggle.is-active {
+  border-color: rgba(231, 111, 67, 0.58);
+  background: rgba(231, 111, 67, 0.13);
+  color: var(--accent);
+}
+
+.map3d-root .building-dot, .map3d-root .building-selected-marker {
+  background: var(--accent);
+}
+
+.map3d-root .start-node-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(37, 52, 60, 0.1);
+  border-radius: 11px;
+  background: rgba(248, 249, 247, 0.9);
+  box-shadow: 0 10px 30px rgba(40, 52, 57, 0.07);
+}
+
+.map3d-root .start-node-card > svg {
+  flex: 0 0 auto;
+  color: #16a36a;
+}
+
+.map3d-root .start-node-card span {
+  min-width: 0;
+}
+
+.map3d-root .start-node-card small, .map3d-root .start-node-card strong {
+  display: block;
+}
+
+.map3d-root .start-node-card.is-picking {
+  border-color: rgba(38, 124, 135, 0.52);
+  background: rgba(158, 217, 229, 0.22);
+  box-shadow: 0 0 0 3px rgba(38, 124, 135, 0.08);
+}
+
+.map3d-root .wayfinding-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.map3d-root .wayfinding-actions button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(37, 52, 60, 0.13);
+  border-radius: 9px;
+  background: rgba(248, 249, 247, 0.94);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 680;
+  cursor: pointer;
+}
+
+.map3d-root .wayfinding-actions button:hover:not(:disabled), .map3d-root .wayfinding-actions button.is-active {
+  border-color: rgba(38, 124, 135, 0.56);
+  background: rgba(158, 217, 229, 0.22);
+  color: #176a74;
+}
+
+.map3d-root .wayfinding-actions button:disabled, .map3d-root .route-actions button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.map3d-root .start-selection-hint, .map3d-root .start-required-message {
+  margin: 8px 1px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(38, 124, 135, 0.1);
+  color: #176a74;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.map3d-root .start-required-message {
+  border-color: rgba(201, 90, 86, 0.24);
+  background: rgba(201, 90, 86, 0.08);
+  color: #87433f;
+}
+
+.map3d-root .start-node-card small {
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  font-size: 8px;
+  letter-spacing: 0.13em;
+}
+
+.map3d-root .start-node-card strong {
+  overflow: hidden;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map3d-root .graph-error {
+  margin: 10px 0 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(205, 50, 74, 0.2);
+  border-radius: 9px;
+  background: rgba(205, 50, 74, 0.08);
+  color: #a8213a;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.map3d-root .object-panel.is-visible {
+  max-height: calc(100vh - 178px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.map3d-root .route-block {
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--line);
+  background: rgba(234, 238, 235, 0.58);
+}
+
+.map3d-root .route-block-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  color: var(--accent);
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.map3d-root .route-row {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 10px;
+}
+
+.map3d-root .route-row small {
+  color: var(--muted);
+}
+
+.map3d-root .route-row strong {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  text-align: right;
+}
+
+.map3d-root .route-message {
+  margin: 10px 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.map3d-root .route-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+}
+
+.map3d-root .route-actions button {
+  display: inline-flex;
+  min-height: 33px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(37, 52, 60, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.map3d-root .route-actions button:hover {
+  border-color: rgba(231, 111, 67, 0.45);
+  color: var(--accent);
+}
+
+.map3d-root .debug-navigation-panel {
+  position: absolute;
+  z-index: 9;
+  top: 78px;
+  right: 24px;
+  width: min(310px, calc(100vw - 48px));
+  max-height: calc(100vh - 200px);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid rgba(37, 52, 60, 0.14);
+  border-radius: 13px;
+  background: rgba(247, 248, 246, 0.94);
+  box-shadow: 0 20px 44px rgba(35, 49, 56, 0.13);
+  backdrop-filter: blur(18px);
+}
+
+.map3d-root .debug-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 9px;
+  color: var(--accent);
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.11em;
+}
+
+.map3d-root .debug-navigation-panel dl {
+  margin: 0;
+}
+
+.map3d-root .debug-navigation-panel dl > div {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(37, 52, 60, 0.07);
+  font-size: 9px;
+}
+
+.map3d-root .debug-navigation-panel dt {
+  color: var(--muted);
+}
+
+.map3d-root .debug-navigation-panel dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono), monospace;
+  text-align: right;
+}
+
+.map3d-root .debug-navigation-panel details {
+  margin-top: 10px;
+  font-size: 9px;
+}
+
+.map3d-root .debug-navigation-panel summary {
+  color: #c42658;
+  cursor: pointer;
+}
+
+.map3d-root .unmatched-list {
+  margin: 8px 0 0;
+  padding-left: 22px;
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+  line-height: 1.7;
+}
+
+.map3d-root .navigation-node-label {
+  display: inline-block;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: rgba(35, 43, 47, 0.82);
+  color: #fff;
+  font-family: var(--font-mono), monospace;
+  font-size: 4px;
+  white-space: nowrap;
+}
+
+.map3d-root .navigation-node-label.is-poi {
+  background: rgba(213, 91, 32, 0.9);
+}
+
+.map3d-root .navigation-marker-label {
+  display: inline-block;
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 6px;
+  box-shadow: 0 5px 16px rgba(25, 38, 44, 0.2);
+  color: #fff;
+  font-family: var(--font-mono), monospace;
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.map3d-root .start-marker-label { background: #16a36a; }
+.map3d-root .destination-marker-label { background: #ff5a36; }
+
+.map3d-root .route-poi-label {
+  display: inline-block;
+  max-width: 150px;
+  overflow: hidden;
+  padding: 4px 7px;
+  border: 1px solid rgba(6, 169, 229, 0.42);
+  border-radius: 999px;
+  background: rgba(20, 36, 52, 0.9);
+  box-shadow: 0 5px 16px rgba(13, 29, 42, 0.22);
+  color: #f7fbff;
+  font-family: var(--font-mono), monospace;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.map3d-root .navigation-guidance-card, .map3d-root .navigation-session-panel {
+  position: absolute;
+  z-index: 12;
+  border: 1px solid rgba(133, 199, 229, 0.2);
+  background: rgba(18, 34, 50, 0.95);
+  box-shadow: 0 22px 60px rgba(6, 20, 31, 0.3);
+  color: #f7fbff;
+  backdrop-filter: blur(18px);
+}
+
+.map3d-root .navigation-guidance-card {
+  top: 104px;
+  left: 24px;
+  display: grid;
+  width: min(390px, calc(100vw - 48px));
+  grid-template-columns: 58px 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 15px;
+  border-radius: 15px;
+  animation: panel-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.map3d-root .guidance-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 13px;
+  background: #06a9e5;
+  color: white;
+}
+
+.map3d-root .guidance-icon.is-arrive {
+  background: #16a36a;
+}
+
+.map3d-root .navigation-guidance-card > div:last-child {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  column-gap: 12px;
+}
+
+.map3d-root .navigation-guidance-card span {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  color: #8fa5b7;
+  font-family: var(--font-mono), monospace;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.map3d-root .navigation-guidance-card strong {
+  overflow: hidden;
+  font-size: 18px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map3d-root .navigation-guidance-card b {
+  color: #20c7ff;
+  font-family: var(--font-mono), monospace;
+  font-size: 14px;
+}
+
+.map3d-root .navigation-session-panel {
+  bottom: 24px;
+  left: 24px;
+  width: min(390px, calc(100vw - 48px));
+  padding: 16px;
+  border-radius: 15px;
+  animation: panel-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.map3d-root .navigation-session-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.map3d-root .navigation-session-heading span, .map3d-root .navigation-progress-copy, .map3d-root .navigation-trip-summary span {
+  color: #8fa5b7;
+  font-family: var(--font-mono), monospace;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.map3d-root .navigation-session-heading h2 {
+  max-width: 260px;
+  margin: 3px 0 0;
+  overflow: hidden;
+  font-family: var(--font-mono), monospace;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map3d-root .navigation-floor-chip {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid rgba(32, 199, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(6, 169, 229, 0.12);
+  color: #70dafd;
+  font-family: var(--font-mono), monospace;
+  font-size: 7px;
+  font-weight: 750;
+}
+
+.map3d-root .navigation-trip-summary {
+  display: grid;
+  gap: 3px;
+  margin-top: 12px;
+}
+
+.map3d-root .navigation-trip-summary strong {
+  color: #20c7ff;
+  font-size: 11px;
+}
+
+.map3d-root .navigation-progress-copy {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 13px;
+}
+
+.map3d-root .navigation-progress-copy strong {
+  color: #20c7ff;
+}
+
+.map3d-root .navigation-progress-track {
+  position: relative;
+  height: 6px;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: #294056;
+}
+
+.map3d-root .navigation-progress-track div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #16c67a, #06a9e5);
+  transition: width 100ms linear;
+}
+
+.map3d-root .navigation-progress-track i {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #173047;
+  border-radius: 50%;
+  background: #50df9e;
+  box-shadow: 0 0 0 3px rgba(80, 223, 158, 0.16);
+  transform: translate(-50%, -50%);
+  transition: left 100ms linear;
+}
+
+.map3d-root .navigation-session-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.map3d-root .navigation-session-actions button {
+  display: grid;
+  min-width: 0;
+  min-height: 48px;
+  place-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  border: 1px solid rgba(147, 181, 205, 0.18);
+  border-radius: 9px;
+  background: #253b50;
+  color: #eaf5fb;
+  font-size: 7px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.map3d-root .navigation-session-actions button:hover {
+  border-color: rgba(32, 199, 255, 0.58);
+  background: #2b475f;
+}
+
+.map3d-root .navigation-session-actions button.is-paused {
+  background: #df8517;
+}
+
+.map3d-root .navigation-session-actions button.is-danger {
+  background: #d93d49;
+}
+
+.map3d-root .navigation-paused-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px;
+  border-radius: 7px;
+  background: rgba(223, 133, 23, 0.15);
+  color: #ffc56c;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.map3d-root .viewer-shell[data-route-active="true"] .search-panel, .map3d-root .viewer-shell[data-route-active="true"] .object-panel, .map3d-root .viewer-shell[data-route-active="true"] .legend-bar, .map3d-root .viewer-shell[data-route-active="true"] .coordinate-readout {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.map3d-root .legend-route { background: #06a9e5 !important; }
+.map3d-root .legend-poi { background: #f58231 !important; }
+.map3d-root .legend-node { background: #ed4b4b !important; }
+.map3d-root .legend-unmatched { background: #ff2d86 !important; }
+.map3d-root .legend-conditional { background: #d946ef !important; }
+
+@media (max-width: 900px) {
+  .map3d-root .topbar {
+    min-height: 60px;
+    grid-template-columns: 1fr auto;
+    padding: 0 16px;
+  }
+
+  .map3d-root .model-status {
+    display: none;
+  }
+
+  .map3d-root .brand-lockup h1 {
+    font-size: 14px;
+  }
+
+  .map3d-root .brand-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .map3d-root .search-panel {
+    top: 76px;
+    left: 16px;
+    width: min(280px, calc(100vw - 32px));
+  }
+
+  .map3d-root .gesture-guide {
+    display: none;
+  }
+
+  .map3d-root .object-panel {
+    right: 16px;
+    bottom: 72px;
+    width: min(330px, calc(100vw - 32px));
+  }
+
+  .map3d-root .debug-navigation-panel {
+    top: 150px;
+    right: 16px;
+    width: min(300px, calc(100vw - 32px));
+    max-height: 42vh;
+  }
+
+  .map3d-root .navigation-guidance-card {
+    top: 76px;
+    left: 16px;
+    width: min(360px, calc(100vw - 32px));
+  }
+
+  .map3d-root .navigation-session-panel {
+    right: auto;
+    bottom: 16px;
+    left: 16px;
+    width: min(390px, calc(100vw - 32px));
+  }
+
+  .map3d-root .legend-bar {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+    max-width: none;
+    gap: 11px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .map3d-root .legend-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .map3d-root .coordinate-readout {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .map3d-root .viewer-shell {
+    min-height: 448px;
+  }
+
+  .map3d-root .topbar {
+    min-height: 56px;
+  }
+
+  .map3d-root .brand-lockup p {
+    display: none;
+  }
+
+  .map3d-root .brand-lockup h1 {
+    font-size: 13px;
+  }
+
+  .map3d-root .action-button-wide {
+    width: 36px;
+    padding: 0;
+  }
+
+  .map3d-root .action-button-wide span {
+    display: none;
+  }
+
+  .map3d-root .action-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .map3d-root .search-panel {
+    top: 68px;
+  }
+
+  .map3d-root .navigation-guidance-card {
+    top: 68px;
+    left: 12px;
+    width: calc(100vw - 24px);
+    grid-template-columns: 48px 1fr;
+    gap: 10px;
+    padding: 9px 11px;
+  }
+
+  .map3d-root .guidance-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .map3d-root .navigation-guidance-card strong {
+    font-size: 15px;
+  }
+
+  .map3d-root .navigation-session-panel {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    padding: 13px;
+  }
+
+  .map3d-root .navigation-session-actions {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .map3d-root .navigation-session-actions button {
+    min-height: 44px;
+    font-size: 6px;
+  }
+
+  .map3d-root .section-kicker {
+    display: none;
+  }
+
+  .map3d-root .search-field {
+    height: 44px;
+  }
+
+  .map3d-root .object-panel {
+    bottom: 64px;
+  }
+
+  .map3d-root .object-panel:not(.is-visible) {
+    display: none;
+  }
+
+  .map3d-root .object-panel-head {
+    padding: 15px;
+  }
+
+  .map3d-root .object-details {
+    padding-inline: 15px;
+  }
+
+  .map3d-root .position-block {
+    padding: 11px 15px 14px;
+  }
+
+  .map3d-root .legend-bar {
+    bottom: 12px;
+    padding: 9px 11px;
+  }
+
+  .map3d-root .legend-title {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map3d-root *, .map3d-root *::before, .map3d-root *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.map3d-root .sea-planner {
+  position: absolute;
+  z-index: 20;
+  top: 20px;
+  max-height: calc(100dvh - 112px);
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, calc(100vw - 40px));
+  overflow-y: auto;
+  border: 1px solid #d8e0e8;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 16px 50px rgba(13, 38, 64, .15);
+  color: #143653;
+}
+
+.map3d-root .sea-planner-heading { padding: 24px 24px 18px; }
+.map3d-root .sea-planner-heading span { color: #63788d; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
+.map3d-root .sea-planner-heading h1 { margin: 5px 0 0; font-size: 25px; line-height: 1.15; }
+.map3d-root .sea-trip-fields { position: relative; display: grid; gap: 8px; padding: 0 20px; }
+.map3d-root .sea-trip-fields::before { position: absolute; top: 29px; bottom: 29px; left: 37px; width: 2px; background: #d9e3ec; content: ""; }
+.map3d-root .sea-trip-fields button { position: relative; display: flex; min-height: 58px; gap: 15px; align-items: center; padding: 10px 15px; border: 1px solid #dce4ec; border-radius: 9px; background: #fff; text-align: left; cursor: pointer; }
+.map3d-root .sea-trip-fields button.is-current { border-color: #1478b9; background: #f1f8fc; }
+.map3d-root .sea-trip-fields button:disabled { cursor: not-allowed; opacity: .6; }
+.map3d-root .sea-trip-fields button > span:last-child { min-width: 0; }
+.map3d-root .sea-trip-fields small, .map3d-root .sea-trip-fields strong { display: block; }
+.map3d-root .sea-trip-fields small { color: #657b8f; font-size: 12px; }
+.map3d-root .sea-trip-fields strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.map3d-root .sea-pin { flex: none; width: 11px; height: 11px; border: 3px solid #1281bc; border-radius: 50%; background: white; }
+.map3d-root .sea-pin.is-destination { border-color: #eb7542; }
+.map3d-root .sea-search-wrap { position: relative; z-index: 2; padding: 15px 20px 0; }
+.map3d-root .sea-search { display: flex; height: 46px; gap: 9px; align-items: center; padding: 0 12px; border: 1px solid #c7d5e0; border-radius: 9px; background: #fff; color: #55728b; }
+.map3d-root .sea-search:focus-within { border-color: #1478b9; outline: 2px solid #cce7f8; }
+.map3d-root .sea-search input { min-width: 0; flex: 1; border: 0; outline: none; background: transparent; color: #143653; font-size: 13px; }
+.map3d-root .sea-search button { display: grid; width: 28px; height: 28px; place-items: center; border: 0; background: transparent; cursor: pointer; }
+.map3d-root .sea-search-results { position: absolute; top: 66px; right: 20px; left: 20px; max-height: 225px; overflow-y: auto; border: 1px solid #dce4ec; border-radius: 9px; background: #fff; box-shadow: 0 10px 24px rgba(18, 51, 78, .14); }
+.map3d-root .sea-search-results button { display: flex; width: 100%; gap: 10px; align-items: center; padding: 11px 13px; border: 0; border-bottom: 1px solid #eff2f5; background: #fff; text-align: left; cursor: pointer; }
+.map3d-root .sea-search-results button:hover, .map3d-root .sea-search-results button:focus-visible { background: #eef7fc; }
+.map3d-root .sea-search-results button span { min-width: 0; }
+.map3d-root .sea-search-results strong, .map3d-root .sea-search-results small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.map3d-root .sea-search-results small { color: #687b8a; font-size: 11px; }
+.map3d-root .sea-search-results p { margin: 0; padding: 15px; color: #657b8f; font-size: 13px; }
+.map3d-root .sea-hint { margin: 12px 20px 16px; color: #657b8f; font-size: 12px; line-height: 1.5; }
+.map3d-root .sea-route-details { border-top: 1px solid #e2e8ee; }
+.map3d-root .sea-route-summary { display: flex; justify-content: space-between; align-items: start; padding: 20px 24px; background: #f2f8fc; }
+.map3d-root .sea-route-summary strong, .map3d-root .sea-route-summary span { display: block; }
+.map3d-root .sea-route-summary strong { font-size: 25px; line-height: 1; }
+.map3d-root .sea-route-summary span { margin-top: 6px; color: #55728b; font-size: 12px; }
+.map3d-root .sea-route-summary button { display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 6px; background: transparent; cursor: pointer; }
+.map3d-root .sea-step-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px 8px; }
+.map3d-root .sea-step-header h2 { margin: 0; font-size: 15px; }
+.map3d-root .sea-step-header span { color: #61788a; font-size: 12px; }
+.map3d-root .sea-step-list { max-height: 240px; overflow-y: auto; margin: 0; padding: 0 12px; list-style: none; }
+.map3d-root .sea-step-list button { display: flex; width: 100%; gap: 12px; align-items: center; padding: 11px 12px; border: 0; border-radius: 8px; background: transparent; text-align: left; cursor: pointer; }
+.map3d-root .sea-step-list button.is-active { background: #eaf5fb; }
+.map3d-root .sea-step-list button strong, .map3d-root .sea-step-list button small { display: block; }
+.map3d-root .sea-step-list button strong { font-size: 13px; }
+.map3d-root .sea-step-list button small { margin-top: 2px; color: #677f91; font-size: 11px; }
+.map3d-root .sea-step-number { display: grid; width: 28px; height: 28px; flex: none; place-items: center; border-radius: 50%; background: #dcebf4; color: #17658e; font-size: 12px; font-weight: 800; }
+.map3d-root .sea-step-list .is-active .sea-step-number { background: #176b9c; color: #fff; }
+.map3d-root .sea-step-controls, .map3d-root .sea-simulation-controls { display: flex; gap: 8px; padding: 12px 20px; }
+.map3d-root .sea-step-controls button, .map3d-root .sea-simulation-controls button { display: inline-flex; min-height: 42px; flex: 1; gap: 4px; align-items: center; justify-content: center; padding: 8px; border: 1px solid #b9d0df; border-radius: 8px; background: #fff; color: #15577f; font-size: 12px; font-weight: 700; cursor: pointer; }
+.map3d-root .sea-step-controls button:disabled { color: #9aaab7; cursor: not-allowed; }
+.map3d-root .sea-simulation-controls { padding-top: 0; }
+.map3d-root .sea-simulation-controls button:first-child { border-color: #126c9d; background: #126c9d; color: #fff; }
+.map3d-root .sea-map-actions { position: absolute; z-index: 10; right: 20px; bottom: 20px; display: grid; gap: 4px; padding: 5px; border: 1px solid #dae3e9; border-radius: 10px; background: #fff; box-shadow: 0 5px 20px rgba(19, 48, 72, .12); }
+.map3d-root .sea-map-actions button { display: grid; width: 40px; height: 40px; place-items: center; border: 0; border-radius: 6px; background: #fff; color: #1c597d; cursor: pointer; }
+.map3d-root .sea-map-actions button:hover:not(:disabled) { background: #eef6fb; }
+.map3d-root .sea-planner button:focus-visible, .map3d-root .sea-map-actions button:focus-visible { outline: 2px solid #126c9d; outline-offset: 2px; }
+
+.map3d-root .passenger-map-guide {
+  position: absolute;
+  z-index: 30;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  width: min(390px, calc(100vw - 40px));
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+.map3d-root .passenger-map-link {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border: 2px solid #0b5596;
+  border-radius: 10px;
+  background: #fff;
+  color: #084d88;
+  box-shadow: 0 5px 18px rgba(19, 48, 72, .14);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.map3d-root .passenger-map-link:hover { background: #eaf5fb; }
+.map3d-root .passenger-map-link:focus-visible { outline: 3px solid #e76f43; outline-offset: 3px; }
+.map3d-root .passenger-map-link span { font-size: 18px; line-height: 1; }
+
+.map3d-root .passenger-roadmap {
+  width: 100%;
+  max-height: calc(100dvh - 172px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
+  border: 1px solid #b8ceda;
+  border-radius: 14px;
+  background: #fff;
+  color: #153851;
+  box-shadow: 0 14px 42px rgba(18, 51, 78, .19);
+  pointer-events: auto;
+}
+.map3d-root .passenger-roadmap-inner {
+  display: block;
+  width: 100%;
+}
+.map3d-root .passenger-roadmap-kicker { color: #365d75; font-size: 12px; font-weight: 700; }
+.map3d-root .passenger-roadmap-intro h2 { margin: 6px 0 8px; font-size: 22px; line-height: 1.2; }
+.map3d-root .passenger-roadmap-intro > p { margin: 0; color: #425b6b; font-size: 13px; line-height: 1.5; }
+.map3d-root .passenger-roadmap-summary { display: grid; gap: 3px; margin-top: 14px; padding: 10px 12px; border: 1px solid #a9c4d3; border-radius: 9px; background: #f2f8fc; }
+.map3d-root .passenger-roadmap-summary span { color: #415d6f; font-size: 11px; }
+.map3d-root .passenger-roadmap-summary strong { font-size: 15px; }
+.map3d-root .passenger-roadmap-steps { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.map3d-root .passenger-roadmap-step { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; padding: 18px 0; border-bottom: 1px solid #cbdce6; }
+.map3d-root .passenger-roadmap-step + .passenger-roadmap-step { padding-top: 18px; }
+.map3d-root .passenger-roadmap-step:last-child { padding-bottom: 0; border-bottom: 0; }
+.map3d-root .passenger-step-number { display: grid; width: 28px; height: 28px; place-items: center; border: 2px solid #0b5596; border-radius: 50%; color: #0b5596; font-size: 10px; font-weight: 800; }
+.map3d-root .passenger-roadmap-step h3 { margin: 2px 0 5px; font-size: 16px; line-height: 1.3; }
+.map3d-root .passenger-roadmap-step p { margin: 0; color: #425b6b; font-size: 12px; line-height: 1.5; }
+.map3d-root .passenger-departure-fieldset, .map3d-root .passenger-gate-fieldset { min-width: 0; margin: 12px 0 0; padding: 0; border: 0; }
+.map3d-root .passenger-departure-fieldset legend, .map3d-root .passenger-gate-fieldset legend, .map3d-root .passenger-gate-input { margin-bottom: 8px; font-size: 12px; font-weight: 700; }
+.map3d-root .passenger-departure-options, .map3d-root .passenger-gate-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.map3d-root .passenger-departure-options label, .map3d-root .passenger-gate-options label { display: inline-flex; min-height: 44px; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid #8baebe; border-radius: 8px; background: #fff; color: #153851; font-size: 12px; font-weight: 700; cursor: pointer; }
+.map3d-root .passenger-departure-options label.is-selected, .map3d-root .passenger-gate-options label.is-selected { border-color: #0b5596; background: #e3f1fa; }
+.map3d-root .passenger-departure-options input, .map3d-root .passenger-gate-options input { width: 16px; height: 16px; margin: 0; accent-color: #0b5596; }
+.map3d-root .passenger-departure-options label:focus-within, .map3d-root .passenger-gate-options label:focus-within { outline: 3px solid #e76f43; outline-offset: 2px; }
+.map3d-root .passenger-gate-input { display: grid; gap: 8px; margin: 12px 0 0; }
+.map3d-root .passenger-gate-input input { width: 100%; min-height: 44px; padding: 8px 11px; border: 1px solid #8baebe; border-radius: 8px; background: #fff; color: #153851; font-size: 13px; }
+.map3d-root .passenger-roadmap-step .passenger-data-note { margin-top: 9px; color: #425b6b; font-size: 11px; }
+.map3d-root .passenger-roadmap-step .passenger-gate-hint { margin-top: 12px; font-weight: 600; }
+.map3d-root .passenger-roadmap-finish .passenger-step-number { border-color: #cc5b32; color: #a54320; }
+
+@media (max-width: 700px) {
+  .map3d-root .passenger-map-guide { top: 12px; right: 65px; width: min(350px, calc(100vw - 77px)); }
+  .map3d-root .passenger-map-link { min-height: 44px; max-width: 100%; padding: 8px 11px; font-size: 12px; }
+  .map3d-root .passenger-roadmap { max-height: calc(100dvh - 148px); padding: 16px; }
+  .map3d-root .sea-planner { top: auto; right: 8px; bottom: 8px; left: 8px; width: auto; max-height: min(62dvh, 520px); border-radius: 15px; }
+  .map3d-root .sea-planner-heading { padding: 15px 18px 10px; }
+  .map3d-root .sea-planner-heading h1 { font-size: 19px; }
+  .map3d-root .sea-trip-fields { padding: 0 14px; }
+  .map3d-root .sea-trip-fields::before { left: 31px; }
+  .map3d-root .sea-search-wrap { padding: 10px 14px 0; }
+  .map3d-root .sea-hint { margin: 8px 14px 12px; }
+  .map3d-root .sea-map-actions { top: 12px; right: 12px; bottom: auto; }
+  .map3d-root .sea-step-list { max-height: none; overflow: visible; }
+}
