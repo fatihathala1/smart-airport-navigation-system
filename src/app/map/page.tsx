@@ -1,15 +1,16 @@
-import { Suspense } from "react";
-import { FullMapShell } from "@/components/wayfinding/FullMapShell";
+import { Map3DClient } from "@/components/map3d/Map3DClient";
+import { SiteHeader } from "@/components/site/SiteHeader";
 
 export const metadata = {
-  title: "Peta Interaktif Terminal | Juanda Airport Wayfinding",
-  description: "Peta interaktif full screen Terminal 1 & 2 Bandara Internasional Juanda.",
+  title: "Peta 3D Terminal 1 | Juanda Airport Wayfinding",
+  description: "Peta 3D dan navigasi Terminal 1 lantai dasar Bandara Internasional Juanda.",
 };
 
 export default function MapPage() {
   return (
-    <Suspense fallback={<main className="map-skeleton" aria-label="Memuat peta full screen"><div /><div /><div /></main>}>
-      <FullMapShell />
-    </Suspense>
+    <>
+      <SiteHeader />
+      <Map3DClient />
+    </>
   );
 }

@@ -1,19 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowRight, Layers, Navigation, QrCode, Search } from "lucide-react";
+import { ArrowRight, MousePointer2, Navigation, Search, View } from "lucide-react";
 import { useMapStore } from "@/store/mapStore";
 import styles from "./WayfindingFullTutorialSection.module.css";
 
-interface WayfindingFullTutorialSectionProps {
-  onOpenSearchModal?: () => void;
-  onOpenQrModal?: () => void;
-}
-
-export function WayfindingFullTutorialSection({
-  onOpenSearchModal,
-  onOpenQrModal,
-}: WayfindingFullTutorialSectionProps) {
+export function WayfindingFullTutorialSection() {
   const router = useRouter();
   const store = useMapStore();
   const lang = store.lang;
@@ -22,44 +14,44 @@ export function WayfindingFullTutorialSection({
     {
       num: "01",
       tag: lang === "ID" ? "Pencarian lokasi" : "Find a location",
-      title: lang === "ID" ? "Temukan gate, toko, restoran, atau musala" : "Find gates, shops, restaurants, or prayer rooms",
+      title: lang === "ID" ? "Cari building berdasarkan kodenya" : "Find a building by its code",
       icon: Search,
       desc: lang === "ID"
-        ? "Cari lokasi berdasarkan nama atau kategori. Setiap area pada denah dapat dipilih untuk membuka informasi tempat yang lebih lengkap."
-        : "Search by name or category. You can also select any area on the map to see more details.",
-      cta: lang === "ID" ? "Buka pencarian" : "Open search",
-      onCta: () => { if (onOpenSearchModal) onOpenSearchModal(); else store.setIsSearchOpen(true); },
+        ? "Gunakan kolom pencarian di peta untuk menemukan kode building, misalnya T1-GF-01."
+        : "Use the map search field to find a building code, such as T1-GF-01.",
+      cta: lang === "ID" ? "Buka peta" : "Open map",
+      onCta: () => router.push("/map"),
     },
     {
       num: "02",
       tag: lang === "ID" ? "Posisi awal" : "Set your location",
-      title: lang === "ID" ? "Coba titik awal melalui simulasi QR" : "Try a starting point with the QR simulation",
-      icon: QrCode,
+      title: lang === "ID" ? "Tentukan posisi awal di peta" : "Set your starting point on the map",
+      icon: MousePointer2,
       desc: lang === "ID"
-        ? "Pilih titik standee contoh untuk menetapkan titik awal. Peta saat ini menggunakan data simulasi, bukan pemindaian QR bandara secara langsung."
-        : "Choose a sample standee point to set your start. The current map uses demo data, not live airport QR scanning.",
-      cta: lang === "ID" ? "Simulasi scan QR" : "Try QR scan",
-      onCta: () => { if (onOpenQrModal) onOpenQrModal(); },
+        ? "Pilih titik awal pada model 3D sebelum menentukan tujuan. Pemindaian QR belum tersedia pada peta ini."
+        : "Choose a starting point on the 3D model before selecting a destination. QR scanning is not available on this map yet.",
+      cta: lang === "ID" ? "Pilih di peta" : "Choose on map",
+      onCta: () => router.push("/map"),
     },
     {
       num: "03",
       tag: lang === "ID" ? "Perhitungan rute" : "Plan your route",
-      title: lang === "ID" ? "Ikuti rute terpendek beserta estimasi waktu" : "Follow the shortest route and check the walking time",
+      title: lang === "ID" ? "Pilih tujuan dan ikuti rute" : "Choose a destination and follow the route",
       icon: Navigation,
       desc: lang === "ID"
-        ? "Sistem menghitung jalur publik terpendek dari posisi awal menuju tujuan, kemudian menampilkan jarak dan estimasi waktu berjalan."
-        : "The map finds the shortest public route from your starting point and shows the distance and walking time.",
+        ? "Setelah titik awal dan tujuan dipilih, rute akan tampil di model 3D beserta kontrol navigasinya."
+        : "Once you choose the start and destination, the route appears on the 3D model with navigation controls.",
       cta: lang === "ID" ? "Lihat panduan peta" : "View map guide",
       onCta: () => router.push("/help"),
     },
     {
       num: "04",
-      tag: lang === "ID" ? "Lintas lantai" : "Change floors",
-      title: lang === "ID" ? "Periksa lantai dan fasilitas sekitar" : "Check floors and nearby facilities",
-      icon: Layers,
+      tag: lang === "ID" ? "Jelajahi model" : "Explore the model",
+      title: lang === "ID" ? "Atur tampilan peta 3D" : "Adjust the 3D map view",
+      icon: View,
       desc: lang === "ID"
-        ? "Gunakan pemilih lantai untuk melihat lokasi tujuan dan filter fasilitas untuk menjelajahi area yang sedang ditampilkan."
-        : "Use the floor selector to view your destination and facility filters to explore the area currently shown.",
+        ? "Geser, putar, dan zoom peta untuk melihat jalur lebih jelas. Saat ini peta mencakup Terminal 1 lantai dasar."
+        : "Pan, rotate, and zoom the map to inspect your route. The current map covers Terminal 1 ground floor.",
       cta: lang === "ID" ? "Buka peta" : "Open map",
       onCta: () => router.push("/map"),
     },
@@ -84,8 +76,8 @@ export function WayfindingFullTutorialSection({
             </h2>
             <p>
               {lang === "ID"
-                ? "Empat langkah inti untuk mencari lokasi, menetapkan posisi awal, mengikuti rute, dan berpindah lantai di terminal."
-                : "Four simple steps to find a place, set your starting point, follow a route, and change floors."}
+                ? "Empat langkah untuk mencari building, menetapkan posisi awal, mengikuti rute, dan menjelajahi model 3D."
+                : "Four steps to find a building, set your start, follow a route, and explore the 3D model."}
             </p>
           </div>
         </header>

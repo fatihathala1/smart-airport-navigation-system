@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --font-ui: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
   --canvas: #f0f4f5;
   --surface: #f7fafb;
   --surface-strong: #ffffff;
@@ -24,7 +25,7 @@
 
 * { box-sizing: border-box; }
 html { max-width: 100%; overflow-x: hidden; background: var(--canvas); scroll-behavior: smooth; }
-body { max-width: 100%; margin: 0; overflow-x: clip; color: var(--ink); background: var(--canvas); font-family: var(--font-poppins), 'Poppins', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+body { max-width: 100%; margin: 0; overflow-x: clip; color: var(--ink); background: var(--canvas); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; }
 button, a, input, select { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 70%, white); outline-offset: 2px; }
@@ -136,6 +137,7 @@ button:active { transform: translateY(1px); }
 .roamora-cta-btn {
   display: inline-flex;
   align-items: center;
+  text-decoration: none;
   gap: 12px;
   min-height: 52px;
   padding: 0 8px 0 24px;
@@ -310,7 +312,7 @@ button:active { transform: translateY(1px); }
 /* Global Wayfinding Layout */
 .wayfinding-page { min-height: 100dvh; background: linear-gradient(180deg, #0284c7 0%, #0284c7 54%, #7dd3fc 68%, #075985 100%); display: flex; flex-direction: column; }
 .wayfinding-page .wayfinding-shell { flex: 1 1 auto; display: block; overflow: visible; }
-.explore-section { padding: 52px 0 0; background: #0284c7; }
+.explore-section { padding: 52px 0 0; background: #0275b2; }
 
 /* ── Overlapping Scroll Stack ────────────────────────────────────────────── */
 /* Tutorial section (sticky, z-index:1) pins while the video section
@@ -2862,7 +2864,7 @@ button:active { transform: translateY(1px); }
   border-radius: 8px;
   font-size: 12px;
   font-weight: 700;
-  cursor: pointer;
+  cursor: default;
 }
 
 .search-terminal-select:hover {

@@ -16,7 +16,7 @@
   overflow: hidden;
   color: var(--deck-text);
   background: var(--deck-bg) !important;
-  font-family: var(--font-poppins), sans-serif;
+  font-family: var(--font-ui);
   isolation: isolate;
 }
 

@@ -7,7 +7,7 @@
 .terminal select { color: white; background: transparent; border: 0; font: inherit; font-size: 14px; min-height: 24px; }
 .terminal option { color: #123047; background: white; }
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-height: 205px; padding: 26px; background: #f8fcff; color: #123047; text-align: left; font: inherit; border: 1px solid #d8ecf7; border-radius: 20px; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-height: 205px; padding: 26px; background: #f8fcff; color: #123047; text-align: left; text-decoration: none; font: inherit; border: 1px solid #d8ecf7; border-radius: 20px; cursor: pointer; transition: transform .2s, box-shadow .2s; }
 .card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px #004e7933; }
 .card:focus-visible, .terminal:focus-within, .dialog button:focus-visible { outline: 3px solid #fbbf24; outline-offset: 4px; }
 .icon { display: grid; place-items: center; width: 52px; height: 52px; background: #e0f2fe; color: #0369a1; border-radius: 15px; }

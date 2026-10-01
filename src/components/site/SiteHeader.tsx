@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { CircleHelp } from "lucide-react";
 import { useMapStore } from "@/store/mapStore";
 import styles from "./SiteChrome.module.css";
@@ -11,18 +11,8 @@ export function SiteHeader() {
   const store = useMapStore();
   const currentLang = store.lang;
   const pathname = usePathname();
-  const router = useRouter();
   const isMapPage = pathname === "/map";
   const isHomePage = pathname === "/";
-
-  const handleSearchClick = () => {
-    if (!isMapPage) {
-      router.push("/map");
-      store.setIsSearchOpen(true);
-    } else {
-      store.toggleSearch();
-    }
-  };
 
   return (
     <header className={`${styles.header} ${styles.mapHeader} ${isHomePage ? styles.homeHeader : ""}`}>
@@ -56,17 +46,9 @@ export function SiteHeader() {
           <Link href="/" className={styles.navLink} data-active={pathname === "/"}>
             Home
           </Link>
-          <Link href="/map" className={styles.navLink} data-active={isMapPage && !store.isSearchOpen}>
-            Map
+          <Link href="/map" className={styles.navLink} data-active={isMapPage}>
+            Maps
           </Link>
-          <button
-            type="button"
-            className={styles.navLink}
-            data-active={store.isSearchOpen}
-            onClick={handleSearchClick}
-          >
-            Search
-          </button>
           <Link href="/help" className={styles.navLink} data-active={pathname === "/help"}>
             Help
           </Link>

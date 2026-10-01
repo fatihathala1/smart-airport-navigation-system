@@ -1,70 +1,55 @@
-# Persiapan integrasi peta 3D
+# Integrasi peta 3D Juanda
 
-Dokumen ini adalah kontrak kerja untuk memasukkan peta 3D yang masih dikerjakan di perangkat lain ke halaman `/map` proyek ini. Belum ada model atau kode peta 3D di repository ini, jadi halaman Map tetap memakai peta 2D saat ini sampai aset dan data rutenya tersedia.
+Peta dari [`AqillaRamadhani20/glb-to-website`](https://github.com/AqillaRamadhani20/glb-to-website) sudah digabung langsung ke aplikasi utama. Versi sumber yang dipakai: `caedb1614252a8c72510560df8a19606a6ecaf85`. Halaman **Maps** (`/map`) menampilkan peta interaktif penuh dengan header yang sama seperti Home dan Help. Struktur **Home** (`/`) tetap berisi hero, widget, kartu akses, panduan, dan bagian video; frame pratinjau 3D ditambahkan di antaranya. Pencarian kode building dari widget Home diteruskan ke `/map?q=...`. Tidak ada iframe atau server kedua.
 
-## Titik sambung yang sudah ada
+## Menjalankan di lokal
 
-```text
-/map
-  └─ FullMapShell: pencarian, pilihan terminal/lantai, titik awal, tujuan, detail rute
-       ├─ MapStage: renderer SVG 2D saat ini
-       ├─ useMapStore: pilihan lokasi dan status navigasi
-       └─ findGridRoute: perhitungan rute demo saat ini
+```bash
+npm install
+npm run dev
 ```
 
-`FullMapShell` ada di `src/components/wayfinding/FullMapShell.tsx`. Peta visualnya dirender oleh `src/components/wayfinding/MapStage.tsx`. Saat integrasi, pertahankan kendali pencarian dan panel navigasi di `FullMapShell`; renderer 3D mengambil alih area `fs-map-bg` tempat `MapStage` sekarang berada.
+Buka alamat lokal yang ditampilkan oleh perintah tersebut, lalu pilih **Maps**. Keduanya berjalan melalui satu server Next.js dan satu port. Untuk pemeriksaan sebelum deploy, gunakan `npm run typecheck`, `npm run lint`, `npm test`, dan `npm run build`.
 
-Dokumen `docs/integrasi-peta-iframe.md` membahas arah kebalikan, yaitu menampilkan proyek ini di website lain. Itu bukan rancangan utama untuk memasukkan peta 3D ke halaman Map proyek ini.
+## Bagian yang diubah untuk revisi minor
 
-## Kontrak antara website dan peta 3D
-
-Renderer peta harus bisa menerima perubahan dari website berikut:
-
-| Data/perintah | Makna |
+| Kebutuhan revisi | Lokasi |
 | --- | --- |
-| `terminal`, `floorId` | Scene terminal dan lantai yang aktif. ID lantai saat ini: `T1-L1`, `T1-L2`, `T2-L1`, `T2-L2`. |
-| `selectedSpaceId` | Lokasi yang dipilih dari pencarian atau daftar fasilitas; objek 3D yang sesuai disorot dan kamera dapat diarahkan ke sana. |
-| `currentNodeId`, `fromNodeId`, `toNodeId` | Posisi QR, awal, dan tujuan; tampil sebagai penanda yang berbeda. |
-| `route` | Urutan node/segmen rute beserta lantainya; hanya segmen lantai aktif yang perlu terlihat pada scene aktif. |
-| `resetView` | Kembalikan kamera ke tampilan awal terminal/lantai aktif. |
+| Bentuk, posisi, atau nama objek gedung pada model | `public/models/buildings-ground-floor.glb` (ubah di sumber 3D/Blender, lalu ekspor ulang) |
+| Permukaan yang bisa dilalui, posisi tembok/pilar, kaca, dan pintu | `public/models/buildings-ground-floor.glb` — nama dan geometri objek pada ekspor 3D |
+| Aturan membaca lantai, penghalang, dan pintu dari GLB | `src/lib/map3d/scene-walkability.ts` (tes: `tests/map3d-scene-walkability.test.ts`) |
+| Resolusi jalur, jarak aman dari penghalang, dan pencarian rute terpendek | `src/lib/map3d/walkable-grid.ts` (tes: `tests/map3d-walkable-grid.test.ts`) |
+| Pemeriksaan rute terhadap ekspor GLB yang sedang dipakai | `tests/map3d-real-glb.test.ts` |
+| Versi URL aset setelah GLB diganti | `src/lib/map3d/assets.ts` — ubah nilai `?v=` agar cache browser tidak memakai versi lama |
+| Kategori, warna, status, dan informasi objek | `src/lib/map3d/object-metadata.ts` |
+| Pencarian, pemilihan awal/tujuan, kamera, dan perhitungan rute | `src/components/map3d/AirportWayfinding.tsx` |
+| Tampilan garis rute dan titik awal/tujuan pada model | `src/components/map3d/GridRouteLayer.tsx` |
+| Aturan teks belokan dan batas segmen yang disorot | `src/lib/map3d/route-steps.ts` (tes: `tests/map3d-route-steps.test.ts`) |
+| Batas putaran kamera agar denah tidak terlihat dari bawah | `src/lib/map3d/map-camera.ts` dan `src/components/map3d/AirportWayfinding.tsx` (tes: `tests/map3d-camera.test.ts`) |
+| Kecepatan perkiraan dan posisi simulasi | `src/lib/map3d/route-guidance.ts` dan `src/components/map3d/RoutePlaybackController.tsx` |
+| Tata letak dan warna halaman Maps | `src/components/map3d/viewer.css` |
+| Teks, pilihan Departure, dan pertanyaan gate pada roadmap penumpang | `src/components/map3d/PassengerRoadmap.tsx` |
+| Header bersama Home, Maps, dan Help | `src/components/site/SiteHeader.tsx` dan `SiteChrome.module.css` |
+| Font umum situs | `src/app/globals.css` (`--font-ui`); memakai font sistem agar build tidak memerlukan unduhan font eksternal |
+| Struktur dan widget pencarian Home | `src/components/wayfinding/WayfindingShell.tsx` |
+| Kartu akses dan empat langkah panduan Home | `src/components/wayfinding/FacilityShortcuts.tsx` dan `WayfindingFullTutorialSection.tsx` |
+| Ukuran, teks, atau sudut kamera frame Home | `src/components/map3d/Map3DPreview.tsx`, `Map3DPreviewCanvas.tsx`, dan `Map3DPreview.module.css` |
+| Teks panduan pengguna | `src/components/wayfinding/HelpPage.tsx` |
 
-Renderer harus mengirim balik **ID lokasi kanonis** saat objek 3D diklik. `FullMapShell` kemudian memilih lokasi tersebut melalui alur yang sama seperti daftar fasilitas. Nama objek Blender, label tenant, dan posisi array tidak boleh menjadi ID lokasi karena dapat berubah.
+`src/app/map/page.tsx` hanya menjadi pintu masuk halaman Maps. `src/components/map3d/Map3DClient.tsx` memuat viewer di browser. Jadi perubahan data peta umumnya tidak perlu dilakukan pada kedua file tersebut.
 
-Siapkan tabel pemetaan dari `nama objek 3D → ID lokasi` dan `ID node rute → koordinat dunia 3D (x, y, z)` untuk setiap lantai. Catat satuan (disarankan meter), sumbu vertikal, titik asal, skala, dan orientasi model. Koordinat 2D `x/y` di `WayfindingNode` saat ini tidak otomatis cocok dengan koordinat model Blender.
+Penting: mesin rute **tidak memakai node/edge SVG** lagi. Ia membaca bidang `FLOOR__area_visitor` sebagai area jalan kaki, `tembok_pilar*` dan objek fisik tertentu sebagai penghalang, `GLASS__*`/`dinding-kaca*` sebagai dinding kaca, serta `DOOR__*` sebagai bukaan yang bisa dilalui. Jika ekspor GLB mengganti nama objek tersebut, sesuaikan aturan pembacanya di `scene-walkability.ts`. Pastikan bidang lantai dan bukaan pintu tetap cocok secara geometris. Pencarian building masih memakai pola `T1-GF-*` atau `TI-GF-*`; nama di luar pola itu tidak muncul sebagai building yang bisa dipilih. Sesudah mengganti GLB, uji beberapa rute di kedua sisi dinding, bukan hanya tampilannya.
 
-Data demo di `src/data/demo-wayfinding.ts` menghasilkan beberapa `Space.code` yang berulang antar kategori. Jangan menggunakan `code` demo sebagai kunci pemetaan sampai keunikannya dibereskan. Gunakan `MapSpace.id` untuk prototipe saat ini; untuk data operasional, tetapkan satu ID space permanen yang unik dan sama di scene, direktori, QR, serta graf rute.
+## Alur rute di halaman Maps
 
-## Satu sumber rute
+Pilih **Dari** dengan mengeklik lantai atau mencari/mengeklik building, lalu pilih **Ke** dari daftar building atau model. Bila building dipilih sebagai titik awal/tujuan, posisinya ditempelkan ke sel jalan kaki terdekat. Sistem membagi bidang lantai menjadi grid, menutup sel yang bertabrakan dengan penghalang, lalu mencari rute terpendek pada sel yang masih tersambung. Tembok dan pilar tidak bisa dilalui; kaca hanya dapat dilintasi lewat bukaan pintu yang terbaca dalam GLB. Jika tidak ada sambungan yang sah, aplikasi menampilkan pesan bahwa rute tidak ditemukan. Setelah rute ada, halaman menampilkan ringkasan dan daftar langkah. Tombol **Sebelumnya/Berikutnya** memusatkan kamera serta menyorot segmen langkah aktif (oranye) di atas rute penuh (biru). **Mulai simulasi 3D** menjalankan sudut pandang pengunjung; **Lihat peta** kembali ke tampilan atas. Jarak dan waktu adalah perkiraan dari skala model dan kecepatan simulasi, bukan pengukuran lapangan.
 
-Halaman `/map` saat ini memanggil `findGridRoute` dari `src/lib/grid-route.ts`, sedangkan repository juga memiliki implementasi Dijkstra terpisah di `src/lib/dijkstra.ts`. Jika proyek 3D di perangkat lain sudah menghitung rute dengan Dijkstra, tentukan **satu** mesin rute yang akan dipakai setelah penggabungan. Renderer hanya menggambar hasilnya; ia tidak membuat rute berbeda dari yang ditampilkan panel navigasi.
+Tampilan ini baru mendukung Terminal 1 lantai dasar. Opsi kursi roda dan rute antar-lantai belum ditampilkan karena model sekarang belum memberi data aksesibilitas atau konektor lantai yang dapat dipakai mesin rute; menambah tombolnya tanpa data tersebut akan menghasilkan arahan yang menyesatkan.
 
-Hasil rute yang dibawa ke website sekurangnya berisi ID node awal dan akhir, urutan node, lantai setiap segmen, jenis konektor antar lantai, jarak, dan ETA. Jika tujuan tidak benar-benar tercapai, tampilkan status “rute tidak tersedia”. Jangan menggambar jalur ke titik terdekat seolah sudah sampai ke tujuan.
+## Menambah lantai 2 nanti
 
-## Cara membawa peta dari perangkat lain
+Roadmap penumpang adalah panel yang terbuka tepat di bawah tombol "Apakah kamu penumpang?" pada area peta. Tombol yang sama atau Escape menutup panel; tidak ada lagi bagian roadmap di bawah halaman Maps. Pilihan Departure 1–4 dan nomor gate hanya mengubah ringkasan di panel. Pilihan itu belum membuat rute atau memusatkan kamera karena area Departure dan lantai 2 belum dipetakan sebagai tujuan yang dapat dilalui. Saat asetnya tersedia, tambahkan bidang jalan kaki, geometri penghalang, bukaan pintu, dan konektor tangga/lift untuk tiap lantai.
 
-Pilihan utama bergantung pada bentuk hasil akhirnya:
+Lantai 2 **belum** terpasang. Tambahkan ekspor GLB lantai 2 di `public/`, lalu definisikan URL asetnya di `src/lib/map3d/assets.ts`. Setelah itu, perluas loader dan state lantai pada `AirportWayfinding.tsx`/`SceneModel.tsx`, baca bidang jalan kaki serta penghalang lantai 2, dan buat koneksi antar-lantai (misalnya tangga/lift) sebelum mengaktifkan rute lintas lantai. Perbarui juga cakupan pada Home dan Help. Menyalin GLB saja belum cukup untuk menghasilkan navigasi lantai 2.
 
-1. **Sudah berupa aplikasi web 3D:** bawa source project, daftar dependency, aset, dan data grafnya. Integrasikan renderer sebagai komponen client di proyek Next.js ini, dengan kontrak di atas. Muat kode 3D hanya di halaman `/map`.
-2. **Berupa model `.glb`/`.gltf`:** bawa model, tekstur, dan data pemetaan objek/node. Buat renderer client yang menerapkan kontrak yang sama.
-3. **Hanya tersedia URL aplikasi terpisah:** `iframe` dapat dipakai untuk pratinjau sementara. Integrasi pencarian, pilihan lantai, dan rute memerlukan protokol pesan dua arah yang tervalidasi; kebijakan CSP saat ini juga perlu dikonfigurasi secara spesifik untuk origin peta. Jangan membuka semua origin.
-
-Pertahankan `MapStage` 2D sebagai tampilan cadangan selama cakupan scene 3D dan pemetaan data belum lengkap. Jangan mengaktifkan mode 3D untuk terminal/lantai yang belum punya scene tervalidasi.
-
-## Yang perlu dibawa dari perangkat lain
-
-- Source aplikasi web 3D **atau** model hasil ekspor beserta semua teksturnya.
-- Daftar terminal, lantai, ID objek/mesh yang bisa diklik, dan lokasi fisik masing-masing.
-- Graf Dijkstra: ID node, edge, jenis konektor, arah, akses publik, dan jarak terkalibrasi.
-- Pemetaan node rute ke koordinat 3D dan spesifikasi satuan, sumbu, skala, serta origin scene.
-- Contoh hasil rute untuk satu lantai, lintas lantai, lokasi tak terhubung, dan titik awal QR.
-- Informasi build: framework/library 3D, perintah menjalankan, serta target browser/perangkat yang sudah diuji.
-
-## Urutan integrasi setelah aset tersedia
-
-1. Cocokkan ID terminal, lantai, lokasi, dan node antara kedua proyek; selesaikan duplikasi/missing ID sebelum menggambar rute.
-2. Pasang renderer 3D di area `MapStage` dengan loading, error, dan fallback 2D.
-3. Hubungkan klik objek 3D dengan pemilihan lokasi; hubungkan pemilihan dari daftar dengan sorotan dan kamera 3D.
-4. Gunakan satu mesin rute untuk panel dan scene; gambar segmen per lantai serta instruksi konektor.
-5. Uji T1/T2, setiap lantai, QR, jalur normal, lintas lantai, no-route, desktop, mobile, dan navigasi keyboard.
-
-Integrasi dianggap siap saat lokasi yang dipilih di daftar dan scene selalu sama, rute yang digambar sesuai instruksi panel, pergantian lantai tidak menghilangkan konteks rute, dan kegagalan memuat model masih memungkinkan pengguna memakai peta 2D.
+Kode 2D lama masih ada di repositori sebagai arsip implementasi, tetapi tidak dipanggil lagi oleh Home maupun Maps. Aset 3D ini adalah salinan lokal dari repo peta, jadi perubahan baru di repo sumber tidak otomatis masuk ke website utama.

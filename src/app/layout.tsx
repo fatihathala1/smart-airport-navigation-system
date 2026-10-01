@@ -1,15 +1,8 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
 import Providers from "@/components/providers";
 import { SplashScreen } from "@/components/wayfinding/SplashScreen";
 import "./globals.css";
-
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-});
+import "@/components/map3d/viewer.css";
 
 export const metadata: Metadata = {
   title: "Juanda Airport Wayfinding | InJourney Airports",
@@ -32,10 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="id"
-      className={`${poppins.variable} antialiased`}
-    >
+    <html lang="id" className="antialiased">
       <body>
         <SplashScreen />
         <Providers>{children}</Providers>
