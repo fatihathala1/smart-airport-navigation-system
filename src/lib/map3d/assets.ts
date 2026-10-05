@@ -2,7 +2,7 @@
 // placed in public. The query string avoids a browser reusing an older map
 // during the configured public-asset cache lifetime.
 export const GROUND_FLOOR_MODEL_URL =
-  "/models/buildings-ground-floor.glb?v=9ecfc396";
+  "/models/buildings-ground-floor.glb?v=buildings-ground-floor-v3-20261005";
 
 export const GROUND_FLOOR_NAVIGATION_URL =
   "/navigation/navigation-graph-ground-floor.svg?v=b34e7066";

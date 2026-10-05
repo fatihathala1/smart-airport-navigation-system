@@ -229,3 +229,51 @@ export function findWalkableRoute(grid: WalkableGrid, start: Point2, destination
   }
   return simplified;
 }
+
+export type TargetRect = { minX: number; maxX: number; minZ: number; maxZ: number };
+
+function distanceToTargetRect(point: Point2, target: TargetRect) {
+  const dx = Math.max(target.minX - point[0], 0, point[0] - target.maxX);
+  const dz = Math.max(target.minZ - point[1], 0, point[1] - target.maxZ);
+  return Math.hypot(dx, dz);
+}
+
+/**
+ * Route to the reachable side of a model object instead of routing to its
+ * center. This keeps the final route point on the walkable floor immediately
+ * beside the target, even when the target itself is a solid room/fixture.
+ */
+export function findWalkableRouteToTarget(
+  grid: WalkableGrid,
+  start: Point2,
+  target: TargetRect,
+): Point2[] | null {
+  const width = Math.max(target.maxX - target.minX, grid.cellSize);
+  const depth = Math.max(target.maxZ - target.minZ, grid.cellSize);
+  const samples = Math.max(2, Math.ceil(Math.max(width, depth) / grid.cellSize));
+  const candidates: Point2[] = [[
+    (target.minX + target.maxX) / 2,
+    (target.minZ + target.maxZ) / 2,
+  ]];
+
+  for (let index = 0; index <= samples; index += 1) {
+    const x = target.minX + (width * index) / samples;
+    const z = target.minZ + (depth * index) / samples;
+    candidates.push([x, target.minZ], [x, target.maxZ], [target.minX, z], [target.maxX, z]);
+  }
+
+  let best: { route: Point2[]; targetDistance: number; length: number } | null = null;
+  for (const candidate of candidates) {
+    const route = findWalkableRoute(grid, start, candidate);
+    if (!route) continue;
+    const targetDistance = distanceToTargetRect(route.at(-1) ?? candidate, target);
+    const length = route.reduce((total, point, index) => index === 0
+      ? 0
+      : total + Math.hypot(point[0] - route[index - 1][0], point[1] - route[index - 1][1]), 0);
+    if (!best || targetDistance < best.targetDistance - 1e-6 ||
+      (Math.abs(targetDistance - best.targetDistance) <= 1e-6 && length < best.length)) {
+      best = { route, targetDistance, length };
+    }
+  }
+  return best?.route ?? null;
+}

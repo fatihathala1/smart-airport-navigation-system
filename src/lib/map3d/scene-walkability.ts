@@ -12,7 +12,7 @@ type SceneObject = { name: string; object: THREE.Object3D };
 function obstacleKind(name: string): ObstacleFootprint["kind"] | null {
   if (/^DOOR__/i.test(name)) return null;
   if (/^(GLASS__|dinding-kaca)/i.test(name)) return "glass";
-  if (/^(tembok[_-]pilar|T1-GF-|TI-GF-|Eskalator|ESC_|CHAIR|FOUNTAIN|Air-mancur)/i.test(name)) return "solid";
+  if (/^(tembok[-_](?:pilar|pillar)|T1-GF-|TI-GF-|Eskalator|ESC_|CHAIR|FOUNTAIN|Air-mancur|BAGGAGE[ _-]CLAIM|BAGGAGE[ _-]WRAP|lost[ _-]n[ _-]found)/i.test(name)) return "solid";
   return null;
 }
 
@@ -56,7 +56,8 @@ export function createGridFromSceneObjects(
   for (const record of objects) {
     if (!record.object.visible) continue;
     record.object.updateWorldMatrix(true, true);
-    if (/^FLOOR__area_visitor$/i.test(record.name)) {
+    // V3 drops the FLOOR__ prefix while retaining the same visitor-floor mesh.
+    if (/^(?:FLOOR__)?area_visitor$/i.test(record.name)) {
       floor.push(...floorTriangles(record.object));
       continue;
     }

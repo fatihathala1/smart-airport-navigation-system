@@ -20,7 +20,9 @@ export type CategoryKey =
   | "prayer-room"
   | "nursery"
   | "toilet"
-  | "office";
+  | "office"
+  | "baggage-claim"
+  | "baggage-wrap";
 
 export type ObjectMetadata = {
   key: CategoryKey;
@@ -48,9 +50,9 @@ export type SelectedObject = ObjectMetadata & {
 const BASE_LOCATION = "Terminal 1 - Ground Floor";
 
 export const COLOR_PALETTE: Record<CategoryKey, string> = {
-  building: "#D8C7A7",
-  wall: "#B8BEC4",
-  pillar: "#E8E6DE",
+  building: "#8B5A2B",
+  wall: "#7A858D",
+  pillar: "#68747C",
   glass: "#9ED9E5",
   "door-glass": "#AEE6EC",
   "door-frame": "#34434A",
@@ -58,21 +60,28 @@ export const COLOR_PALETTE: Record<CategoryKey, string> = {
   departure: "#4FA66A",
   arrival: "#4D82C4",
   "red-area": "#C95A56",
-  visitor: "#E7D495",
+  visitor: "#FFFFFF",
   fountain: "#5AA9E6",
-  "lost-found": "#8B78B8",
-  security: "#F44336",
-  "customer-service": "#FF9800",
+  "lost-found": "#F28C28",
+  security: "#9C3EA9",
+  "customer-service": "#D9D9D9",
   seating: "#9E9E9E",
-  "prayer-room": "#009688",
-  nursery: "#E91E63",
-  toilet: "#03A9F4",
-  office: "#607D8B",
+  "prayer-room": "#38A852",
+  nursery: "#62FF9F",
+  toilet: "#67E8F9",
+  office: "#176B3A",
+  "baggage-claim": "#A6A6A6",
+  "baggage-wrap": "#123B73",
 };
 
 function categoryForObject(objectName: string): CategoryKey {
   const name = objectName.trim().toLocaleLowerCase("id-ID");
-  if (/^t[i1]-gf-/.test(name)) return "building";
+  if (/^t(?:1|i)-gf-tl(?:[-_]|$)/.test(name)) return "toilet";
+  if (/^door__(?:keberangkatan|kedatangan)_/.test(name)) {
+    return name.startsWith("door__keberangkatan") ? "departure" : "arrival";
+  }
+  if (/^baggage claim[- ](?:a1|b[1-6])$/.test(name)) return "baggage-claim";
+  if (/^baggage wrap[- ]/.test(name)) return "baggage-wrap";
   if (name.startsWith("area_merah")) return "red-area";
   if (name.startsWith("area_visitor")) return "visitor";
   if (name.startsWith("air-mancur") || name.startsWith("fountain__")) {
@@ -93,12 +102,14 @@ function categoryForObject(objectName: string): CategoryKey {
   if (name.startsWith("kedatangan")) return "arrival";
 
   if (name.includes("-avsec-") || name.includes("avsec")) return "security";
-  if (name.includes("-cs-")) return "customer-service";
+  if (name.includes("-cs-") || name.includes("customer service")) return "customer-service";
   if (name.includes("-kursi-") || name.includes("kursi")) return "seating";
   if (name.includes("-mus-") || name.includes("mushola")) return "prayer-room";
   if (name.includes("-nr-") || name.includes("nursery")) return "nursery";
   if (name.includes("-tl-") || name.includes("toilet")) return "toilet";
   if (name.includes("-man-") || name.includes("office")) return "office";
+
+  if (/^t[i1]-gf-/.test(name)) return "building";
 
   if (
     /^(rectangle|vector|curve)/.test(name) ||
@@ -132,6 +143,8 @@ const CATEGORY_LABELS: Record<CategoryKey, string> = {
   nursery: "Nursery Room",
   toilet: "Toilet",
   office: "Ruang Manajemen / Kantor",
+  "baggage-claim": "Baggage Claim",
+  "baggage-wrap": "Baggage Wrap",
 };
 
 export function getObjectMetadata(objectName: string): ObjectMetadata {
