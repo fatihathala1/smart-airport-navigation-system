@@ -27,6 +27,7 @@ import * as THREE from "three";
 import { PassengerRoadmap } from "./PassengerRoadmap";
 import {
   SceneModel,
+  getSelectableLabel,
   type SceneBounds,
   type SceneObjectRecord,
 } from "@/components/map3d/SceneModel";
@@ -46,7 +47,8 @@ import {
 import { getMapOrbitLimits } from "@/lib/map3d/map-camera";
 import { isMapModelLoading } from "@/lib/map3d/loading-state";
 import { createGridFromSceneObjects } from "@/lib/map3d/scene-walkability";
-import { findWalkableRoute, snapToWalkable, type Point2, type WalkableGrid } from "@/lib/map3d/walkable-grid";
+import { findWalkableRouteToTarget, snapToWalkable, type Point2, type WalkableGrid } from "@/lib/map3d/walkable-grid";
+import { defaultMapObjectConfig, readMapObjectConfigs, type MapObjectConfig } from "@/lib/map3d/admin-object-config";
 
 type ViewerApi = {
   resetView: () => void;
@@ -299,6 +301,7 @@ export function AirportWayfinding() {
   const [bounds, setBounds] = useState<SceneBounds | null>(null);
   const [objects, setObjects] = useState<SceneObjectRecord[]>([]);
   const [selected, setSelected] = useState<SelectedObject | null>(null);
+  const [mapObjectConfigs, setMapObjectConfigs] = useState<Record<string, MapObjectConfig>>({});
   const [query, setQuery] = useState(() =>
     typeof window === "undefined"
       ? ""
@@ -323,6 +326,20 @@ export function AirportWayfinding() {
     useState<RoutePlaybackSnapshot | null>(null);
   const [routeRestartToken, setRouteRestartToken] = useState(0);
   const [routeRecenterToken, setRouteRecenterToken] = useState(0);
+  useEffect(() => {
+    const sync = () => setMapObjectConfigs(readMapObjectConfigs());
+    sync();
+    window.addEventListener("storage", sync);
+    window.addEventListener("todjuanda-map-config-change", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("todjuanda-map-config-change", sync);
+    };
+  }, []);
+  const selectedLocationConfig = useMemo(
+    () => selected ? mapObjectConfigs[selected.name] ?? defaultMapObjectConfig(selected.name) : null,
+    [mapObjectConfigs, selected],
+  );
   const handleReady = useCallback(
     (nextBounds: SceneBounds, nextObjects: SceneObjectRecord[]) => {
       setBounds(nextBounds);
@@ -408,10 +425,13 @@ export function AirportWayfinding() {
         return;
       }
       record.object.updateWorldMatrix(true, false);
-      const center = new THREE.Box3()
-        .setFromObject(record.object)
-        .getCenter(new THREE.Vector3());
-      const points = findWalkableRoute(walkGrid, startPoint, [center.x, center.z]);
+      const box = new THREE.Box3().setFromObject(record.object);
+      const points = findWalkableRouteToTarget(walkGrid, startPoint, {
+        minX: box.min.x,
+        maxX: box.max.x,
+        minZ: box.min.z,
+        maxZ: box.max.z,
+      });
       if (!points) {
         setRouteProgress(null);
         setRoutePaused(false);
@@ -455,7 +475,9 @@ export function AirportWayfinding() {
     if (!normalizedQuery) return [];
     return selectableBuildings
       .filter((item) =>
-        item.name.toLocaleLowerCase("id-ID").includes(normalizedQuery),
+        `${item.name} ${item.selectableLabel ?? getSelectableLabel(item.name) ?? ""}`
+          .toLocaleLowerCase("id-ID")
+          .includes(normalizedQuery),
       )
       .slice(0, 8);
   }, [query, selectableBuildings]);
@@ -695,7 +717,7 @@ export function AirportWayfinding() {
             {query && <button type="button" onClick={() => setQuery("")} aria-label="Hapus pencarian"><X size={16} /></button>}
           </label>
           {searchFocused && query && <div className="sea-search-results">
-            {searchResults.length ? searchResults.map((record) => <button key={record.uuid} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => chooseSearchResult(record)}><MapPin size={16} /><span><strong>{record.name}</strong><small>{record.metadata.category}</small></span></button>) : <p>Tidak ditemukan. Coba kode building lain.</p>}
+            {searchResults.length ? searchResults.map((record) => <button key={record.uuid} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => chooseSearchResult(record)}><MapPin size={16} /><span><strong>{record.selectableLabel ?? record.name}</strong><small>{record.selectableLabel ? `${record.name} · ${record.metadata.category}` : record.metadata.category}</small></span></button>) : <p>Tidak ditemukan. Coba kode building lain.</p>}
           </div>}
         </div>
         <p className="sea-hint" role="status">{gridError ?? routeMessage}</p>
@@ -709,6 +731,20 @@ export function AirportWayfinding() {
       </aside>
 
       <div className="sea-map-actions" aria-label="Kontrol peta"><button type="button" onClick={showMapView} disabled={!bounds} aria-label="Tampilkan seluruh peta"><RotateCcw size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomIn()} disabled={!bounds} aria-label="Perbesar peta"><Plus size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomOut()} disabled={!bounds} aria-label="Perkecil peta"><Minus size={18} /></button></div>
+
+      {selected && selectedLocationConfig && <aside className="sea-location-info" aria-label={`Informasi ${selectedLocationConfig.displayName || selected.name}`}>
+        {selectedLocationConfig.photoUrl && <img src={selectedLocationConfig.photoUrl} alt={`Tampak depan ${selectedLocationConfig.displayName || selected.name}`} />}
+        <div className="sea-location-info-body">
+          <span className="sea-location-kicker">{selectedLocationConfig.entityType === "FACILITY" ? "FASILITAS BANDARA" : "TENANT KOMERSIAL"}</span>
+          <h2>{selectedLocationConfig.displayName || selected.name}</h2>
+          <span className="sea-location-category">{selected.category}</span>
+          {selectedLocationConfig.description && <p>{selectedLocationConfig.description}</p>}
+          <div className="sea-location-hours"><strong>Jam operasional</strong><span>{selectedLocationConfig.entityType === "FACILITY" || (!selectedLocationConfig.openTime && !selectedLocationConfig.closeTime) ? "Buka 24 jam" : `${selectedLocationConfig.openTime} – ${selectedLocationConfig.closeTime}`}</span></div>
+          {(selectedLocationConfig.activeFrom || selectedLocationConfig.activeUntil) && <div className="sea-location-hours"><strong>Masa aktif</strong><span>{selectedLocationConfig.activeFrom || "Sekarang"} – {selectedLocationConfig.activeUntil || "Tidak ditentukan"}</span></div>}
+          {selectedLocationConfig.contact && <div className="sea-location-contact">{selectedLocationConfig.contact}</div>}
+          <div className="sea-location-links">{selectedLocationConfig.websiteUrl && <a href={selectedLocationConfig.websiteUrl} target="_blank" rel="noreferrer">Website</a>}{selectedLocationConfig.instagramUrl && <a href={selectedLocationConfig.instagramUrl} target="_blank" rel="noreferrer">Instagram</a>}</div>
+        </div>
+      </aside>}
 
     </main>
   );

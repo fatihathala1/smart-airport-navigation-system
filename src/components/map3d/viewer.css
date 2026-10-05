@@ -19,7 +19,7 @@
   min-height: calc(100dvh - 72px);
   margin: 0;
   overflow: clip;
-  background: #dfe3e2;
+  background: #071521;
   color: var(--ink);
   font-family: var(--font-sans), Arial, sans-serif;
 }
@@ -39,8 +39,8 @@
   min-height: 528px;
   isolation: isolate;
   background:
-    radial-gradient(circle at 68% 38%, rgba(255, 255, 255, 0.94), rgba(235, 238, 236, 0.78) 38%, transparent 68%),
-    linear-gradient(140deg, #d9dedd 0%, #eef0ee 48%, #cbd1d0 100%);
+    radial-gradient(circle at 68% 38%, rgba(57, 103, 132, 0.58), rgba(25, 50, 68, 0.72) 38%, transparent 68%),
+    linear-gradient(140deg, #081722 0%, #122a3b 48%, #07121d 100%);
 }
 
 .map3d-root .map-home-link {
@@ -66,8 +66,8 @@
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(rgba(31, 47, 55, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(31, 47, 55, 0.035) 1px, transparent 1px);
+    linear-gradient(rgba(143, 198, 224, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 198, 224, 0.09) 1px, transparent 1px);
   background-size: 52px 52px;
   content: "";
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 82%);
@@ -1438,7 +1438,7 @@
   left: 20px;
   display: flex;
   flex-direction: column;
-  width: min(380px, calc(100vw - 40px));
+  width: min(340px, calc(100vw - 40px));
   overflow-y: auto;
   border: 1px solid #d8e0e8;
   border-radius: 18px;
@@ -1447,12 +1447,12 @@
   color: #143653;
 }
 
-.map3d-root .sea-planner-heading { padding: 24px 24px 18px; }
+.map3d-root .sea-planner-heading { padding: 20px 20px 14px; }
 .map3d-root .sea-planner-heading span { color: #63788d; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
-.map3d-root .sea-planner-heading h1 { margin: 5px 0 0; font-size: 25px; line-height: 1.15; }
+.map3d-root .sea-planner-heading h1 { margin: 5px 0 0; font-size: 22px; line-height: 1.15; }
 .map3d-root .sea-trip-fields { position: relative; display: grid; gap: 8px; padding: 0 20px; }
 .map3d-root .sea-trip-fields::before { position: absolute; top: 29px; bottom: 29px; left: 37px; width: 2px; background: #d9e3ec; content: ""; }
-.map3d-root .sea-trip-fields button { position: relative; display: flex; min-height: 58px; gap: 15px; align-items: center; padding: 10px 15px; border: 1px solid #dce4ec; border-radius: 9px; background: #fff; text-align: left; cursor: pointer; }
+.map3d-root .sea-trip-fields button { position: relative; display: flex; min-height: 52px; gap: 12px; align-items: center; padding: 8px 13px; border: 1px solid #dce4ec; border-radius: 9px; background: #fff; text-align: left; cursor: pointer; }
 .map3d-root .sea-trip-fields button.is-current { border-color: #1478b9; background: #f1f8fc; }
 .map3d-root .sea-trip-fields button:disabled { cursor: not-allowed; opacity: .6; }
 .map3d-root .sea-trip-fields button > span:last-child { min-width: 0; }
@@ -1461,12 +1461,12 @@
 .map3d-root .sea-trip-fields strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
 .map3d-root .sea-pin { flex: none; width: 11px; height: 11px; border: 3px solid #1281bc; border-radius: 50%; background: white; }
 .map3d-root .sea-pin.is-destination { border-color: #eb7542; }
-.map3d-root .sea-search-wrap { position: relative; z-index: 2; padding: 15px 20px 0; }
-.map3d-root .sea-search { display: flex; height: 46px; gap: 9px; align-items: center; padding: 0 12px; border: 1px solid #c7d5e0; border-radius: 9px; background: #fff; color: #55728b; }
+.map3d-root .sea-search-wrap { position: relative; z-index: 2; padding: 12px 20px 0; }
+.map3d-root .sea-search { display: flex; height: 40px; gap: 8px; align-items: center; padding: 0 10px; border: 1px solid #c7d5e0; border-radius: 8px; background: #fff; color: #55728b; }
 .map3d-root .sea-search:focus-within { border-color: #1478b9; outline: 2px solid #cce7f8; }
-.map3d-root .sea-search input { min-width: 0; flex: 1; border: 0; outline: none; background: transparent; color: #143653; font-size: 13px; }
-.map3d-root .sea-search button { display: grid; width: 28px; height: 28px; place-items: center; border: 0; background: transparent; cursor: pointer; }
-.map3d-root .sea-search-results { position: absolute; top: 66px; right: 20px; left: 20px; max-height: 225px; overflow-y: auto; border: 1px solid #dce4ec; border-radius: 9px; background: #fff; box-shadow: 0 10px 24px rgba(18, 51, 78, .14); }
+.map3d-root .sea-search input { min-width: 0; flex: 1; border: 0; outline: none; background: transparent; color: #143653; font-size: 12px; }
+.map3d-root .sea-search button { display: grid; width: 24px; height: 24px; place-items: center; border: 0; background: transparent; cursor: pointer; }
+.map3d-root .sea-search-results { position: absolute; top: 58px; right: 20px; left: 20px; max-height: 225px; overflow-y: auto; border: 1px solid #dce4ec; border-radius: 9px; background: #fff; box-shadow: 0 10px 24px rgba(18, 51, 78, .14); }
 .map3d-root .sea-search-results button { display: flex; width: 100%; gap: 10px; align-items: center; padding: 11px 13px; border: 0; border-bottom: 1px solid #eff2f5; background: #fff; text-align: left; cursor: pointer; }
 .map3d-root .sea-search-results button:hover, .map3d-root .sea-search-results button:focus-visible { background: #eef7fc; }
 .map3d-root .sea-search-results button span { min-width: 0; }
@@ -1576,6 +1576,109 @@
 .map3d-root .passenger-roadmap-step .passenger-gate-hint { margin-top: 12px; font-weight: 600; }
 .map3d-root .passenger-roadmap-finish .passenger-step-number { border-color: #cc5b32; color: #a54320; }
 
+/* Dark map interface: keep the 3D model readable while removing the light UI chrome. */
+.map3d-root {
+  --ink: #e7f1f7;
+  --muted: #9bb0be;
+  --line: rgba(150, 190, 214, 0.2);
+  --panel: rgba(14, 30, 43, 0.95);
+  --panel-solid: #0e1e2b;
+}
+
+.map3d-root .viewer-shell::before { display: none; }
+.map3d-root .topbar,
+.map3d-root .search-panel,
+.map3d-root .object-panel,
+.map3d-root .legend-bar,
+.map3d-root .coordinate-readout,
+.map3d-root .loading-overlay {
+  border-color: rgba(150, 190, 214, 0.2);
+  background: rgba(10, 24, 36, 0.94);
+  color: #e7f1f7;
+}
+.map3d-root .topbar { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); }
+.map3d-root .map-home-link,
+.map3d-root .action-button,
+.map3d-root .search-field,
+.map3d-root .search-results,
+.map3d-root .search-results button,
+.map3d-root .sea-step-controls button,
+.map3d-root .sea-simulation-controls button,
+.map3d-root .sea-map-actions,
+.map3d-root .sea-map-actions button {
+  border-color: rgba(150, 190, 214, 0.24);
+  background: #142b3c;
+  color: #e7f1f7;
+}
+.map3d-root .map-home-link:hover,
+.map3d-root .action-button:hover:not(:disabled),
+.map3d-root .search-results button:hover,
+.map3d-root .sea-map-actions button:hover:not(:disabled),
+.map3d-root .sea-step-controls button:hover:not(:disabled),
+.map3d-root .sea-simulation-controls button:hover:not(:disabled) { background: #1d4057; }
+.map3d-root .search-field input { color: #e7f1f7; }
+.map3d-root .search-field input::placeholder { color: #8fa8b8; }
+.map3d-root .search-results small,
+.map3d-root .search-panel .empty-result,
+.map3d-root .coordinate-readout span { color: #9bb0be; }
+.map3d-root .position-block,
+.map3d-root .coordinate { background: rgba(30, 57, 75, 0.72); }
+
+.map3d-root .sea-planner,
+.map3d-root .passenger-roadmap {
+  border-color: rgba(150, 190, 214, 0.24);
+  background: #0e1e2b;
+  color: #e7f1f7;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.38);
+}
+.map3d-root .sea-planner-heading span,
+.map3d-root .sea-trip-fields small,
+.map3d-root .sea-hint,
+.map3d-root .sea-route-summary span,
+.map3d-root .sea-step-header span,
+.map3d-root .sea-step-list button small { color: #9bb0be; }
+.map3d-root .sea-trip-fields::before { background: rgba(150, 190, 214, 0.2); }
+.map3d-root .sea-trip-fields button,
+.map3d-root .sea-search,
+.map3d-root .sea-search-results,
+.map3d-root .sea-search-results button,
+.map3d-root .passenger-departure-options label,
+.map3d-root .passenger-gate-options label,
+.map3d-root .passenger-gate-input input {
+  border-color: rgba(150, 190, 214, 0.26);
+  background: #142b3c;
+  color: #e7f1f7;
+}
+.map3d-root .sea-trip-fields button.is-current,
+.map3d-root .sea-search-results button:hover,
+.map3d-root .sea-search-results button:focus-visible,
+.map3d-root .sea-step-list button.is-active,
+.map3d-root .passenger-departure-options label.is-selected,
+.map3d-root .passenger-gate-options label.is-selected { background: #1b4058; }
+.map3d-root .sea-search input,
+.map3d-root .passenger-gate-input input { color: #e7f1f7; }
+.map3d-root .sea-search input::placeholder,
+.map3d-root .passenger-gate-input input::placeholder { color: #8fa8b8; }
+.map3d-root .sea-route-details,
+.map3d-root .passenger-roadmap-step { border-color: rgba(150, 190, 214, 0.2); }
+.map3d-root .sea-route-summary,
+.map3d-root .passenger-roadmap-summary { background: #142f43; border-color: rgba(150, 190, 214, 0.25); }
+.map3d-root .sea-step-number { background: #214961; color: #9edcff; }
+.map3d-root .sea-step-list button.is-active .sea-step-number { background: #168bc2; color: #fff; }
+
+.map3d-root .passenger-map-link {
+  border-color: #238bc1;
+  background: #142b3c;
+  color: #dff4ff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.map3d-root .passenger-map-link:hover { background: #1d4057; }
+.map3d-root .passenger-roadmap-kicker,
+.map3d-root .passenger-roadmap-intro > p,
+.map3d-root .passenger-roadmap-step p,
+.map3d-root .passenger-roadmap-step .passenger-data-note,
+.map3d-root .passenger-roadmap-summary span { color: #9bb0be; }
+
 @media (max-width: 700px) {
   .map3d-root .passenger-map-guide { top: 12px; right: 65px; width: min(350px, calc(100vw - 77px)); }
   .map3d-root .passenger-map-link { min-height: 44px; max-width: 100%; padding: 8px 11px; font-size: 12px; }
@@ -1590,3 +1693,18 @@
   .map3d-root .sea-map-actions { top: 12px; right: 12px; bottom: auto; }
   .map3d-root .sea-step-list { max-height: none; overflow: visible; }
 }
+.map3d-root .sea-location-info { position: absolute; z-index: 8; right: 20px; bottom: 20px; display: flex; width: min(360px, calc(100% - 40px)); max-height: min(420px, calc(100% - 40px)); overflow: hidden; border: 1px solid rgba(176, 224, 234, .55); border-radius: 16px; background: rgba(8, 29, 42, .94); color: #f0fbfd; box-shadow: 0 18px 45px rgba(0, 0, 0, .26); backdrop-filter: blur(14px); }
+.map3d-root .sea-location-info > img { width: 116px; flex: 0 0 116px; align-self: stretch; min-height: 150px; object-fit: cover; background: #234b5a; }
+.map3d-root .sea-location-info-body { min-width: 0; overflow: auto; padding: 16px; }
+.map3d-root .sea-location-kicker { color: #78e2ec; font-size: 9px; font-weight: 850; letter-spacing: .09em; }
+.map3d-root .sea-location-info h2 { margin: 5px 0 2px; color: #fff; font-size: 18px; line-height: 1.15; }
+.map3d-root .sea-location-category { color: #a6c5cd; font-size: 10px; }
+.map3d-root .sea-location-info p { margin: 11px 0; color: #d0e5e9; font-size: 11px; line-height: 1.55; }
+.map3d-root .sea-location-hours { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid rgba(176, 224, 234, .18); font-size: 10px; }
+.map3d-root .sea-location-hours strong { color: #9bc1c8; font-weight: 650; }
+.map3d-root .sea-location-hours span { color: #fff; font-weight: 800; text-align: right; }
+.map3d-root .sea-location-contact { margin-top: 8px; color: #c9e4e8; font-size: 10px; }
+.map3d-root .sea-location-links { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.map3d-root .sea-location-links a { padding: 5px 8px; border: 1px solid rgba(120, 226, 236, .5); border-radius: 99px; color: #9beef4; font-size: 10px; text-decoration: none; }
+.map3d-root .sea-location-links a:hover { background: rgba(120, 226, 236, .14); }
+@media (max-width: 760px) { .map3d-root .sea-location-info { right: 12px; bottom: 12px; width: calc(100% - 24px); } }

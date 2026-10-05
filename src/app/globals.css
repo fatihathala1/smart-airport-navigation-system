@@ -866,6 +866,42 @@ button:active { transform: translateY(1px); }
 .admin-map-selection small { color: #008ca2; font-size: 9px; font-weight: 850; letter-spacing: .07em; }
 .admin-map-selection strong { color: #142328; font-size: 13px; }
 .admin-map-selection span:not(.admin-map-selection-icon) { color: #5e6f75; font-size: 11px; }
+.admin-3d-editor-canvas { position: relative; overflow: hidden; border-radius: 14px; background: #102d3d; }
+.admin-3d-editor-canvas canvas { display: block; width: 100% !important; height: 100% !important; }
+.admin-3d-loading { position: absolute; inset: 0; display: grid; place-items: center; color: #e8f8fb; font-size: 13px; pointer-events: none; }
+.admin-object-editor-layout { display: grid; grid-template-columns: minmax(210px, 0.32fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+.admin-object-list, .admin-object-form { min-width: 0; border: 1px solid #dfe7e9; border-radius: 14px; background: #fff; }
+.admin-object-list-header { display: flex; justify-content: space-between; align-items: center; padding: 13px 14px; border-bottom: 1px solid #e8eff0; color: #17313b; font-size: 12px; }
+.admin-object-list-header span { min-width: 23px; padding: 3px 7px; border-radius: 99px; background: #e7f7f8; color: #008ca2; text-align: center; font-size: 10px; font-weight: 800; }
+.admin-object-list-scroll { max-height: 520px; overflow: auto; padding: 6px; }
+.admin-object-list-scroll button { display: flex; width: 100%; flex-direction: column; gap: 3px; padding: 10px; border: 0; border-radius: 9px; background: transparent; color: #17313b; text-align: left; cursor: pointer; }
+.admin-object-list-scroll button:hover, .admin-object-list-scroll button.is-selected { background: #eaf9fa; }
+.admin-object-list-scroll strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-object-list-scroll small { overflow: hidden; color: #71848a; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-object-form { padding: 16px; }
+.admin-object-form-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid #e8eff0; }
+.admin-object-form-heading small { color: #008ca2; font-size: 9px; font-weight: 850; letter-spacing: .08em; }
+.admin-object-form-heading h3 { margin: 4px 0 0; color: #142328; font-size: 16px; }
+.admin-object-pill { padding: 5px 9px; border-radius: 99px; background: #eaf9fa; color: #008ca2; font-size: 10px; font-weight: 800; }
+.admin-object-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; margin-top: 14px; }
+.admin-object-field { display: flex; min-width: 0; flex-direction: column; gap: 5px; color: #4e6870; font-size: 10px; font-weight: 750; }
+.admin-object-field:nth-child(5) { grid-column: 1 / -1; }
+.admin-object-field input, .admin-object-field select, .admin-object-field textarea { width: 100%; min-height: 37px; box-sizing: border-box; padding: 8px 9px; border: 1px solid #d7e2e4; border-radius: 8px; outline: 0; background: #fbfdfd; color: #17313b; font: inherit; font-size: 12px; font-weight: 500; }
+.admin-object-field textarea { resize: vertical; }
+.admin-object-field input:focus, .admin-object-field select:focus, .admin-object-field textarea:focus { border-color: #00a8bd; box-shadow: 0 0 0 3px rgba(0, 168, 189, .12); }
+.admin-object-color-field { display: flex; gap: 7px; }
+.admin-object-color-field input[type="color"] { width: 42px; min-height: 37px; padding: 3px; cursor: pointer; }
+.admin-object-color-field input:not([type="color"]) { flex: 1; }
+.admin-object-occupancy-help { align-self: end; padding: 9px; border-radius: 8px; background: #f4f9fa; color: #5e6f75; font-size: 10px; line-height: 1.45; }
+.admin-object-photo-preview { max-width: 240px; max-height: 130px; margin-top: 12px; border-radius: 9px; object-fit: cover; }
+.admin-object-form-actions { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
+.admin-object-form-actions .primary-button { display: inline-flex; align-items: center; gap: 7px; }
+.admin-object-saved { display: inline-flex; align-items: center; gap: 4px; color: #21844a; font-size: 11px; font-weight: 750; }
+.admin-object-empty { display: flex; min-height: 240px; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #71848a; text-align: center; }
+.admin-object-empty svg { color: #00a8bd; }
+.admin-object-empty strong { color: #17313b; font-size: 14px; }
+.admin-object-empty span { max-width: 280px; font-size: 11px; line-height: 1.5; }
+@media (max-width: 800px) { .admin-object-editor-layout { grid-template-columns: 1fr; } .admin-object-list-scroll { max-height: 230px; } }
 
 @media (max-width: 900px) {
   .admin-body-container { grid-template-columns: 1fr; }

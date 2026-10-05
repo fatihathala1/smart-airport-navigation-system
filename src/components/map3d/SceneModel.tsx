@@ -13,13 +13,20 @@ import {
   type SelectedObject,
 } from "@/lib/map3d/object-metadata";
 import { GROUND_FLOOR_MODEL_URL } from "@/lib/map3d/assets";
+import { readMapObjectConfigs, type MapObjectConfigByName } from "@/lib/map3d/admin-object-config";
 
 // These meshes are duplicate wall/pillar geometry directly above the
 // commercial frontage (T1-GF-41 through T1-GF-48) in the supplied export.
 // The source GLB is left untouched; only their runtime visibility is disabled
 // so the website matches the approved latest map composition.
 const HIDDEN_COMMERCIAL_OVERHEAD_OBJECT =
-  /^tembok_pilar_(?:31[0-9]|63[1-9]|640|37|358)$/i;
+  /^tembok_pilar_(?:31[0-9]|63[1-9]|640|358)$/i;
+
+// These exported zone meshes are decorative overlays that make the 3D map
+// visually noisy. Doors remain available; only the colored arrival/departure
+// area surfaces and their outlines are hidden at runtime.
+const HIDDEN_TERMINAL_ZONE_OBJECT =
+  /^(?:keberangkatan|kedatangan)_|^(?:OUTLINE__)?ZONE_(?:DEPARTURE|KEBERANGKATAN|KEDATANGAN)_|^T1[-_]GF[-_]ZONE_(?:DEPARTURE|KEBERANGKATAN|KEDATANGAN)_/i;
 
 export type SceneObjectRecord = {
   uuid: string;
@@ -28,6 +35,7 @@ export type SceneObjectRecord = {
   metadata: ObjectMetadata;
   nodeIndex: number;
   selectable: boolean;
+  selectableLabel?: string;
 };
 
 export type SceneBounds = {
@@ -49,12 +57,14 @@ type SceneModelProps = {
   onSelect: (selection: SelectedObject) => void;
   onSelectFloor?: (point: THREE.Vector3) => void;
   onReady: (bounds: SceneBounds, objects: SceneObjectRecord[]) => void;
+  objectConfigs?: MapObjectConfigByName;
 };
 
 type ColorMaterial = THREE.Material & {
   color?: THREE.Color;
   emissive?: THREE.Color;
   emissiveIntensity?: number;
+  map?: THREE.Texture | null;
   opacity: number;
   transparent: boolean;
   depthWrite: boolean;
@@ -70,6 +80,46 @@ type GltfNodeDefinition = {
   name?: string;
   mesh?: number;
 };
+
+let floorTileTexture: THREE.CanvasTexture | null = null;
+
+function getFloorTileTexture() {
+  if (floorTileTexture || typeof document === "undefined") {
+    return floorTileTexture;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+
+  context.fillStyle = "#FFFFFF";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.strokeStyle = "#C4C9CC";
+  context.lineWidth = 2;
+
+  for (let offset = 0; offset <= canvas.width; offset += 32) {
+    context.beginPath();
+    context.moveTo(offset, 0);
+    context.lineTo(offset, canvas.height);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(0, offset);
+    context.lineTo(canvas.width, offset);
+    context.stroke();
+  }
+
+  floorTileTexture = new THREE.CanvasTexture(canvas);
+  floorTileTexture.colorSpace = THREE.SRGBColorSpace;
+  floorTileTexture.wrapS = THREE.RepeatWrapping;
+  floorTileTexture.wrapT = THREE.RepeatWrapping;
+  floorTileTexture.repeat.set(18, 18);
+  floorTileTexture.anisotropy = 8;
+  floorTileTexture.needsUpdate = true;
+  return floorTileTexture;
+}
 
 function tagSourceHierarchy(
   source: THREE.Object3D,
@@ -111,7 +161,20 @@ function tagSourceHierarchy(
 }
 
 export function isSelectableBuildingName(objectName: string) {
-  return /^(T1|TI)-GF-/i.test(objectName);
+  if (/ZONE_(?:DEPARTURE|KEBERANGKATAN|KEDATANGAN)/i.test(objectName)) return false;
+  return /^(T1|TI)-GF-|^BAGGAGE[ _-](?:CLAIM[- _](?:A1|B[1-6])|WRAP[- _])|^DOOR__(?:KEBERANGKATAN|KEDATANGAN)_|^tembok[-_]pillar_?(?:5|6)$|^tembok_pilar_(?:42|43)$/i.test(objectName);
+}
+
+export function getSelectableLabel(objectName: string) {
+  const normalized = objectName.toLocaleLowerCase("id-ID");
+  const departureAnchor = {
+    "tembok-pillar_6": "Departure 1",
+    "tembok-pillar_5": "Departure 2",
+    "tembok_pilar_43": "Departure 3",
+    "tembok_pilar_42": "Departure 4",
+  }[normalized];
+  if (departureAnchor) return departureAnchor;
+  return undefined;
 }
 
 function prepareRuntimeMaterial(material: THREE.Material, objectName: string) {
@@ -130,6 +193,10 @@ function prepareRuntimeMaterial(material: THREE.Material, objectName: string) {
   }
   if (typeof runtimeMaterial.metalness === "number") {
     runtimeMaterial.metalness = style.metalness;
+  }
+  if (style.key === "visitor") {
+    const tileTexture = getFloorTileTexture();
+    if (tileTexture) runtimeMaterial.map = tileTexture;
   }
   runtimeMaterial.userData.runtimeColorKey = style.key;
   runtimeMaterial.userData.runtimeColor = style.color;
@@ -175,7 +242,7 @@ function updateSelectionMaterial(material: THREE.Material, selected: boolean) {
   }
 }
 
-export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady }: SceneModelProps) {
+export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady, objectConfigs = {} }: SceneModelProps) {
   const gltf = useGLTF(GROUND_FLOOR_MODEL_URL);
   const sourceScene = gltf.scene;
   const sourceParser = gltf.parser as typeof gltf.parser & {
@@ -183,7 +250,19 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady }: S
     json: { nodes?: GltfNodeDefinition[] };
   };
   const [hovered, setHovered] = useState(false);
+  const [storedObjectConfigs, setStoredObjectConfigs] = useState<MapObjectConfigByName>(() => readMapObjectConfigs());
   const pointerStart = useRef<{ x: number; y: number; button: number } | null>(null);
+  const effectiveObjectConfigs = Object.keys(objectConfigs).length ? objectConfigs : storedObjectConfigs;
+
+  useEffect(() => {
+    const sync = () => setStoredObjectConfigs(readMapObjectConfigs());
+    window.addEventListener("storage", sync);
+    window.addEventListener("todjuanda-map-config-change", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("todjuanda-map-config-change", sync);
+    };
+  }, []);
 
   const model = useMemo(() => {
     const runtimeScene = cloneScene(sourceScene);
@@ -200,15 +279,37 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady }: S
       if (!(object instanceof THREE.Mesh)) return;
 
       const sourceObjectName = object.userData.sourceObjectName || object.name;
+      const objectConfig = effectiveObjectConfigs[sourceObjectName];
       if (HIDDEN_COMMERCIAL_OVERHEAD_OBJECT.test(sourceObjectName)) {
         object.visible = false;
         object.userData.runtimeVisibilityReason = "commercial-overhead-obstruction";
+      }
+      if (HIDDEN_TERMINAL_ZONE_OBJECT.test(sourceObjectName)) {
+        object.visible = false;
+        object.userData.runtimeVisibilityReason = "decorative-terminal-zone";
+      }
+      if (objectConfig?.occupancy === "WALKABLE") {
+        object.visible = false;
+        object.userData.runtimeVisibilityReason = "admin-configured-walkable";
       }
       const metadata = getObjectMetadata(sourceObjectName);
       const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material];
       const runtimeMaterials = sourceMaterials.map((sourceMaterial) => {
         const runtimeMaterial = sourceMaterial.clone();
         prepareRuntimeMaterial(runtimeMaterial, sourceObjectName);
+        if (objectConfig?.occupancy === "OBSTACLE") {
+          const colorMaterial = runtimeMaterial as ColorMaterial;
+          colorMaterial.color?.set("#68747C");
+          colorMaterial.userData.baseColor = colorMaterial.color?.getHex();
+          colorMaterial.userData.runtimeColorKey = "wall";
+          colorMaterial.userData.runtimeColor = "#68747C";
+        }
+        if (objectConfig?.color && /^#[0-9a-f]{6}$/i.test(objectConfig.color)) {
+          const colorMaterial = runtimeMaterial as ColorMaterial;
+          colorMaterial.color?.set(objectConfig.color);
+          colorMaterial.userData.baseColor = colorMaterial.color?.getHex();
+          colorMaterial.userData.runtimeColor = objectConfig.color;
+        }
         return runtimeMaterial;
       });
 
@@ -217,7 +318,7 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady }: S
     });
 
     return runtimeScene;
-  }, [sourceScene, sourceParser]);
+  }, [sourceScene, sourceParser, effectiveObjectConfigs]);
 
   useLayoutEffect(() => {
     model.updateWorldMatrix(true, true);
@@ -239,7 +340,9 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady }: S
       if (object instanceof THREE.Mesh) {
         if (
           object.userData.runtimeVisibilityReason ===
-          "commercial-overhead-obstruction"
+          "commercial-overhead-obstruction" ||
+          object.userData.runtimeVisibilityReason === "decorative-terminal-zone" ||
+          object.userData.runtimeVisibilityReason === "admin-configured-walkable"
         ) {
           runtimeHiddenObjectNames.push(
             object.userData.sourceObjectName || object.name,
@@ -268,6 +371,7 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady }: S
         metadata: getObjectMetadata(sourceObjectName),
         nodeIndex,
         selectable: isSelectableBuildingName(sourceObjectName),
+        selectableLabel: getSelectableLabel(sourceObjectName),
       });
     });
 
@@ -323,7 +427,7 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady }: S
         selectedObject.userData.sourceObjectName || selectedObject.name;
       if (isSelectableBuildingName(sourceName)) {
         onSelect(createSelectedObject(selectedObject));
-      } else if (/^FLOOR__area_visitor$/i.test(sourceName)) {
+      } else if (/^(?:FLOOR__)?area_visitor$/i.test(sourceName)) {
         onSelectFloor?.(event.point.clone());
       }
     }
@@ -352,7 +456,7 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady }: S
         }
         const sourceName =
           logicalObject?.userData.sourceObjectName || logicalObject?.name || "";
-        if (isSelectableBuildingName(sourceName) || (onSelectFloor && /^FLOOR__area_visitor$/i.test(sourceName))) {
+        if (isSelectableBuildingName(sourceName) || (onSelectFloor && /^(?:FLOOR__)?area_visitor$/i.test(sourceName))) {
           event.stopPropagation();
           setHovered(true);
         }
