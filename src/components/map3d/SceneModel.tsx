@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ThreeEvent } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
+import { Html, useGLTF } from "@react-three/drei";
 import { clone as cloneScene } from "three/examples/jsm/utils/SkeletonUtils.js";
 import * as THREE from "three";
 import {
@@ -13,7 +13,7 @@ import {
   type SelectedObject,
 } from "@/lib/map3d/object-metadata";
 import { GROUND_FLOOR_MODEL_URL } from "@/lib/map3d/assets";
-import { readMapObjectConfigs, type MapObjectConfigByName } from "@/lib/map3d/admin-object-config";
+import { defaultMapObjectConfig, readMapObjectConfigs, type MapObjectConfigByName, type MapObjectDoor } from "@/lib/map3d/admin-object-config";
 
 // These meshes are duplicate wall/pillar geometry directly above the
 // commercial frontage (T1-GF-41 through T1-GF-48) in the supplied export.
@@ -56,6 +56,7 @@ type SceneModelProps = {
   selectedUuid: string | null;
   onSelect: (selection: SelectedObject) => void;
   onSelectFloor?: (point: THREE.Vector3) => void;
+  onSelectEntryPoint?: (point: THREE.Vector3, objectName: string, side: MapObjectDoor["side"]) => void;
   onReady: (bounds: SceneBounds, objects: SceneObjectRecord[]) => void;
   objectConfigs?: MapObjectConfigByName;
 };
@@ -242,7 +243,7 @@ function updateSelectionMaterial(material: THREE.Material, selected: boolean) {
   }
 }
 
-export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady, objectConfigs = {} }: SceneModelProps) {
+export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntryPoint, onReady, objectConfigs = {} }: SceneModelProps) {
   const gltf = useGLTF(GROUND_FLOOR_MODEL_URL);
   const sourceScene = gltf.scene;
   const sourceParser = gltf.parser as typeof gltf.parser & {
@@ -319,6 +320,16 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady, obj
 
     return runtimeScene;
   }, [sourceScene, sourceParser, effectiveObjectConfigs]);
+
+  const selectedEntryObject = useMemo(() => {
+    if (!selectedUuid) return null;
+    return model.getObjectByProperty("uuid", selectedUuid) ?? null;
+  }, [model, selectedUuid]);
+
+  const selectedEntryObjectName = selectedEntryObject?.userData.sourceObjectName || selectedEntryObject?.name || "";
+  const selectedEntryDoors = selectedEntryObject
+    ? effectiveObjectConfigs[selectedEntryObjectName]?.entryDoors ?? defaultMapObjectConfig(selectedEntryObjectName).entryDoors
+    : undefined;
 
   useLayoutEffect(() => {
     model.updateWorldMatrix(true, true);
@@ -434,18 +445,19 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady, obj
   };
 
   return (
-    <primitive
-      object={model}
-      dispose={null}
-      onPointerDown={(event: ThreeEvent<PointerEvent>) => {
+    <>
+      <primitive
+        object={model}
+        dispose={null}
+        onPointerDown={(event: ThreeEvent<PointerEvent>) => {
         pointerStart.current = {
           x: event.clientX,
           y: event.clientY,
           button: event.button,
         };
-      }}
-      onPointerUp={handlePointerUp}
-      onPointerOver={(event: ThreeEvent<PointerEvent>) => {
+        }}
+        onPointerUp={handlePointerUp}
+        onPointerOver={(event: ThreeEvent<PointerEvent>) => {
         let logicalObject: THREE.Object3D | null = event.object;
         while (
           logicalObject &&
@@ -460,13 +472,39 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onReady, obj
           event.stopPropagation();
           setHovered(true);
         }
-      }}
-      onPointerOut={() => setHovered(false)}
-      onPointerCancel={() => {
-        pointerStart.current = null;
-      }}
-    />
+        }}
+        onPointerOut={() => setHovered(false)}
+        onPointerCancel={() => {
+          pointerStart.current = null;
+        }}
+      />
+      {selectedEntryObject && selectedEntryDoors && !/^DOOR__/i.test(selectedEntryObjectName) && <EntryDoorMarkers object={selectedEntryObject} objectName={selectedEntryObjectName} doors={selectedEntryDoors} onSelect={onSelectEntryPoint} />}
+    </>
   );
+}
+
+function EntryDoorMarkers({ object, objectName, doors, onSelect }: { object: THREE.Object3D; objectName: string; doors: MapObjectDoor[]; onSelect?: SceneModelProps["onSelectEntryPoint"] }) {
+  const box = new THREE.Box3().setFromObject(object);
+  const width = Math.max(box.max.x - box.min.x, 0.6);
+  const depth = Math.max(box.max.z - box.min.z, 0.6);
+  const y = box.min.y + 0.85;
+  const labels: Record<MapObjectDoor["side"], string> = { NORTH: "U", EAST: "T", SOUTH: "S", WEST: "B" };
+  return <group>
+    {doors.slice(0, 4).map((door, index) => {
+      const ratio = Math.max(0, Math.min(100, door.position ?? 50)) / 100;
+      const point = door.side === "NORTH" ? new THREE.Vector3(box.min.x + width * ratio, y, box.min.z - 0.2)
+        : door.side === "SOUTH" ? new THREE.Vector3(box.min.x + width * ratio, y, box.max.z + 0.2)
+          : door.side === "WEST" ? new THREE.Vector3(box.min.x - 0.2, y, box.min.z + depth * ratio)
+            : new THREE.Vector3(box.max.x + 0.2, y, box.min.z + depth * ratio);
+      return <group key={`${objectName}-entry-door-${index}`} position={point}>
+        <mesh renderOrder={1000} onPointerUp={(event) => { event.stopPropagation(); if (door.open) onSelect?.(point.clone(), objectName, door.side); }}>
+          <sphereGeometry args={[Math.max(Math.min(width, depth) * 0.045, 0.3), 20, 12]} />
+          <meshBasicMaterial color={door.open ? "#16C784" : "#E05252"} depthTest={false} depthWrite={false} />
+        </mesh>
+        <Html center distanceFactor={8} style={{ pointerEvents: "none" }}><span className={`map-door-marker-label${door.open ? " is-open" : " is-closed"}`}>{labels[door.side]} {door.open ? "Pintu" : "Tutup"}</span></Html>
+      </group>;
+    })}
+  </group>;
 }
 
 useGLTF.preload(GROUND_FLOOR_MODEL_URL);

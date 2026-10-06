@@ -10,7 +10,7 @@ import { floors, spaces } from "@/data/demo-wayfinding";
 import type { MapSpace, TerminalCode } from "@/types";
 import { SceneModel, type SceneBounds, type SceneObjectRecord } from "@/components/map3d/SceneModel";
 import type { SelectedObject } from "@/lib/map3d/object-metadata";
-import { defaultMapObjectConfig, readMapObjectConfigs, writeMapObjectConfigs, type MapObjectConfig, type MapObjectConfigByName, type MapObjectOccupancy } from "@/lib/map3d/admin-object-config";
+import { defaultMapObjectConfig, getMapObjectPhotoUrl, readMapObjectConfigs, writeMapObjectConfigs, type MapObjectConfig, type MapObjectConfigByName, type MapObjectDoorSide, type MapObjectOccupancy } from "@/lib/map3d/admin-object-config";
 
 function LegacyAdminMapPanel() {
   const [terminal, setTerminal] = useState<TerminalCode>("T1");
@@ -153,6 +153,16 @@ export function AdminMapPanel() {
     if (record?.selectable) selectRecord(record);
   }, [objects, selectRecord]);
   const updateDraft = <K extends keyof MapObjectConfig>(key: K, value: MapObjectConfig[K]) => setDraft((current) => current ? { ...current, [key]: value } : current);
+    const updateDoor = (index: number, key: "side" | "open" | "position", value: string | boolean) => setDraft((current) => {
+      if (!current) return current;
+      const entryDoors = current.entryDoors.map((door, doorIndex) => {
+        if (doorIndex !== index) return door;
+        if (key === "side") return { ...door, side: value as MapObjectDoorSide };
+        if (key === "open") return { ...door, open: Boolean(value) };
+        return { ...door, position: Number(value) };
+      });
+      return { ...current, entryDoors };
+    });
   const saveDraft = () => {
     if (!draft) return;
     const next = { ...configs, [draft.objectName]: { ...draft, updatedAt: new Date().toISOString() } };
@@ -167,10 +177,11 @@ export function AdminMapPanel() {
         <EditorField label="Nama tampilan"><input value={draft.displayName} onChange={(event) => updateDraft("displayName", event.target.value)} placeholder="Contoh: Kopi Juanda" /></EditorField>
         <EditorField label="Jenis data"><select value={draft.entityType} onChange={(event) => updateDraft("entityType", event.target.value as MapObjectConfig["entityType"])}><option value="TENANT">Tenant komersial</option><option value="FACILITY">Fasilitas / layanan</option></select></EditorField><EditorField label="Warna objek"><span className="admin-object-color-field"><input type="color" value={draft.color || "#D8C7A7"} onChange={(event) => updateDraft("color", event.target.value)} /><input value={draft.color} onChange={(event) => updateDraft("color", event.target.value)} placeholder="#D8C7A7" pattern="^#[0-9a-fA-F]{6}$" /></span></EditorField>
         <EditorField label="Status bentuk lokasi"><select value={draft.occupancy} onChange={(event) => updateDraft("occupancy", event.target.value as MapObjectOccupancy)}>{OCCUPANCY_OPTIONS.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></EditorField><div className="admin-object-occupancy-help">{OCCUPANCY_OPTIONS.find((option) => option.value === draft.occupancy)?.help}</div>
+        <div className="admin-object-doors"><div className="admin-object-doors-heading"><strong>Pintu masuk (maksimal 4)</strong><span>Rute hanya boleh masuk dari pintu yang terbuka. Posisi 0% dan 100% adalah kedua ujung sisi; 50% adalah titik tengah sisi.</span></div>{draft.entryDoors.map((door, index) => <div className="admin-object-door-row" key={`${draft.objectName}-door-${index}`}><strong>Pintu {index + 1}</strong><select value={door.side} onChange={(event) => updateDoor(index, "side", event.target.value as MapObjectDoorSide)}><option value="NORTH">Utara</option><option value="EAST">Timur</option><option value="SOUTH">Selatan</option><option value="WEST">Barat</option></select><label><input type="checkbox" checked={door.open} onChange={(event) => updateDoor(index, "open", event.target.checked)} /> Buka</label><label className="admin-object-door-position">Posisi <input type="range" min="0" max="100" value={door.position} aria-label={`Posisi pintu ${index + 1}`} onChange={(event) => updateDoor(index, "position", event.target.value)} /><span>{door.position}%</span></label></div>)}</div>
         <EditorField label="Deskripsi / detail"><textarea rows={4} value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} placeholder="Layanan, akses, dan informasi penting." /></EditorField>
-        <EditorField label="Foto tampak depan (URL)"><input type="url" value={draft.photoUrl} onChange={(event) => updateDraft("photoUrl", event.target.value)} placeholder="https://.../foto-lokasi.jpg" /></EditorField>
+        <EditorField label="Foto tampak depan (URL)"><input type="url" value={draft.photoUrl} onChange={(event) => updateDraft("photoUrl", event.target.value)} placeholder="URL gambar langsung atau link Google Drive" /><small className="admin-object-field-help">Untuk Google Drive, ubah akses file menjadi “Anyone with the link / Siapa saja yang memiliki link dapat melihat”.</small></EditorField>
         <EditorField label="Website / sosial media"><input type="url" value={draft.websiteUrl} onChange={(event) => updateDraft("websiteUrl", event.target.value)} placeholder="https://..." /></EditorField><EditorField label="Instagram / link lain"><input type="url" value={draft.instagramUrl} onChange={(event) => updateDraft("instagramUrl", event.target.value)} placeholder="https://instagram.com/..." /></EditorField>
         <EditorField label="Kontak"><input value={draft.contact} onChange={(event) => updateDraft("contact", event.target.value)} placeholder="Telepon / email" /></EditorField><EditorField label="Jam buka"><input type="time" value={draft.openTime} onChange={(event) => updateDraft("openTime", event.target.value)} /></EditorField><EditorField label="Jam tutup"><input type="time" value={draft.closeTime} onChange={(event) => updateDraft("closeTime", event.target.value)} /></EditorField><EditorField label="Masa aktif mulai"><input type="date" value={draft.activeFrom} onChange={(event) => updateDraft("activeFrom", event.target.value)} /></EditorField><EditorField label="Masa aktif sampai"><input type="date" value={draft.activeUntil} onChange={(event) => updateDraft("activeUntil", event.target.value)} /></EditorField>
-      </div>{draft.photoUrl && <img className="admin-object-photo-preview" src={draft.photoUrl} alt={`Foto ${draft.displayName || draft.objectName}`} onError={(event) => { event.currentTarget.style.display = "none"; }} />}<div className="admin-object-form-actions"><button type="button" className="primary-button" onClick={saveDraft}><Save size={15} /> Simpan konfigurasi</button>{saved && <span className="admin-object-saved"><Check size={14} /> Tersimpan di browser ini</span>}</div></>}</section></div>
+      </div>{getMapObjectPhotoUrl(draft.photoUrl) && <img className="admin-object-photo-preview" src={getMapObjectPhotoUrl(draft.photoUrl)} alt={`Foto ${draft.displayName || draft.objectName}`} onError={(event) => { event.currentTarget.style.display = "none"; }} />}<div className="admin-object-form-actions"><button type="button" className="primary-button" onClick={saveDraft}><Save size={15} /> Simpan konfigurasi</button>{saved && <span className="admin-object-saved"><Check size={14} /> Tersimpan di browser ini</span>}</div></>}</section></div>
   </div>;
 }

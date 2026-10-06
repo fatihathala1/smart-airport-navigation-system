@@ -231,6 +231,37 @@ export function findWalkableRoute(grid: WalkableGrid, start: Point2, destination
 }
 
 export type TargetRect = { minX: number; maxX: number; minZ: number; maxZ: number };
+export type TargetEntryDoor = { side: "NORTH" | "EAST" | "SOUTH" | "WEST"; open: boolean; position?: number };
+
+export function openTargetEntryDoors(grid: WalkableGrid, target: TargetRect, entryDoors: readonly TargetEntryDoor[]): WalkableGrid {
+  const next: WalkableGrid = { ...grid, open: grid.open.slice() };
+  const openingHalfWidth = Math.max(grid.cellSize * 1.5, 0.8);
+  const openingDepth = Math.max(grid.cellSize * 2.5, 1.2);
+  const width = Math.max(target.maxX - target.minX, grid.cellSize);
+  const depth = Math.max(target.maxZ - target.minZ, grid.cellSize);
+  const clearCell = (x: number, z: number) => {
+    const column = Math.floor((x - grid.minX) / grid.cellSize);
+    const row = Math.floor((z - grid.minZ) / grid.cellSize);
+    if (column < 0 || column >= grid.width || row < 0 || row >= grid.height) return;
+    next.open[row * grid.width + column] = 1;
+  };
+  entryDoors.filter((door) => door.open).slice(0, 4).forEach((door) => {
+    const ratio = Math.max(0, Math.min(100, door.position ?? 50)) / 100;
+    const centerX = target.minX + width * ratio;
+    const centerZ = target.minZ + depth * ratio;
+    const perpendicularSteps = Math.ceil((openingHalfWidth * 2) / grid.cellSize);
+    const depthSteps = Math.ceil(openingDepth / grid.cellSize);
+    for (let along = -perpendicularSteps; along <= perpendicularSteps; along += 1) {
+      for (let away = 0; away <= depthSteps; away += 1) {
+        if (door.side === "NORTH") clearCell(centerX + along * grid.cellSize, target.minZ - away * grid.cellSize);
+        if (door.side === "SOUTH") clearCell(centerX + along * grid.cellSize, target.maxZ + away * grid.cellSize);
+        if (door.side === "WEST") clearCell(target.minX - away * grid.cellSize, centerZ + along * grid.cellSize);
+        if (door.side === "EAST") clearCell(target.maxX + away * grid.cellSize, centerZ + along * grid.cellSize);
+      }
+    }
+  });
+  return next;
+}
 
 function distanceToTargetRect(point: Point2, target: TargetRect) {
   const dx = Math.max(target.minX - point[0], 0, point[0] - target.maxX);
@@ -247,20 +278,31 @@ export function findWalkableRouteToTarget(
   grid: WalkableGrid,
   start: Point2,
   target: TargetRect,
+  entryDoors?: readonly TargetEntryDoor[],
 ): Point2[] | null {
   const width = Math.max(target.maxX - target.minX, grid.cellSize);
   const depth = Math.max(target.maxZ - target.minZ, grid.cellSize);
   const samples = Math.max(2, Math.ceil(Math.max(width, depth) / grid.cellSize));
-  const candidates: Point2[] = [[
-    (target.minX + target.maxX) / 2,
-    (target.minZ + target.maxZ) / 2,
-  ]];
-
-  for (let index = 0; index <= samples; index += 1) {
-    const x = target.minX + (width * index) / samples;
-    const z = target.minZ + (depth * index) / samples;
-    candidates.push([x, target.minZ], [x, target.maxZ], [target.minX, z], [target.maxX, z]);
+  const candidates: Point2[] = [];
+  const entryOffset = Math.max(grid.cellSize * 0.75, 0.2);
+  const addSideCandidate = (side: TargetEntryDoor["side"], position: number) => {
+    const ratio = Math.max(0, Math.min(100, position)) / 100;
+    if (side === "NORTH") candidates.push([target.minX + width * ratio, target.minZ - entryOffset]);
+    if (side === "SOUTH") candidates.push([target.minX + width * ratio, target.maxZ + entryOffset]);
+    if (side === "WEST") candidates.push([target.minX - entryOffset, target.minZ + depth * ratio]);
+    if (side === "EAST") candidates.push([target.maxX + entryOffset, target.minZ + depth * ratio]);
+  };
+  if (entryDoors !== undefined) {
+    entryDoors.filter((door) => door.open).slice(0, 4).forEach((door) => addSideCandidate(door.side, door.position ?? 50));
+  } else {
+    candidates.push([(target.minX + target.maxX) / 2, (target.minZ + target.maxZ) / 2]);
+    for (let index = 0; index <= samples; index += 1) {
+      const x = target.minX + (width * index) / samples;
+      const z = target.minZ + (depth * index) / samples;
+      candidates.push([x, target.minZ], [x, target.maxZ], [target.minX, z], [target.maxX, z]);
+    }
   }
+  if (!candidates.length) return null;
 
   let best: { route: Point2[]; targetDistance: number; length: number } | null = null;
   for (const candidate of candidates) {
@@ -270,8 +312,8 @@ export function findWalkableRouteToTarget(
     const length = route.reduce((total, point, index) => index === 0
       ? 0
       : total + Math.hypot(point[0] - route[index - 1][0], point[1] - route[index - 1][1]), 0);
-    if (!best || targetDistance < best.targetDistance - 1e-6 ||
-      (Math.abs(targetDistance - best.targetDistance) <= 1e-6 && length < best.length)) {
+    if (!best || length < best.length - 1e-6 ||
+      (Math.abs(length - best.length) <= 1e-6 && targetDistance < best.targetDistance)) {
       best = { route, targetDistance, length };
     }
   }
