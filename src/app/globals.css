@@ -446,6 +446,19 @@ button:active { transform: translateY(1px); }
 /* North Arrow & Scale Indicator */
 .compass-indicator { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(33, 44, 54, 0.85); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px); font-size: 11px; font-weight: 750; color: #ffffff; }
 .compass-arrow { display: inline-block; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 11px solid var(--danger); transform: rotate(0deg); }
+.map-compass { position: absolute; left: 18px; top: 18px; z-index: 10; width: 72px; height: 72px; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 50%; background: rgba(33, 44, 54, 0.86); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px); color: #dbeafe; font-size: 11px; font-weight: 800; pointer-events: none; }
+.map-compass::before, .map-compass::after { content: ""; position: absolute; background: rgba(255, 255, 255, 0.22); }
+.map-compass::before { left: 50%; top: 11px; bottom: 11px; width: 1px; transform: translateX(-50%); }
+.map-compass::after { top: 50%; left: 11px; right: 11px; height: 1px; transform: translateY(-50%); }
+.map-compass-label { position: absolute; z-index: 1; line-height: 1; }
+.map-compass-north { top: 7px; left: 50%; transform: translateX(-50%); color: #ff8b78; }
+.map-compass-east { right: 8px; top: 50%; transform: translateY(-50%); }
+.map-compass-south { bottom: 7px; left: 50%; transform: translateX(-50%); }
+.map-compass-west { left: 8px; top: 50%; transform: translateY(-50%); }
+.map-compass-center { position: absolute; left: 50%; top: 50%; z-index: 1; transform: translate(-50%, -50%); color: #00d2ff; font-size: 17px; }
+.map-door-marker-label { display: inline-block; padding: 3px 6px; border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 999px; color: #ffffff; background: rgba(31, 45, 49, 0.9); font-size: 10px; font-weight: 800; white-space: nowrap; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28); }
+.map-door-marker-label.is-open { border-color: #16c784; }
+.map-door-marker-label.is-closed { border-color: #e05252; color: #ffd7d7; }
 
 /* Map Legend & Color Key */
 .map-legend { position: absolute; left: 50%; bottom: 18px; z-index: 10; display: flex; align-items: center; gap: 16px; padding: 9px 18px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px; background: rgba(33, 44, 54, 0.85); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); transform: translateX(-50%); backdrop-filter: blur(12px); pointer-events: none; }
@@ -893,7 +906,17 @@ button:active { transform: translateY(1px); }
 .admin-object-color-field input[type="color"] { width: 42px; min-height: 37px; padding: 3px; cursor: pointer; }
 .admin-object-color-field input:not([type="color"]) { flex: 1; }
 .admin-object-occupancy-help { align-self: end; padding: 9px; border-radius: 8px; background: #f4f9fa; color: #5e6f75; font-size: 10px; line-height: 1.45; }
+.admin-object-doors { grid-column: 1 / -1; padding: 12px; border: 1px solid #dfe7e9; border-radius: 10px; background: #f8fbfb; }
+.admin-object-doors-heading { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 9px; color: #17313b; font-size: 11px; }
+.admin-object-doors-heading span { color: #71848a; font-size: 10px; font-weight: 500; }
+.admin-object-door-row { display: grid; grid-template-columns: 55px 110px 75px minmax(150px, 1fr); align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid #e8eff0; color: #4e6870; font-size: 10px; }
+.admin-object-door-row select { min-height: 30px; padding: 5px; border: 1px solid #d7e2e4; border-radius: 6px; background: #fff; color: #17313b; font-size: 10px; }
+.admin-object-door-row label { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.admin-object-door-position { display: flex; gap: 6px; align-items: center; }
+.admin-object-door-position input[type="range"] { flex: 1; accent-color: #00a8bd; }
+.admin-object-door-position span { width: 32px; color: #008ca2; font-weight: 800; }
 .admin-object-photo-preview { max-width: 240px; max-height: 130px; margin-top: 12px; border-radius: 9px; object-fit: cover; }
+.admin-object-field-help { display: block; margin-top: 6px; color: #667887; font-size: 11px; line-height: 1.4; }
 .admin-object-form-actions { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
 .admin-object-form-actions .primary-button { display: inline-flex; align-items: center; gap: 7px; }
 .admin-object-saved { display: inline-flex; align-items: center; gap: 4px; color: #21844a; font-size: 11px; font-weight: 750; }
