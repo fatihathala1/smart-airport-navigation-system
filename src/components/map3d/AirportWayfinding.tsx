@@ -21,11 +21,13 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Trees,
   X,
 } from "lucide-react";
 import * as THREE from "three";
 import { PassengerRoadmap } from "./PassengerRoadmap";
 import { FloorSwitcher } from "./FloorSwitcher";
+import { ExteriorScene } from "./ExteriorScene";
 import { FLOOR_DEFINITIONS, resolveFloorView, type FloorId } from "@/lib/map3d/floors";
 import { useFloorAvailability } from "@/lib/map3d/useFloorAvailability";
 import {
@@ -333,6 +335,8 @@ export function AirportWayfinding() {
   const [routeRestartToken, setRouteRestartToken] = useState(0);
   const [routeRecenterToken, setRouteRecenterToken] = useState(0);
   const [selectedFloor, setSelectedFloor] = useState<FloorId | null>(null);
+  const [showExterior, setShowExterior] = useState(true);
+  const [exteriorAttribution, setExteriorAttribution] = useState<string | null>(null);
   const { availability, ready: floorsReady } = useFloorAvailability();
   const floorView = useMemo(() => resolveFloorView(selectedFloor, availability), [selectedFloor, availability]);
   const routable = FLOOR_DEFINITIONS[floorView.view].routable;
@@ -713,6 +717,10 @@ export function AirportWayfinding() {
               onSelectEntryPoint={chooseEntryPoint}
               onReady={handleReady}
             />}
+            {/* Lingkungan luar menempel di tanah, jadi tidak ditampilkan pada model Lantai 2 saja. */}
+            {bounds && floorView.view !== "L2" && (
+              <ExteriorScene baseY={bounds.box.min.y} visible={showExterior} onAttribution={setExteriorAttribution} />
+            )}
             <GridRouteLayer
               points={routeWorldPoints}
               highlightedPoints={highlightedPoints}
@@ -778,7 +786,8 @@ export function AirportWayfinding() {
         </div>}
       </aside>
 
-      <div className="sea-map-actions" aria-label="Kontrol peta"><button type="button" onClick={showMapView} disabled={!bounds} aria-label="Tampilkan seluruh peta"><RotateCcw size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomIn()} disabled={!bounds} aria-label="Perbesar peta"><Plus size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomOut()} disabled={!bounds} aria-label="Perkecil peta"><Minus size={18} /></button></div>
+      <div className="sea-map-actions" aria-label="Kontrol peta"><button type="button" onClick={showMapView} disabled={!bounds} aria-label="Tampilkan seluruh peta"><RotateCcw size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomIn()} disabled={!bounds} aria-label="Perbesar peta"><Plus size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomOut()} disabled={!bounds} aria-label="Perkecil peta"><Minus size={18} /></button><button type="button" className="map-exterior-toggle" onClick={() => setShowExterior((value) => !value)} disabled={!bounds || floorView.view === "L2"} aria-pressed={showExterior} aria-label={showExterior ? "Sembunyikan area luar gedung" : "Tampilkan area luar gedung"} title="Area luar gedung"><Trees size={18} /></button></div>
+      {exteriorAttribution && <p className="map-attribution">Area luar: {exteriorAttribution}</p>}
 
       <div className="map-compass" aria-label="Arah mata angin pada model peta">
         <span className="map-compass-label map-compass-north">U</span>
