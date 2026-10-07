@@ -1708,3 +1708,117 @@
 .map3d-root .sea-location-links a { padding: 5px 8px; border: 1px solid rgba(120, 226, 236, .5); border-radius: 99px; color: #9beef4; font-size: 10px; text-decoration: none; }
 .map3d-root .sea-location-links a:hover { background: rgba(120, 226, 236, .14); }
 @media (max-width: 760px) { .map3d-root .sea-location-info { right: 12px; bottom: 12px; width: calc(100% - 24px); } }
+
+/* ==========================================================================
+   PEMILIH LANTAI DAN DAFTAR DEPARTURE
+   ========================================================================== */
+.map3d-root .floor-switcher {
+  position: absolute;
+  z-index: 10;
+  right: 20px;
+  bottom: 176px;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.map3d-root .floor-switcher-buttons {
+  display: grid;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid rgba(150, 190, 214, 0.24);
+  border-radius: 10px;
+  background: #142b3c;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.28);
+}
+
+.map3d-root .floor-switcher-button {
+  display: grid;
+  grid-template-columns: 28px auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 118px;
+  height: 44px;
+  padding: 0 12px 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #e7f1f7;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map3d-root .floor-switcher-number {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 6px;
+  background: rgba(150, 190, 214, 0.16);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.map3d-root .floor-switcher-button:hover:not(:disabled) { background: #1d4057; }
+.map3d-root .floor-switcher-button:focus-visible { outline: 2px solid #7cc4e8; outline-offset: 2px; }
+.map3d-root .floor-switcher-button[aria-pressed="true"],
+.map3d-root .floor-switcher-button[aria-pressed="true"]:hover:not(:disabled) { background: #126c9d; color: #fff; }
+.map3d-root .floor-switcher-button[aria-pressed="true"] .floor-switcher-number { background: rgba(255, 255, 255, 0.22); }
+.map3d-root .floor-switcher-button:disabled { color: #6f8796; cursor: not-allowed; }
+.map3d-root .floor-switcher-button:disabled .floor-switcher-number { background: transparent; border: 1px dashed rgba(150, 190, 214, 0.3); }
+
+.map3d-root .floor-switcher-caption {
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(20, 43, 60, 0.82);
+  color: #b9cdd9;
+  font-size: 12px;
+}
+
+.map3d-root .floor-switcher-caption strong { color: #fff; font-weight: 600; }
+
+@media (max-width: 760px) {
+  .map3d-root .floor-switcher { top: 64px; right: 12px; bottom: auto; }
+  .map3d-root .floor-switcher-button { min-width: 0; grid-template-columns: 28px; padding: 0 8px; }
+  .map3d-root .floor-switcher-name { display: none; }
+}
+
+.map3d-root .departure-fieldset { min-width: 0; margin: 12px 0 0; padding: 0; border: 0; }
+.map3d-root .departure-legend { margin-bottom: 8px; padding: 0; font-size: 12px; font-weight: 700; }
+.map3d-root .departure-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+
+.map3d-root .departure-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid rgba(150, 190, 214, 0.26);
+  border-radius: 10px;
+  background: #142b3c;
+  color: #e7f1f7;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+.map3d-root .departure-card:hover:not(.is-inactive) { border-color: rgba(150, 190, 214, 0.5); }
+.map3d-root .departure-card:focus-within { outline: 3px solid #e76f43; outline-offset: 2px; }
+.map3d-root .departure-card.is-selected { border-color: #7cc4e8; background: #1b4058; }
+.map3d-root .departure-card.is-inactive { cursor: not-allowed; background: transparent; border-style: dashed; color: #8fa8b8; }
+
+.map3d-root .departure-radio { position: absolute; top: 14px; left: 13px; width: 16px; height: 16px; margin: 0; accent-color: #38a6d8; }
+
+.map3d-root .departure-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.map3d-root .departure-head strong { font-size: 14px; font-weight: 700; }
+.map3d-root .departure-range { color: #9bb0be; font-size: 12px; font-variant-numeric: tabular-nums; }
+.map3d-root .departure-note { margin-top: -4px; color: #9bb0be; font-size: 12px; }
+
+.map3d-root .departure-airlines { display: grid; gap: 6px; margin: 0; padding: 8px 0 0; border-top: 1px solid rgba(150, 190, 214, 0.18); list-style: none; }
+.map3d-root .departure-airline { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 30px; }
+.map3d-root .departure-airline-name { font-size: 12px; font-weight: 600; }
+.map3d-root .departure-airline-range { color: #9bb0be; font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.map3d-root .departure-logo { width: 56px; height: 28px; padding: 2px 4px; border-radius: 5px; background: #fff; object-fit: contain; }
+.map3d-root .departure-logo-monogram { display: grid; width: 56px; height: 28px; place-items: center; border: 1px solid rgba(150, 190, 214, 0.3); border-radius: 5px; color: #b9cdd9; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+

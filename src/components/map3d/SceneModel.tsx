@@ -59,6 +59,8 @@ type SceneModelProps = {
   onSelectEntryPoint?: (point: THREE.Vector3, objectName: string, side: MapObjectDoor["side"]) => void;
   onReady: (bounds: SceneBounds, objects: SceneObjectRecord[]) => void;
   objectConfigs?: MapObjectConfigByName;
+  /** Model yang dimuat. Bawaan: lantai dasar. */
+  modelUrl?: string;
 };
 
 type ColorMaterial = THREE.Material & {
@@ -243,8 +245,8 @@ function updateSelectionMaterial(material: THREE.Material, selected: boolean) {
   }
 }
 
-export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntryPoint, onReady, objectConfigs = {} }: SceneModelProps) {
-  const gltf = useGLTF(GROUND_FLOOR_MODEL_URL);
+export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntryPoint, onReady, objectConfigs = {}, modelUrl = GROUND_FLOOR_MODEL_URL }: SceneModelProps) {
+  const gltf = useGLTF(modelUrl);
   const sourceScene = gltf.scene;
   const sourceParser = gltf.parser as typeof gltf.parser & {
     associations: Map<THREE.Object3D, GltfAssociation>;

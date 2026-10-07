@@ -3,10 +3,9 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Building2, Compass, MapPin, Search, X } from "lucide-react";
-import { FacilityShortcuts } from "./FacilityShortcuts";
+import { ExploreSection } from "./ExploreSection";
 import { WayfindingFullTutorialSection } from "./WayfindingFullTutorialSection";
 import { WayfindingVideoTutorial } from "./WayfindingVideoTutorial";
-import { Map3DPreview } from "@/components/map3d/Map3DPreview";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { useMapStore } from "@/store/mapStore";
@@ -81,8 +80,7 @@ export function WayfindingShell() {
           </div>
         </section>
         <section className="explore-section" ref={facilityRef}>
-          <FacilityShortcuts />
-          <Map3DPreview />
+          <ExploreSection />
           <div className="section-overlap-stack">
             <WayfindingFullTutorialSection />
             <WayfindingVideoTutorial />

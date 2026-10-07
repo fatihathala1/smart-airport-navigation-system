@@ -1,0 +1,4 @@
+.map { position: absolute; inset: 0; z-index: 0; background: #dfe7ea; }
+.terminal { cursor: pointer; transition: fill-opacity .15s ease; }
+.tooltip { padding: 6px 10px; border: 0; border-radius: 8px; background: #075985; color: #fff; font-size: 12px; line-height: 1.35; box-shadow: 0 3px 12px rgba(0,0,0,.2); }
+.tooltip::before { border-top-color: #075985 !important; }

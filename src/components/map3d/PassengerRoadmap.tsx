@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DepartureList } from "./DepartureList";
 
 type GateAnswer = "yes" | "no" | null;
 
@@ -57,17 +58,7 @@ export function PassengerRoadmap() {
             <div>
               <h3>Menuju area check-in</h3>
               <p>Di area Departure berapa kamu akan check-in untuk mengambil tiket?</p>
-              <fieldset className="passenger-departure-fieldset">
-                <legend>Pilih area Departure</legend>
-                <div className="passenger-departure-options">
-                  {[1, 2, 3, 4].map((number) => (
-                    <label key={number} className={departure === number ? "is-selected" : ""}>
-                      <input type="radio" name="passenger-departure" value={number} checked={departure === number} onChange={() => setDeparture(number)} />
-                      Departure {number}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
+              <DepartureList value={departure} onChange={setDeparture} />
               <p className="passenger-data-note">Pilihan area ini belum terhubung ke peta 3D.</p>
             </div>
           </li>

@@ -25,6 +25,9 @@ import {
 } from "lucide-react";
 import * as THREE from "three";
 import { PassengerRoadmap } from "./PassengerRoadmap";
+import { FloorSwitcher } from "./FloorSwitcher";
+import { FLOOR_DEFINITIONS, resolveFloorView, type FloorId } from "@/lib/map3d/floors";
+import { useFloorAvailability } from "@/lib/map3d/useFloorAvailability";
 import {
   SceneModel,
   getSelectableLabel,
@@ -47,7 +50,7 @@ import {
 import { getMapOrbitLimits } from "@/lib/map3d/map-camera";
 import { isMapModelLoading } from "@/lib/map3d/loading-state";
 import { createGridFromSceneObjects } from "@/lib/map3d/scene-walkability";
-import { findWalkableRouteToTarget, openTargetEntryDoors, snapToWalkable, type Point2, type WalkableGrid } from "@/lib/map3d/walkable-grid";
+import { elevationAt, findWalkableRouteToTarget, openTargetEntryDoors, snapToWalkable, type Point2, type WalkableGrid } from "@/lib/map3d/walkable-grid";
 import { defaultMapObjectConfig, getMapObjectPhotoUrl, readMapObjectConfigs, type MapObjectConfig } from "@/lib/map3d/admin-object-config";
 
 type ViewerApi = {
@@ -286,7 +289,7 @@ function LoadingOverlay({ modelReady }: { modelReady: boolean }) {
         <Box size={22} strokeWidth={1.6} />
       </div>
       <div className="loader-copy">
-        <span>MEMUAT GROUND FLOOR</span>
+        <span>MEMUAT MODEL LANTAI</span>
         <strong>{Math.round(progress)}%</strong>
       </div>
       <div className="loader-track">
@@ -295,6 +298,9 @@ function LoadingOverlay({ modelReady }: { modelReady: boolean }) {
     </div>
   );
 }
+
+/** Jarak gambar rute di atas permukaan lantai, dalam meter. */
+const ROUTE_CLEARANCE = 0.06;
 
 export function AirportWayfinding() {
   const viewerApi = useRef<ViewerApi>(null);
@@ -326,6 +332,10 @@ export function AirportWayfinding() {
     useState<RoutePlaybackSnapshot | null>(null);
   const [routeRestartToken, setRouteRestartToken] = useState(0);
   const [routeRecenterToken, setRouteRecenterToken] = useState(0);
+  const [selectedFloor, setSelectedFloor] = useState<FloorId | null>(null);
+  const { availability, ready: floorsReady } = useFloorAvailability();
+  const floorView = useMemo(() => resolveFloorView(selectedFloor, availability), [selectedFloor, availability]);
+  const routable = FLOOR_DEFINITIONS[floorView.view].routable;
   useEffect(() => {
     const sync = () => setMapObjectConfigs(readMapObjectConfigs());
     sync();
@@ -344,6 +354,11 @@ export function AirportWayfinding() {
     (nextBounds: SceneBounds, nextObjects: SceneObjectRecord[]) => {
       setBounds(nextBounds);
       setObjects(nextObjects);
+      if (!routable) {
+        setWalkGrid(null);
+        setGridError(null);
+        return;
+      }
       try {
         setWalkGrid(createGridFromSceneObjects(nextObjects));
         setGridError(null);
@@ -352,7 +367,7 @@ export function AirportWayfinding() {
         setGridError(error instanceof Error ? error.message : "Area jalan dari model GLB tidak dapat diproses.");
       }
     },
-    [],
+    [routable],
   );
 
   const selectableBuildings = useMemo(
@@ -401,7 +416,7 @@ export function AirportWayfinding() {
       setViewMode("map");
       setRouteProgress(null);
       setRoutePaused(false);
-      viewerApi.current?.focusPoint(new THREE.Vector3(snapped[0], (bounds?.box.min.y ?? 0) + 0.2, snapped[1]));
+      viewerApi.current?.focusPoint(new THREE.Vector3(snapped[0], elevationAt(walkGrid, snapped[0], snapped[1]) + ROUTE_CLEARANCE, snapped[1]));
     },
     [bounds, walkGrid],
   );
@@ -452,8 +467,9 @@ export function AirportWayfinding() {
         return;
       }
 
-      const elevation = (bounds?.box.min.y ?? 0) + 0.2;
-      setRouteWorldPoints(points.map(([x, z]) => [x, elevation, z]));
+      // Tinggi diambil per titik dari permukaan lantai, bukan dari dasar model,
+      // supaya rute tetap menempel saat model berisi lebih dari satu lantai.
+      setRouteWorldPoints(points.map(([x, z]) => [x, elevationAt(routeGrid, x, z) + ROUTE_CLEARANCE, z]));
       setDestinationPoint(points.at(-1) ?? null);
       setDestinationName(record.name);
       setRouteMessage("Rute terdekat menghindari tembok dan pilar, melalui bukaan pintu yang ada pada model.");
@@ -547,12 +563,15 @@ export function AirportWayfinding() {
     return () => window.cancelAnimationFrame(frame);
   }, [routeMetrics]);
 
-  const markerElevation = (bounds?.box.min.y ?? 0) + 0.2;
+  const pointElevation = useCallback(
+    (point: Point2) => (walkGrid ? elevationAt(walkGrid, point[0], point[1]) : bounds?.box.min.y ?? 0) + ROUTE_CLEARANCE,
+    [bounds, walkGrid],
+  );
   const startWorldPoint: RouteWorldPoint | null = startPoint
-    ? [startPoint[0], markerElevation, startPoint[1]]
+    ? [startPoint[0], pointElevation(startPoint), startPoint[1]]
     : null;
   const destinationWorldPoint: RouteWorldPoint | null = destinationPoint
-    ? [destinationPoint[0], markerElevation, destinationPoint[1]]
+    ? [destinationPoint[0], pointElevation(destinationPoint), destinationPoint[1]]
     : null;
 
   const toggleRoutePause = useCallback(() => {
@@ -593,6 +612,19 @@ export function AirportWayfinding() {
     setRoutePaused(false);
     window.requestAnimationFrame(() => viewerApi.current?.resetView());
   }, []);
+
+  const changeFloor = useCallback((floor: FloorId | null) => {
+    if (floor === selectedFloor) return;
+    resetRoute();
+    // Model baru hanya dimuat ulang jika URL-nya berbeda. Tanpa pengecekan ini, memilih
+    // Lantai 1 saat tampilan gabungan masih memakai model Lantai 1 akan menahan overlay pemuatan.
+    if (resolveFloorView(floor, availability).url !== floorView.url) {
+      setBounds(null);
+      setObjects([]);
+      setWalkGrid(null);
+    }
+    setSelectedFloor(floor);
+  }, [availability, floorView.url, resetRoute, selectedFloor]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -672,13 +704,15 @@ export function AirportWayfinding() {
             color="#D9E8FF"
           />
           <Suspense fallback={null}>
-            <SceneModel
+            {floorView.url && <SceneModel
+              key={floorView.url}
+              modelUrl={floorView.url}
               selectedUuid={selected?.uuid ?? null}
               onSelect={handleSelect}
               onSelectFloor={selectingStart ? (point) => commitStartPoint([point.x, point.z], "Posisi pada peta") : undefined}
               onSelectEntryPoint={chooseEntryPoint}
               onReady={handleReady}
-            />
+            />}
             <GridRouteLayer
               points={routeWorldPoints}
               highlightedPoints={highlightedPoints}
@@ -705,11 +739,13 @@ export function AirportWayfinding() {
         </Canvas>
       </div>
 
-      <LoadingOverlay modelReady={bounds !== null} />
+      <LoadingOverlay modelReady={floorsReady && floorView.url !== null && bounds !== null} />
+      {floorsReady && floorView.url === null && <div className="loading-overlay" role="alert"><div className="loader-copy"><span>MODEL BELUM TERSEDIA</span><strong>Letakkan file GLB di public/models</strong></div></div>}
+      <FloorSwitcher selected={selectedFloor} shownView={floorView.view} isFallback={floorView.isFallback} availability={availability} onSelect={changeFloor} />
 
       <aside className="sea-planner" aria-label="Pencarian rute">
         <div className="sea-planner-heading">
-          <span>TERMINAL 1 · LANTAI DASAR</span>
+          <span>TERMINAL 1 · {floorView.view === "ALL" ? "LANTAI 1 DAN 2" : floorView.view === "L2" ? "LANTAI 2" : "LANTAI 1"}</span>
           <h1>Petunjuk arah</h1>
         </div>
         <div className="sea-trip-fields">
@@ -732,7 +768,7 @@ export function AirportWayfinding() {
             {searchResults.length ? searchResults.map((record) => { const displayName = mapObjectConfigs[record.name]?.displayName?.trim(); return <button key={record.uuid} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => chooseSearchResult(record)}><MapPin size={16} /><span><strong>{displayName || record.selectableLabel || record.name}</strong><small>{displayName ? `${record.name} · ${record.metadata.category}` : (record.selectableLabel ? `${record.name} · ${record.metadata.category}` : record.metadata.category)}</small></span></button>; }) : <p>Tidak ditemukan. Coba nama tenant atau kode building.</p>}
           </div>}
         </div>
-        <p className="sea-hint" role="status">{gridError ?? routeMessage}</p>
+        <p className="sea-hint" role="status">{gridError ?? (routable ? routeMessage : "Rute tersedia di Lantai 1. Tekan Lantai 1 untuk memilih titik awal dan tujuan.")}</p>
         {routeMetrics && routeSteps.length > 0 && <div className="sea-route-details">
           <div className="sea-route-summary"><div><strong>{Math.round(routeMetrics.totalDistance)} m</strong><span>Perkiraan {Math.max(1, Math.ceil(routeMetrics.totalDistance / 1.35 / 60))} menit · lantai dasar</span></div><button type="button" onClick={resetRoute} aria-label="Hapus rute"><X size={18} /></button></div>
           <div className="sea-step-header"><h2>Langkah perjalanan</h2><span>{activeStepIndex + 1} / {routeSteps.length}</span></div>
