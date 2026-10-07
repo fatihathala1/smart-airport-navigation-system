@@ -1822,3 +1822,44 @@
 .map3d-root .departure-logo { width: 56px; height: 28px; padding: 2px 4px; border-radius: 5px; background: #fff; object-fit: contain; }
 .map3d-root .departure-logo-monogram { display: grid; width: 56px; height: 28px; place-items: center; border: 1px solid rgba(150, 190, 214, 0.3); border-radius: 5px; color: #b9cdd9; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
 
+
+/* ==========================================================================
+   AREA LUAR GEDUNG
+   ========================================================================== */
+.map3d-root .exterior-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid rgba(150, 190, 214, 0.35);
+  border-radius: 6px;
+  background: rgba(14, 30, 43, 0.86);
+  color: #e7f1f7;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.map3d-root .exterior-label b {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 4px;
+  background: #1f6fb2;
+  color: #fff;
+  font-size: 11px;
+}
+.map3d-root .exterior-label.is-building { padding-left: 8px; color: #c9d6de; font-weight: 500; }
+.map3d-root .sea-map-actions .map-exterior-toggle[aria-pressed="true"] { background: #126c9d; color: #fff; }
+.map3d-root .map-attribution {
+  position: absolute;
+  z-index: 10;
+  right: 76px;
+  bottom: 22px;
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(14, 30, 43, 0.7);
+  color: #9bb0be;
+  font-size: 10px;
+}

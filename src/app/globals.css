@@ -35,279 +35,34 @@ button:active { transform: translateY(1px); }
 /* ==========================================================================
    ROAMORA HERO & FLOATING SEARCH WIDGET STYLES
    ========================================================================== */
-.roamora-hero {
-  position: relative;
-  width: 100%;
-  min-height: clamp(688px, calc(100svh - 72px), 848px);
-  margin: 0;
-  padding: 78px 32px 64px;
-  border-radius: 34px 34px 0 0;
-  background: url('/bg-home.jpg') center 35% / cover no-repeat;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  overflow: hidden;
-  z-index: 10;
-}
 
-.roamora-hero-backdrop {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(10, 28, 33, 0.62) 0%, rgba(10, 28, 33, 0.34) 42%, rgba(2, 132, 199, 0.28) 72%, rgba(2, 132, 199, 0.8) 96%, #0284c7 100%);
-}
 
-.roamora-hero-content {
-  position: relative;
-  z-index: 2;
-  width: min(1280px, 100%);
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
 
-.roamora-hero-copy {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
 
-.roamora-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 18px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  color: #0284c7;
-  font-size: 12px;
-  font-weight: 700;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(10px);
-}
 
-.roamora-badge-icon {
-  color: #0284c7;
-  transform: rotate(-10deg);
-}
 
-.roamora-hero-title {
-  max-width: 850px;
-  margin: 0;
-  font-size: clamp(50px, 5.35vw, 84px);
-  font-weight: 800;
-  letter-spacing: -0.062em;
-  line-height: 1;
-  text-align: center;
-  color: #ffffff;
-}
 
-.roamora-blue-text {
-  background: linear-gradient(90deg, #0ea5e9 0%, #7dd3fc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  display: block;
-  margin-top: 10px;
-}
 
-.roamora-hero-subtitle {
-  margin: 0;
-  max-width: none;
-  color: rgba(255, 255, 255, 0.94);
-  font-size: clamp(15px, 1.25vw, 19px);
-  line-height: 1.45;
-  font-weight: 500;
-  text-align: center;
-  white-space: nowrap;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-}
 
-.roamora-hero-actions {
-  width: 100%;
-  margin-top: 22px;
-  display: flex;
-  justify-content: center;
-}
 
-.roamora-cta-btn {
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-  gap: 12px;
-  min-height: 52px;
-  padding: 0 8px 0 24px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 12px 30px rgba(2, 132, 199, 0.4);
-  transition: all 0.22s ease;
-}
 
-.roamora-cta-btn:hover {
-  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 16px 36px rgba(2, 132, 199, 0.5);
-}
 
-.roamora-cta-arrow {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
-}
 
 /* Floating Search & Navigation Card Widget */
-.roamora-floating-widget {
-  position: relative;
-  z-index: 5;
-  margin: clamp(48px, 7vh, 72px) auto 0;
-  width: min(1200px, 100%);
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: #ffffff;
-  border-radius: 28px;
-  border: 1px solid rgba(220, 230, 234, 0.95);
-  box-shadow: 0 24px 60px rgba(15, 35, 40, 0.12), 0 6px 18px rgba(15, 35, 40, 0.04);
-  backdrop-filter: blur(16px);
-}
 
-.roamora-widget-col {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: #ffffff;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background 0.16s ease;
-}
 
-.roamora-widget-col:hover {
-  background: #f5f9fa;
-}
 
-.roamora-col-icon {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  background: #eef8f9;
-  color: #0f2d35;
-}
 
-.roamora-col-copy {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-  line-height: 1.25;
-}
 
-.roamora-col-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #7a8d94;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
 
-.roamora-col-val {
-  font-size: 13px;
-  font-weight: 700;
-  color: #0f2d35;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
-.roamora-widget-input {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  font-size: 13px;
-  font-weight: 600;
-  color: #0f2d35;
-}
 
-.roamora-widget-input::placeholder {
-  color: #9cb0b7;
-}
 
-.roamora-widget-select {
-  border: 0;
-  outline: 0;
-  background: transparent;
-  font-size: 12px;
-  font-weight: 700;
-  color: #0f2d35;
-  cursor: pointer;
-  padding: 2px 0;
-}
 
-.roamora-inline-switches {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.roamora-widget-divider {
-  width: 1px;
-  height: 36px;
-  background: #e5ecef;
-  flex-shrink: 0;
-}
 
-.roamora-clear-btn {
-  border: 0;
-  background: transparent;
-  color: #7a8d94;
-  cursor: pointer;
-  padding: 4px;
-}
 
-.roamora-search-submit-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 52px;
-  padding: 0 24px;
-  border-radius: 999px;
-  border: 0;
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-  box-shadow: 0 8px 22px rgba(2, 132, 199, 0.35);
-  transition: all 0.18s ease;
-}
 
-.roamora-search-submit-btn:hover {
-  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
-  box-shadow: 0 12px 28px rgba(2, 132, 199, 0.45);
-  transform: scale(1.02);
-}
 
 /* Global Wayfinding Layout */
 .wayfinding-page { min-height: 100dvh; background: linear-gradient(180deg, #0284c7 0%, #0284c7 54%, #7dd3fc 68%, #075985 100%); display: flex; flex-direction: column; }
@@ -569,41 +324,9 @@ button:active { transform: translateY(1px); }
   .workspace { grid-template-columns: minmax(0, 1fr); }
   .search-panel { grid-template-columns: 180px minmax(0, 1fr); }
   .result-row { flex-basis: 240px; }
-  .roamora-hero { min-height: 748px; padding: 54px 20px 60px; }
-  .roamora-hero-copy { width: min(760px, 100%); }
-  .roamora-floating-widget {
-    inset: auto;
-    margin-top: 40px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
-    border-radius: 24px;
-  }
-  .roamora-widget-divider { display: none; }
-  .roamora-search-submit-btn { grid-column: 1 / -1; }
 }
 
 @media (max-width: 767px) {
-  .roamora-hero { min-height: auto; padding: 52px 12px; }
-  .roamora-hero-content { min-height: 0; }
-  .roamora-hero-copy { width: 100%; gap: 14px; }
-  .roamora-hero-title { font-size: clamp(36px, 12vw, 52px); }
-  .roamora-blue-text { margin-top: 6px; }
-  .roamora-hero-subtitle { max-width: 34rem; font-size: 14px; white-space: normal; }
-  .roamora-floating-widget {
-    position: relative;
-    inset: auto;
-    order: initial;
-    width: 100%;
-    margin-top: 24px;
-    grid-template-columns: 1fr;
-    padding: 10px;
-    border-radius: 22px;
-  }
-  .roamora-widget-col { padding: 9px 12px; }
-  .roamora-search-submit-btn { grid-column: auto; width: 100%; }
-  .roamora-hero-actions { order: initial; width: 100%; margin-top: 18px; justify-content: center; }
-  .roamora-cta-btn { min-height: 48px; padding: 0 24px; }
   .explore-section { padding-top: 36px; }
   .explore-heading, .insights-heading, .insights-grid { width: calc(100% - 24px); }
   .explore-heading { margin-bottom: 28px; }
@@ -2388,7 +2111,8 @@ button:active { transform: translateY(1px); }
   line-height: 1.45;
 }
 
-/* Full-Screen Map Page – Background Map + Floating HUD */
+/* Full-Screen Map Page – Background Map + Floating HUD
+ */
 
 /* Page shell -- occupies full viewport height */
 .wayfinding-page.full-screen-page {
@@ -3465,7 +3189,8 @@ html {
   }
 }
 
-/* FULL TUTORIAL SECTION -- Premium Redesign */
+/* FULL TUTORIAL SECTION -- Premium Redesign
+ */
 .fts-section {
   position: relative;
   overflow: hidden;
@@ -3802,7 +3527,8 @@ html {
 }
 
 
-/* VIDEO TUTORIAL SECTION -- Premium Redesign */
+/* VIDEO TUTORIAL SECTION -- Premium Redesign
+ */
 .vts-section {
   position: relative;
   overflow: hidden;
