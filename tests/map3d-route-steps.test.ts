@@ -32,3 +32,17 @@ test("ignores tiny bends and keeps a final arrival instruction", () => {
   assert.deepEqual(steps.map((step) => step.kind), ["straight", "arrive"]);
   assert.equal(steps[0].endIndex, metrics.points.length - 1);
 });
+
+test("a floor change becomes its own step with the connector label", () => {
+  const metrics = createRouteMetrics([
+    [0, 0, 0],
+    [0, 0, 10],
+    [6, 3, 10],
+    [6, 3, 20],
+  ]);
+  assert.ok(metrics);
+  const steps = createRouteSteps(metrics, [{ index: 1, direction: "up", label: "Naik eskalator ke Lantai 2" }]);
+  assert.deepEqual(steps.map((step) => step.kind), ["straight", "up", "straight", "arrive"]);
+  assert.equal(steps[1].label, "Naik eskalator ke Lantai 2");
+  assert.deepEqual([steps[1].startIndex, steps[1].endIndex], [1, 2]);
+});

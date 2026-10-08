@@ -5,12 +5,38 @@ import { DepartureList } from "./DepartureList";
 
 type GateAnswer = "yes" | "no" | null;
 
-export function PassengerRoadmap() {
+type PassengerRoadmapProps = {
+  /** false selama model dan grid jalan belum siap. */
+  routeReady?: boolean;
+  /** Nomor gate yang ada pada model Lantai 2. */
+  gates?: readonly number[];
+  onRouteToDeparture?: (departure: number) => void;
+  /** `departure` adalah area check-in yang dipilih, dipakai sebagai titik awal. */
+  onRouteToGate?: (gate: number, departure: number | null) => void;
+};
+
+/** Ambil nomor gate dari isian bebas: "5", "Gate 5", "G05". */
+export function parseGateNumber(value: string): number | null {
+  const match = /\d+/.exec(value);
+  if (!match) return null;
+  const gate = Number.parseInt(match[0], 10);
+  return Number.isFinite(gate) && gate > 0 ? gate : null;
+}
+
+function gateRangeText(gates: readonly number[]) {
+  if (!gates.length) return "";
+  const sorted = [...gates].sort((left, right) => left - right);
+  return `${sorted[0]}–${sorted.at(-1)}`;
+}
+
+export function PassengerRoadmap({ routeReady = false, gates = [], onRouteToDeparture, onRouteToGate }: PassengerRoadmapProps) {
   const [open, setOpen] = useState(false);
   const [departure, setDeparture] = useState<number | null>(null);
   const [gateAnswer, setGateAnswer] = useState<GateAnswer>(null);
   const [gate, setGate] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const gateNumber = parseGateNumber(gate);
+  const gateOnMap = gateNumber !== null && gates.includes(gateNumber);
 
   useEffect(() => {
     if (!open) return;
@@ -25,6 +51,13 @@ export function PassengerRoadmap() {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [open]);
+
+  // Panel ditutup supaya rute di peta langsung terlihat.
+  const showRoute = (run: () => void) => {
+    run();
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
 
   return (
     <div className="passenger-map-guide">
@@ -48,7 +81,7 @@ export function PassengerRoadmap() {
           <div className="passenger-roadmap-summary" aria-live="polite">
             <span>Rencana perjalananmu</span>
             <strong>{departure ? `Departure ${departure}` : "Pilih area Departure"}</strong>
-            <span>{gateAnswer === "yes" && gate.trim() ? `Gate ${gate.trim()}` : "Nomor gate menunggu informasi di tiket"}</span>
+            <span>{gateAnswer === "yes" && gateNumber !== null ? `Gate ${gateNumber}` : "Nomor gate menunggu informasi di tiket"}</span>
           </div>
         </div>
 
@@ -59,7 +92,17 @@ export function PassengerRoadmap() {
               <h3>Menuju area check-in</h3>
               <p>Di area Departure berapa kamu akan check-in untuk mengambil tiket?</p>
               <DepartureList value={departure} onChange={setDeparture} />
-              <p className="passenger-data-note">Pilihan area ini belum terhubung ke peta 3D.</p>
+              {departure !== null && onRouteToDeparture && (
+                <button
+                  type="button"
+                  className="passenger-route-button"
+                  disabled={!routeReady}
+                  onClick={() => showRoute(() => onRouteToDeparture(departure))}
+                >
+                  Tunjukkan rute ke Departure {departure}
+                </button>
+              )}
+              {departure !== null && !routeReady && <p className="passenger-data-note">Peta masih dimuat. Rute dapat dibuka setelah peta siap.</p>}
             </div>
           </li>
 
@@ -84,11 +127,28 @@ export function PassengerRoadmap() {
               {gateAnswer === "yes" && (
                 <label className="passenger-gate-input">
                   Gate berapa?
-                  <input type="text" value={gate} onChange={(event) => setGate(event.target.value)} placeholder="Masukkan nomor gate dari tiket" maxLength={20} />
+                  <input type="text" inputMode="numeric" value={gate} onChange={(event) => setGate(event.target.value)} placeholder="Masukkan nomor gate dari tiket" maxLength={20} />
                 </label>
               )}
+              {gateAnswer === "yes" && gateOnMap && onRouteToGate && (
+                <button
+                  type="button"
+                  className="passenger-route-button"
+                  disabled={!routeReady}
+                  onClick={() => showRoute(() => onRouteToGate(gateNumber, departure))}
+                >
+                  Tunjukkan rute ke Gate {gateNumber}
+                  <small>{departure ? `Dari Departure ${departure}, naik ke Lantai 2` : "Naik ke Lantai 2"}</small>
+                </button>
+              )}
+              {gateAnswer === "yes" && gate.trim() !== "" && !gateOnMap && (
+                <p className="passenger-gate-hint" role="status">
+                  {gates.length
+                    ? `Gate ${gateNumber ?? gate.trim()} tidak ada di peta Lantai 2. Gate yang tersedia: ${gateRangeText(gates)}.`
+                    : "Peta Lantai 2 belum tersedia, jadi rute ke gate belum bisa ditampilkan."}
+                </p>
+              )}
               {gateAnswer === "no" && <p className="passenger-gate-hint" role="status">Lanjutkan check-in dahulu, lalu lihat nomor gate pada tiket atau layar informasi.</p>}
-              <p className="passenger-data-note">Peta dan rute menuju gate di lantai 2 belum tersedia.</p>
             </div>
           </li>
 

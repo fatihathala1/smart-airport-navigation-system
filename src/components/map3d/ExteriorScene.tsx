@@ -34,7 +34,7 @@ const LAYERS = {
 const BUILDING_COLOR = "#cfc9bf";
 
 /** Ketinggian lapisan relatif terhadap lantai terminal, dalam satuan model. */
-const GROUND_OFFSET = -0.25;
+export const EXTERIOR_GROUND_OFFSET = -0.25;
 
 function FlatLayer({ geometry, layer }: { geometry: THREE.BufferGeometry | null; layer: keyof typeof LAYERS }) {
   if (!geometry) return null;
@@ -71,7 +71,7 @@ export function ExteriorScene({ baseY, visible, onAttribution }: ExteriorScenePr
 
   const layers = useMemo(() => {
     if (!data) return null;
-    const y = baseY + GROUND_OFFSET;
+    const y = baseY + EXTERIOR_GROUND_OFFSET;
     const byKind = (kind: string) => data.areas.filter((area) => area.kind === kind);
     const roads = data.lines.filter((line) => line.kind === "road");
     const taxiways = data.lines.filter((line) => line.kind === "taxiway");
