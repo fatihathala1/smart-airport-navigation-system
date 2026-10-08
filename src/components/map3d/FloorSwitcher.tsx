@@ -1,32 +1,25 @@
 "use client";
 
-import { FLOOR_BUTTON_ORDER, FLOOR_DEFINITIONS, type FloorAvailability, type FloorId, type FloorView } from "@/lib/map3d/floors";
+import { FLOOR_BUTTON_ORDER, FLOOR_LABELS, floorViewLabel, type FloorId, type FloorView } from "@/lib/map3d/floors";
 
 type FloorSwitcherProps = {
-  selected: FloorId | null;
-  shownView: FloorView;
-  isFallback: boolean;
-  availability: FloorAvailability;
-  onSelect: (floor: FloorId | null) => void;
+  view: FloorView;
+  /** Lantai yang ada pada model yang dimuat. */
+  floors: readonly FloorId[];
+  onSelect: (view: FloorView) => void;
 };
 
 /**
  * Tombol lantai. Menekan lantai yang sedang aktif membatalkan pilihan,
- * lalu peta kembali ke tampilan gabungan.
+ * lalu peta kembali menampilkan semua lantai.
  */
-export function FloorSwitcher({ selected, shownView, isFallback, availability, onSelect }: FloorSwitcherProps) {
-  const caption = selected
-    ? FLOOR_DEFINITIONS[selected].label
-    : isFallback
-      ? "Lantai 1"
-      : "2 lantai";
-
+export function FloorSwitcher({ view, floors, onSelect }: FloorSwitcherProps) {
   return (
     <div className={"floor-switcher"} role="group" aria-label="Pilih lantai">
       <div className={"floor-switcher-buttons"}>
         {FLOOR_BUTTON_ORDER.map((floor) => {
-          const available = Boolean(availability[floor]);
-          const pressed = selected === floor;
+          const available = floors.includes(floor);
+          const pressed = view === floor;
           return (
             <button
               key={floor}
@@ -34,17 +27,17 @@ export function FloorSwitcher({ selected, shownView, isFallback, availability, o
               className="floor-switcher-button"
               aria-pressed={pressed}
               disabled={!available}
-              title={available ? (pressed ? "Tekan lagi untuk tampilan gabungan" : undefined) : "Model lantai ini belum tersedia"}
-              onClick={() => onSelect(pressed ? null : floor)}
+              title={available ? (pressed ? "Tekan lagi untuk menampilkan semua lantai" : undefined) : "Model lantai ini belum tersedia"}
+              onClick={() => onSelect(pressed ? "ALL" : floor)}
             >
               <span className={"floor-switcher-number"}>{floor === "L1" ? "1" : "2"}</span>
-              <span className={"floor-switcher-name"}>{FLOOR_DEFINITIONS[floor].label}</span>
+              <span className={"floor-switcher-name"}>{FLOOR_LABELS[floor]}</span>
             </button>
           );
         })}
       </div>
-      <p className={"floor-switcher-caption"} role="status" data-view={shownView}>
-        {selected ? "Menampilkan" : "Tampilan"} <strong>{caption}</strong>
+      <p className={"floor-switcher-caption"} role="status" data-view={view}>
+        {view === "ALL" ? "Tampilan" : "Menampilkan"} <strong>{floorViewLabel(view, floors)}</strong>
       </p>
     </div>
   );

@@ -47,8 +47,11 @@ const GLASS_NAME = /(glass|kaca)/i;
  * dengan lantai di dalam gedung, sehingga tidak ada petunjuk bentuk yang dapat
  * memisahkan keduanya. Bila tidak ada objek yang cocok, seluruh permukaan datar
  * pada lantai terluas dipakai sebagai cadangan.
+ *
+ * `FLOOR_` di awal nama mencakup `FLOOR__...` dan pelat Lantai 2 dari Blender
+ * (`FLOOR_JUANDA_FF8`).
  */
-const WALKABLE_FLOOR_NAME = /(area[_\-\s]?visitor|walkable|area[_\-\s]?jalan|^floor__|nav[_\-\s]?floor)/i;
+export const WALKABLE_FLOOR_NAME = /(area[_\-\s]?visitor|walkable|area[_\-\s]?jalan|^floor_|nav[_\-\s]?floor)/i;
 
 /** Objek penanda yang tidak pernah menghalangi jalan. */
 const NON_BLOCKING_NAME = /(navigasi|navigation|marker|label|signage)/i;
@@ -105,10 +108,28 @@ function readTriangles(record: SceneObject): ObjectSurfaces {
  * dipakai tanpa mengubah kode.
  */
 export function analyzeSceneWalkability(objects: SceneObject[], options: GridOptions = {}): SceneWalkability {
-  const cellSize = options.cellSize ?? 0.6;
-  const clearance = options.clearance ?? 0.4;
-  const preferredHeadroom = options.headroom ?? 2.1;
+  const scene = parseScene(objects);
+  const wanted = options.levelY;
+  const level = wanted === undefined
+    ? scene.levels[0]
+    : [...scene.levels].sort((left, right) => Math.abs(left.y - wanted) - Math.abs(right.y - wanted))[0];
+  return { grid: buildLevelGrid(scene, level, options), level, levels: scene.levels };
+}
 
+/**
+ * Grid jalan untuk setiap tingkat lantai pada model, diurutkan dari bawah ke
+ * atas. Geometri dibaca sekali saja, lalu dipotong per tingkat.
+ */
+export function analyzeAllLevels(objects: SceneObject[], options: Omit<GridOptions, "levelY"> = {}): SceneWalkability[] {
+  const scene = parseScene(objects);
+  return [...scene.levels]
+    .sort((left, right) => left.y - right.y)
+    .map((level) => ({ grid: buildLevelGrid(scene, level, options), level, levels: scene.levels }));
+}
+
+type ParsedScene = { parsed: ObjectSurfaces[]; floorSource: ObjectSurfaces[]; levels: FloorLevel[] };
+
+function parseScene(objects: SceneObject[]): ParsedScene {
   const parsed: ObjectSurfaces[] = [];
   for (const record of objects) {
     if (!record.object.visible) continue;
@@ -120,11 +141,13 @@ export function analyzeSceneWalkability(objects: SceneObject[], options: GridOpt
   const floorSource = floorObjects.length ? floorObjects : parsed;
   const levels = detectFloorLevels(floorSource.flatMap((entry) => entry.surfaces));
   if (!levels.length) throw new Error("Permukaan lantai untuk navigasi tidak ditemukan dalam model GLB.");
+  return { parsed, floorSource, levels };
+}
 
-  const wanted = options.levelY;
-  const level = wanted === undefined
-    ? levels[0]
-    : [...levels].sort((left, right) => Math.abs(left.y - wanted) - Math.abs(right.y - wanted))[0];
+function buildLevelGrid({ parsed, floorSource, levels }: ParsedScene, level: FloorLevel, options: GridOptions): WalkableGrid {
+  const cellSize = options.cellSize ?? 0.6;
+  const clearance = options.clearance ?? 0.4;
+  const preferredHeadroom = options.headroom ?? 2.1;
   const headroom = headroomFor(level, levels, preferredHeadroom);
   const floorTop = level.maxY + FLAT_TRIANGLE_TOLERANCE;
   const bandBottom = level.y + 0.15;
@@ -145,7 +168,8 @@ export function analyzeSceneWalkability(objects: SceneObject[], options: GridOpt
   for (const entry of parsed) {
     const { name } = entry.record;
     if (DOOR_NAME.test(name)) {
-      if (!entry.box.isEmpty()) {
+      // Pintu lantai lain tidak boleh membuka dinding kaca di lantai ini.
+      if (!entry.box.isEmpty() && entry.box.max.y >= bandBottom && entry.box.min.y <= bandTop) {
         doors.push({ minX: entry.box.min.x, maxX: entry.box.max.x, minZ: entry.box.min.z, maxZ: entry.box.max.z });
       }
       continue;
@@ -174,11 +198,7 @@ export function analyzeSceneWalkability(objects: SceneObject[], options: GridOpt
 
   if (!floor.length) throw new Error("Permukaan lantai untuk navigasi tidak ditemukan dalam model GLB.");
 
-  return {
-    grid: createWalkableGrid({ floor, obstacles: [], doors, obstacleTriangles, cellSize, clearance }),
-    level,
-    levels,
-  };
+  return createWalkableGrid({ floor, obstacles: [], doors, obstacleTriangles, cellSize, clearance });
 }
 
 /** Beri ketebalan pada segitiga yang terproyeksi menjadi garis. */

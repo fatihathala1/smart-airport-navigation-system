@@ -1678,6 +1678,26 @@
 .map3d-root .passenger-roadmap-step p,
 .map3d-root .passenger-roadmap-step .passenger-data-note,
 .map3d-root .passenger-roadmap-summary span { color: #9bb0be; }
+.map3d-root .passenger-route-button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: #168bc2;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+.map3d-root .passenger-route-button small { color: #d7f0fc; font-size: 11px; font-weight: 600; }
+.map3d-root .passenger-route-button:hover:not(:disabled) { background: #1d9bd6; }
+.map3d-root .passenger-route-button:focus-visible { outline: 3px solid #e76f43; outline-offset: 2px; }
+.map3d-root .passenger-route-button:disabled { background: #214961; color: #9bb0be; cursor: not-allowed; }
 
 @media (max-width: 700px) {
   .map3d-root .passenger-map-guide { top: 12px; right: 65px; width: min(350px, calc(100vw - 77px)); }

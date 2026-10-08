@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { floorOfObject } from "./floors";
 
 export type CategoryKey =
   | "building"
@@ -22,7 +23,9 @@ export type CategoryKey =
   | "toilet"
   | "office"
   | "baggage-claim"
-  | "baggage-wrap";
+  | "baggage-wrap"
+  | "gate"
+  | "jet-bridge";
 
 export type ObjectMetadata = {
   key: CategoryKey;
@@ -48,6 +51,7 @@ export type SelectedObject = ObjectMetadata & {
 };
 
 const BASE_LOCATION = "Terminal 1 - Ground Floor";
+const UPPER_LOCATION = "Terminal 1 - Lantai 2";
 
 export const COLOR_PALETTE: Record<CategoryKey, string> = {
   building: "#8B5A2B",
@@ -72,10 +76,21 @@ export const COLOR_PALETTE: Record<CategoryKey, string> = {
   office: "#176B3A",
   "baggage-claim": "#A6A6A6",
   "baggage-wrap": "#123B73",
+  gate: "#2F80C9",
+  "jet-bridge": "#B9C4CB",
 };
 
 function categoryForObject(objectName: string): CategoryKey {
-  const name = objectName.trim().toLocaleLowerCase("id-ID");
+  // Nama Lantai 2 yang bentrok dengan Lantai 1 diberi akhiran `__l2` saat digabung.
+  const name = objectName.trim().toLocaleLowerCase("id-ID").replace(/__l2$/, "");
+  // Pelat lantai Lantai 2 dan bidang lantai lain yang diekspor dengan nama
+  // berbeda (`xray`, `pavlon`, `area-duduk`, `bolong`).
+  if (/^floor_|^xray(?:[._]\d+)?$|^pavlon|^area-duduk|^bolong/.test(name)) return "visitor";
+  if (name.startsWith("garbarata")) return "jet-bridge";
+  if (/^t[i1]-ff-gate-\d+$/.test(name)) return "gate";
+  if (name.startsWith("xray_")) return "security";
+  if (name.startsWith("seat_vis__")) return "seating";
+  if (name.startsWith("stair_vis__") || /-(?:eks|tangga)[- ]/.test(name)) return "escalator";
   if (/^t(?:1|i)-gf-tl(?:[-_]|$)/.test(name)) return "toilet";
   if (/^door__(?:keberangkatan|kedatangan)_/.test(name)) {
     return name.startsWith("door__keberangkatan") ? "departure" : "arrival";
@@ -109,7 +124,7 @@ function categoryForObject(objectName: string): CategoryKey {
   if (name.includes("-tl-") || name.includes("toilet")) return "toilet";
   if (name.includes("-man-") || name.includes("office")) return "office";
 
-  if (/^t[i1]-gf-/.test(name)) return "building";
+  if (/^t[i1]-[gf]f-/.test(name)) return "building";
 
   if (
     /^(rectangle|vector|curve)/.test(name) ||
@@ -145,14 +160,16 @@ const CATEGORY_LABELS: Record<CategoryKey, string> = {
   office: "Ruang Manajemen / Kantor",
   "baggage-claim": "Baggage Claim",
   "baggage-wrap": "Baggage Wrap",
+  gate: "Gate keberangkatan",
+  "jet-bridge": "Garbarata",
 };
 
-export function getObjectMetadata(objectName: string): ObjectMetadata {
+export function getObjectMetadata(objectName: string, floor: "L1" | "L2" = "L1"): ObjectMetadata {
   const key = categoryForObject(objectName);
   return {
     key,
     category: CATEGORY_LABELS[key],
-    location: BASE_LOCATION,
+    location: floor === "L2" ? UPPER_LOCATION : BASE_LOCATION,
     status: "Terdata",
     color: COLOR_PALETTE[key],
   };
@@ -195,6 +212,6 @@ export function createSelectedObject(object: THREE.Object3D): SelectedObject {
     uuid: object.uuid,
     name: sourceObjectName,
     position: [worldPosition.x, worldPosition.y, worldPosition.z],
-    ...getObjectMetadata(sourceObjectName),
+    ...getObjectMetadata(sourceObjectName, floorOfObject(object)),
   };
 }

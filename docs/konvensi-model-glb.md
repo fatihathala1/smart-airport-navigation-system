@@ -1,7 +1,7 @@
 # Konvensi model GLB untuk navigasi
 
 Dokumen ini menjelaskan apa yang dibaca aplikasi dari sebuah file GLB, supaya model
-berikutnya (Lantai 2, gabungan, tampilan luar) dapat dipakai tanpa mengubah kode.
+berikutnya dapat dipakai tanpa mengubah kode.
 
 ## Yang dikenali dari bentuk, bukan dari nama
 
@@ -25,7 +25,7 @@ Pencocokan tidak membedakan huruf besar kecil dan boleh berada di mana saja dala
 
 | Maksud | Kata kunci pada nama objek | Alasan |
 |---|---|---|
-| Permukaan yang boleh dilalui | `area_visitor`, `walkable`, `area_jalan`, awalan `FLOOR__`, `nav_floor` | Apron di luar gedung berada pada ketinggian yang sama persis dengan lantai di dalam gedung. Tidak ada bentuk yang memisahkan keduanya. Pada model saat ini, `area_merah` di luar gedung sejajar dengan `area_visitor` di dalam. |
+| Permukaan yang boleh dilalui | `area_visitor`, `walkable`, `area_jalan`, awalan `FLOOR_`, `nav_floor` | Apron di luar gedung berada pada ketinggian yang sama persis dengan lantai di dalam gedung. Tidak ada bentuk yang memisahkan keduanya. Pada model saat ini, `area_merah` di luar gedung sejajar dengan `area_visitor` di dalam. |
 | Bukaan pintu | `door` atau `pintu` | Sebuah bukaan adalah ketiadaan geometri. Yang perlu ditandai justru letaknya. |
 | Dinding kaca | `glass` atau `kaca` | Hanya dinding kaca yang boleh ditembus oleh bukaan pintu. Tembok dan pilar tidak, meskipun ada pintu di dekatnya. |
 
@@ -49,20 +49,69 @@ permukaan jalannya.
 6. Plafon dan elemen gantung boleh dibiarkan. Keduanya otomatis diabaikan selama
    berada di atas rentang ketinggian pejalan kaki.
 
-## Menambahkan file model baru
+## Model bertingkat: satu file untuk dua lantai
 
-Daftar file ada di `src/lib/map3d/floors.ts`. Letakkan file di `public/models/`
-dengan nama berikut, lalu naikkan `FLOOR_VERSION` agar browser tidak memakai
-salinan lama:
+Aplikasi memuat satu file, `public/models/t1-gabungan.glb`, yang dibuat dari dua
+ekspor Blender:
+
+| Lantai | File sumber |
+|---|---|
+| Lantai 1 (GF) | `public/models/buildings-ground-floor.glb` |
+| Lantai 2 (FF) | `data/models/t1-lantai-2.glb` |
+
+Setelah salah satu file sumber berubah:
 
 ```
-public/models/t1-lantai-1.glb
-public/models/t1-lantai-2.glb
-public/models/t1-gabungan.glb
+node scripts/merge-floors.mjs
 ```
 
-Aplikasi memeriksa file mana yang ada saat halaman peta dibuka. File yang belum
-ada membuat tombol lantainya nonaktif, bukan membuat peta gagal dimuat.
+lalu naikkan versi `TERMINAL_MODEL_URL` di `src/lib/map3d/assets.ts`.
+
+Skrip menaruh isi GF di bawah node `LEVEL__L1` dan isi FF di bawah `LEVEL__L2`.
+Tombol lantai hanya menyembunyikan salah satu grup, jadi model tidak dimuat ulang
+dan rute yang aktif tetap ada. Yang dilakukan skrip:
+
+- **Menyelaraskan FF ke GF.** Kedua file diekspor terpusat pada kotak pembatasnya
+  sendiri, jadi titik nolnya berbeda. Geseran FF (`FF_OFFSET`, saat ini
+  X −0,79 m, Y +3,0 m, Z +9,23 m) dicari dari 56 pasang pilar struktur yang
+  menembus kedua lantai; sisa selisihnya rata-rata 0,25 m. Bila FF diekspor ulang
+  dengan titik nol lain, angka ini perlu dicari ulang.
+- **Membuang salinan GF di file FF.** File FF ikut membawa eskalator dan tangga
+  bernama `T1-GF-...` dengan posisi sedikit bergeser. Salinan ini dibuang; versi
+  dari file GF yang dipakai.
+- **Memberi akhiran `__L2`** pada nama FF yang sudah dipakai di GF (misalnya
+  `tembok_pilar_42`), supaya penanda Departure dan konfigurasi admin per nama
+  tetap menunjuk objek Lantai 1.
+
+### Pesawat di apron
+
+`src/lib/map3d/aircraft.ts` membuat pesawat low-poly (ukuran kelas A320 dikali
+skala model) dan menempatkannya nose-in di setiap `garbarata_*`, dengan pintu
+depan di ujung kabin garbarata. Satu dari setiap lima stand dibiarkan kosong.
+Warna ekor polos, bukan identitas maskapai. Pesawat ikut tombol area luar gedung.
+
+### Penghubung antarlantai
+
+Rute antarlantai lewat objek yang namanya mengandung salah satu kata berikut dan
+geometrinya benar-benar menjangkau dari lantai bawah ke lantai atas:
+
+| Nama | Arah yang dipakai rute |
+|---|---|
+| `EKS NAIK`, `ESKALATOR NAIK` | hanya naik |
+| `EKS TURUN`, `ESKALATOR TURUN` | hanya turun |
+| `TANGGA`, `STAIR` | dua arah |
+
+Eskalator tanpa kata NAIK/TURUN (misalnya `T1-GF-EKS-05`) tidak dipakai karena
+arahnya tidak diketahui. Ujung bawah dan atas diambil dari titik geometri pada
+ketinggian masing-masing lantai, jadi cukup objek visualnya (`ESC_VIS__...`,
+`STAIR_VIS__...`) yang miring dari lantai ke lantai.
+
+### Daftar periksa tambahan untuk Lantai 2
+
+1. Pelat lantai diberi nama berawalan `FLOOR_` (sekarang `FLOOR_JUANDA_FF8`).
+2. Gate diberi nama `T1-FF-GATE-<nomor>`. Nomor ini yang dicocokkan dengan isian
+   gate di panduan penumpang.
+3. Eskalator diberi kata NAIK atau TURUN sesuai arah sebenarnya.
 
 ## Pengujian
 
@@ -73,6 +122,9 @@ ada membuat tombol lantainya nonaktif, bukan membuat peta gagal dimuat.
   nama yang tetap memblokir, dan titik awal di dalam unit tertutup.
 - `tests/map3d-real-glb.test.ts`: membaca `buildings-ground-floor.glb` yang asli dan
   memastikan rute antar unit masih terbentuk.
+- `tests/map3d-multi-floor.test.ts`: membaca `t1-gabungan.glb`, memeriksa
+  pengelompokan lantai, ketinggian kedua lantai, arah eskalator, rute Departure 1
+  ke Gate 5 (naik), Gate 3 ke Baggage Claim B1 (turun), dan rute di satu lantai.
 
 Saat menambahkan model baru, salin pola pada `map3d-real-glb.test.ts` agar model
 tersebut ikut diuji.
