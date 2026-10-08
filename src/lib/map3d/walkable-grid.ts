@@ -414,6 +414,11 @@ export function findWalkableRoute(grid: WalkableGrid, start: Point2, destination
   }
 
   if (previous[destinationIndex] < 0) return null;
+  return tracePath(grid, previous, startIndex, destinationIndex);
+}
+
+/** Susun ulang jalur dari tabel `previous`, lalu buang titik yang segaris. */
+function tracePath(grid: WalkableGrid, previous: Int32Array, startIndex: number, destinationIndex: number): Point2[] {
   const raw: Point2[] = [];
   for (let index = destinationIndex; index >= 0; index = previous[index]) {
     raw.push(gridPoint(grid, index));
@@ -506,18 +511,61 @@ export function findWalkableRouteToTarget(
   }
   if (!candidates.length) return null;
 
-  let best: { route: Point2[]; targetDistance: number; length: number } | null = null;
+  // Semua titik sisi dicari dalam satu penelusuran Dijkstra dari titik awal,
+  // bukan satu A* per titik. Objek besar seperti baggage claim punya puluhan
+  // titik sisi, dan cara lama menelusuri grid sebanyak itu.
+  const groups = components(grid);
+  const startIndex = reachableIndex(grid, start);
+  if (startIndex < 0) return null;
+  const goals = new Map<number, number>();
   for (const candidate of candidates) {
-    const route = findWalkableRoute(grid, start, candidate);
-    if (!route) continue;
-    const targetDistance = distanceToTargetRect(route.at(-1) ?? candidate, target);
-    const length = route.reduce((total, point, index) => index === 0
-      ? 0
-      : total + Math.hypot(point[0] - route[index - 1][0], point[1] - route[index - 1][1]), 0);
-    if (!best || length < best.length - 1e-6 ||
-      (Math.abs(length - best.length) <= 1e-6 && targetDistance < best.targetDistance)) {
-      best = { route, targetDistance, length };
+    const index = reachableIndex(grid, candidate);
+    if (index < 0 || index === startIndex || groups.label[index] !== groups.label[startIndex]) continue;
+    const targetDistance = distanceToTargetRect(gridPoint(grid, index), target);
+    goals.set(index, Math.min(goals.get(index) ?? Number.POSITIVE_INFINITY, targetDistance));
+  }
+  if (!goals.size) return null;
+
+  const cost = new Float64Array(grid.open.length).fill(Number.POSITIVE_INFINITY);
+  const previous = new Int32Array(grid.open.length).fill(-1);
+  const settled = new Uint8Array(grid.open.length);
+  const queue: QueueEntry[] = [];
+  cost[startIndex] = 0;
+  pushQueue(queue, { index: startIndex, score: 0 });
+  let remaining = goals.size;
+  let best: { index: number; cost: number; targetDistance: number } | null = null;
+  while (queue.length && remaining > 0) {
+    const current = popQueue(queue);
+    if (settled[current.index]) continue;
+    settled[current.index] = 1;
+    // Titik yang tersisa tidak mungkin lebih dekat dari rute terbaik.
+    if (best && current.score > best.cost + 1e-6) break;
+    const targetDistance = goals.get(current.index);
+    if (targetDistance !== undefined) {
+      remaining -= 1;
+      if (!best || current.score < best.cost - 1e-6 ||
+        (Math.abs(current.score - best.cost) <= 1e-6 && targetDistance < best.targetDistance)) {
+        best = { index: current.index, cost: current.score, targetDistance };
+      }
+    }
+    const row = Math.floor(current.index / grid.width);
+    const column = current.index % grid.width;
+    for (let dz = -1; dz <= 1; dz += 1) {
+      for (let dx = -1; dx <= 1; dx += 1) {
+        if (!dx && !dz) continue;
+        const nextRow = row + dz;
+        const nextColumn = column + dx;
+        if (nextRow < 0 || nextRow >= grid.height || nextColumn < 0 || nextColumn >= grid.width) continue;
+        const nextIndex = nextRow * grid.width + nextColumn;
+        if (!grid.open[nextIndex] || settled[nextIndex]) continue;
+        if (dx && dz && (!grid.open[row * grid.width + nextColumn] || !grid.open[nextRow * grid.width + column])) continue;
+        const nextCost = cost[current.index] + Math.hypot(dx, dz);
+        if (nextCost >= cost[nextIndex]) continue;
+        cost[nextIndex] = nextCost;
+        previous[nextIndex] = current.index;
+        pushQueue(queue, { index: nextIndex, score: nextCost });
+      }
     }
   }
-  return best?.route ?? null;
+  return best ? tracePath(grid, previous, startIndex, best.index) : null;
 }

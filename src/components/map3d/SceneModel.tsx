@@ -13,6 +13,7 @@ import {
   type SelectedObject,
 } from "@/lib/map3d/object-metadata";
 import { GROUND_FLOOR_MODEL_URL } from "@/lib/map3d/assets";
+import { FLOOR_ORDER, floorOfObject, levelGroupName, type FloorId, type FloorView } from "@/lib/map3d/floors";
 import { defaultMapObjectConfig, readMapObjectConfigs, type MapObjectConfigByName, type MapObjectDoor } from "@/lib/map3d/admin-object-config";
 
 // These meshes are duplicate wall/pillar geometry directly above the
@@ -36,6 +37,8 @@ export type SceneObjectRecord = {
   nodeIndex: number;
   selectable: boolean;
   selectableLabel?: string;
+  /** Lantai tempat objek berada pada model bertingkat. */
+  floor: FloorId;
 };
 
 export type SceneBounds = {
@@ -61,7 +64,17 @@ type SceneModelProps = {
   objectConfigs?: MapObjectConfigByName;
   /** Model yang dimuat. Bawaan: lantai dasar. */
   modelUrl?: string;
+  /** Lantai yang ditampilkan pada model bertingkat. Bawaan: semua lantai. */
+  floorView?: FloorView;
 };
+
+/**
+ * Layer untuk lantai yang disembunyikan. Kamera hanya merender layer 0 dan
+ * raycaster hanya mengenai layer 0, jadi objek di sini tidak terlihat dan tidak
+ * bisa diklik. `visible` saja tidak cukup karena raycast R3F tetap mengenai
+ * objek yang tidak terlihat.
+ */
+const HIDDEN_FLOOR_LAYER = 31;
 
 type ColorMaterial = THREE.Material & {
   color?: THREE.Color;
@@ -165,7 +178,7 @@ function tagSourceHierarchy(
 
 export function isSelectableBuildingName(objectName: string) {
   if (/ZONE_(?:DEPARTURE|KEBERANGKATAN|KEDATANGAN)/i.test(objectName)) return false;
-  return /^(T1|TI)-GF-|^BAGGAGE[ _-](?:CLAIM[- _](?:A1|B[1-6])|WRAP[- _])|^DOOR__(?:KEBERANGKATAN|KEDATANGAN)_|^tembok[-_]pillar_?(?:5|6)$|^tembok_pilar_(?:42|43)$/i.test(objectName);
+  return /^(T1|TI)-[GF]F-|^BAGGAGE[ _-](?:CLAIM[- _](?:A1|B[1-6])|WRAP[- _])|^DOOR__(?:KEBERANGKATAN|KEDATANGAN)_|^tembok[-_]pillar_?(?:5|6)$|^tembok_pilar_(?:42|43)$/i.test(objectName);
 }
 
 export function getSelectableLabel(objectName: string) {
@@ -177,6 +190,8 @@ export function getSelectableLabel(objectName: string) {
     "tembok_pilar_42": "Departure 4",
   }[normalized];
   if (departureAnchor) return departureAnchor;
+  const gate = /^t1-ff-gate-(\d+)$/.exec(normalized);
+  if (gate) return `Gate ${Number(gate[1])}`;
   return undefined;
 }
 
@@ -245,7 +260,25 @@ function updateSelectionMaterial(material: THREE.Material, selected: boolean) {
   }
 }
 
-export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntryPoint, onReady, objectConfigs = {}, modelUrl = GROUND_FLOOR_MODEL_URL }: SceneModelProps) {
+/** Tampilkan hanya lantai yang dipilih. */
+function applyFloorView(model: THREE.Object3D, floorView: FloorView) {
+  FLOOR_ORDER.forEach((floor) => {
+    const group = model.getObjectByName(levelGroupName(floor));
+    if (!group) return;
+    const shown = floorView === "ALL" || floorView === floor;
+    // Hanya grupnya yang disembunyikan. Objek di dalamnya tetap `visible`,
+    // karena grid jalan dibangun dari objek yang visible untuk semua lantai.
+    group.visible = shown;
+    group.traverse((object) => object.layers.set(shown ? 0 : HIDDEN_FLOOR_LAYER));
+  });
+}
+
+/** Bidang lantai yang dapat diklik untuk memilih titik awal, di lantai mana pun. */
+function isFloorSurfaceName(objectName: string) {
+  return getObjectMetadata(objectName).key === "visitor";
+}
+
+export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntryPoint, onReady, objectConfigs = {}, modelUrl = GROUND_FLOOR_MODEL_URL, floorView = "ALL" }: SceneModelProps) {
   const gltf = useGLTF(modelUrl);
   const sourceScene = gltf.scene;
   const sourceParser = gltf.parser as typeof gltf.parser & {
@@ -381,10 +414,11 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
         uuid: object.uuid,
         name: sourceObjectName,
         object,
-        metadata: getObjectMetadata(sourceObjectName),
+        metadata: getObjectMetadata(sourceObjectName, floorOfObject(object)),
         nodeIndex,
         selectable: isSelectableBuildingName(sourceObjectName),
         selectableLabel: getSelectableLabel(sourceObjectName),
+        floor: floorOfObject(object),
       });
     });
 
@@ -401,6 +435,10 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
       objects,
     );
   }, [sourceParser, model, onReady]);
+
+  useLayoutEffect(() => {
+    applyFloorView(model, floorView);
+  }, [model, floorView]);
 
   useLayoutEffect(() => {
     model.traverse((object) => {
@@ -440,7 +478,7 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
         selectedObject.userData.sourceObjectName || selectedObject.name;
       if (isSelectableBuildingName(sourceName)) {
         onSelect(createSelectedObject(selectedObject));
-      } else if (/^(?:FLOOR__)?area_visitor$/i.test(sourceName)) {
+      } else if (isFloorSurfaceName(sourceName)) {
         onSelectFloor?.(event.point.clone());
       }
     }
@@ -470,7 +508,7 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
         }
         const sourceName =
           logicalObject?.userData.sourceObjectName || logicalObject?.name || "";
-        if (isSelectableBuildingName(sourceName) || (onSelectFloor && /^(?:FLOOR__)?area_visitor$/i.test(sourceName))) {
+        if (isSelectableBuildingName(sourceName) || (onSelectFloor && isFloorSurfaceName(sourceName))) {
           event.stopPropagation();
           setHovered(true);
         }
