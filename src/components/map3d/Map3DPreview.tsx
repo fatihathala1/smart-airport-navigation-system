@@ -7,8 +7,8 @@ import { ArrowUpRight } from "lucide-react";
 import { useMapStore } from "@/store/mapStore";
 import styles from "./Map3DPreview.module.css";
 
-const PreviewCanvas = dynamic(
-  () => import("./Map3DPreviewCanvas").then((module) => module.Map3DPreviewCanvas),
+const OverviewMap = dynamic(
+  () => import("@/components/map2d/JuandaOverviewMap").then((module) => module.JuandaOverviewMap),
   { ssr: false },
 );
 
@@ -46,9 +46,9 @@ export function Map3DPreview() {
           <ArrowUpRight size={18} aria-hidden="true" />
         </Link>
       </div>
-      <div className={styles.frame} aria-label={lang === "ID" ? "Cuplikan 3D area tengah Terminal 1" : "3D preview of central Terminal 1"}>
-        {visible ? <PreviewCanvas /> : <span className={styles.placeholder} role="status">{lang === "ID" ? "Memuat pratinjau peta..." : "Loading map preview..."}</span>}
-        <span className={styles.frameCaption}>{lang === "ID" ? "Cuplikan area tengah Terminal 1" : "Central Terminal 1 preview"}</span>
+      <div className={styles.frame} aria-label={lang === "ID" ? "Peta Bandara Juanda" : "Juanda Airport map"}>
+        {visible ? <OverviewMap /> : <span className={styles.placeholder} role="status">{lang === "ID" ? "Memuat peta bandara..." : "Loading airport map..."}</span>}
+        <span className={styles.frameCaption}>{lang === "ID" ? "Klik area Terminal 1 untuk masuk ke 3D" : "Click Terminal 1 to enter 3D"}</span>
       </div>
     </section>
   );

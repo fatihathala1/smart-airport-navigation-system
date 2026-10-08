@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import * as THREE from "three";
 import { createGridFromSceneObjects } from "../src/lib/map3d/scene-walkability";
-import { findWalkableRoute } from "../src/lib/map3d/walkable-grid";
+import { findWalkableRouteToTarget } from "../src/lib/map3d/walkable-grid";
 
 type Accessor = {
   bufferView: number;
@@ -65,15 +65,19 @@ function readModelObjects() {
 test("current GLB still provides connected walking routes between terminal units", () => {
   const objects = readModelObjects();
   const grid = createGridFromSceneObjects(objects);
-  const centerOf = (name: string): [number, number] => {
+  const boxOf = (name: string) => {
     const record = objects.find((item) => item.name === name);
     assert.ok(record, `${name} is missing from the GLB`);
-    const center = new THREE.Box3().setFromObject(record.object).getCenter(new THREE.Vector3());
-    return [center.x, center.z];
+    const box = new THREE.Box3().setFromObject(record.object);
+    return { minX: box.min.x, maxX: box.max.x, minZ: box.min.z, maxZ: box.max.z };
+  };
+  const centerOf = (name: string): [number, number] => {
+    const box = boxOf(name);
+    return [(box.minX + box.maxX) / 2, (box.minZ + box.maxZ) / 2];
   };
 
   for (const destination of ["T1-GF-09", "T1-GF-20"]) {
-    const route = findWalkableRoute(grid, centerOf("T1-GF-01"), centerOf(destination));
+    const route = findWalkableRouteToTarget(grid, centerOf("T1-GF-01"), boxOf(destination));
     assert.ok(route && route.length >= 2, `No valid floor route to ${destination}`);
     assert.ok(route.every(([x, z]) => {
       const column = Math.floor((x - grid.minX) / grid.cellSize);

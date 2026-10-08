@@ -7,8 +7,8 @@ import {
 } from "../src/lib/map3d/walkable-grid";
 
 const floor: WalkableTriangle[] = [
-  [[0, 0], [12, 0], [12, 8]],
-  [[0, 0], [12, 8], [0, 8]],
+  [[0, 0, 0], [12, 0, 0], [12, 0, 8]],
+  [[0, 0, 0], [12, 0, 8], [0, 0, 8]],
 ];
 
 function crossingAtX(route: [number, number][], x: number) {

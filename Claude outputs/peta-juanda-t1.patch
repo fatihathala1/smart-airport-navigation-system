@@ -1,0 +1,346 @@
+diff --git a/package.json b/package.json
+index d597e7b..c2a7564 100644
+--- a/package.json
++++ b/package.json
+@@ -22,6 +22,7 @@
+     "gsap": "^3.15.0",
+     "jspdf": "^4.2.1",
+     "jspdf-autotable": "^5.0.8",
++    "leaflet": "^1.9.4",
+     "lucide-react": "^1.14.0",
+     "next": "^16.3.1",
+     "next-auth": "^5.0.0-beta.32",
+@@ -35,6 +36,7 @@
+   },
+   "devDependencies": {
+     "@tailwindcss/postcss": "^4",
++    "@types/leaflet": "^1.9.22",
+     "@types/node": "^20",
+     "@types/pg": "^8.20.0",
+     "@types/react": "^19",
+diff --git a/src/components/map2d/JuandaOverviewMap.module.css b/src/components/map2d/JuandaOverviewMap.module.css
+new file mode 100644
+index 0000000..a0c6efd
+--- /dev/null
++++ b/src/components/map2d/JuandaOverviewMap.module.css
+@@ -0,0 +1,4 @@
++.map { position: absolute; inset: 0; z-index: 0; background: #dfe7ea; }
++.terminal { cursor: pointer; transition: fill-opacity .15s ease; }
++.tooltip { padding: 6px 10px; border: 0; border-radius: 8px; background: #075985; color: #fff; font-size: 12px; line-height: 1.35; box-shadow: 0 3px 12px rgba(0,0,0,.2); }
++.tooltip::before { border-top-color: #075985 !important; }
+diff --git a/src/components/map2d/JuandaOverviewMap.tsx b/src/components/map2d/JuandaOverviewMap.tsx
+new file mode 100644
+index 0000000..42bb0ad
+--- /dev/null
++++ b/src/components/map2d/JuandaOverviewMap.tsx
+@@ -0,0 +1,67 @@
++"use client";
++
++import { useEffect, useRef } from "react";
++import { useRouter } from "next/navigation";
++import "leaflet/dist/leaflet.css";
++import { JUANDA_CENTER, JUANDA_TERMINALS } from "@/lib/map2d/juanda-terminals";
++import { useMapStore } from "@/store/mapStore";
++import styles from "./JuandaOverviewMap.module.css";
++
++const BASE_STYLE = { color: "#0369a1", weight: 2, fillColor: "#0ea5e9", fillOpacity: 0.35 };
++const HOVER_STYLE = { color: "#fbbf24", weight: 3, fillColor: "#fbbf24", fillOpacity: 0.45 };
++
++export function JuandaOverviewMap() {
++  const containerRef = useRef<HTMLDivElement>(null);
++  const router = useRouter();
++  const lang = useMapStore((state) => state.lang);
++
++  useEffect(() => {
++    const container = containerRef.current;
++    if (!container) return;
++    let disposed = false;
++    let cleanup = () => {};
++
++    import("leaflet").then((L) => {
++      if (disposed) return;
++      const map = L.map(container, { center: JUANDA_CENTER, zoom: 16, scrollWheelZoom: false, zoomControl: true, attributionControl: true });
++
++      const street = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
++        maxZoom: 19,
++        attribution: "&copy; OpenStreetMap contributors",
++      });
++      const satellite = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
++        maxZoom: 19,
++        attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics",
++      });
++      satellite.addTo(map);
++      L.control.layers({ [lang === "ID" ? "Satelit" : "Satellite"]: satellite, [lang === "ID" ? "Peta" : "Street"]: street }, {}, { position: "topright" }).addTo(map);
++
++      const allBounds = L.latLngBounds([]);
++      for (const terminal of JUANDA_TERMINALS) {
++        const polygon = L.polygon(terminal.polygon, { ...BASE_STYLE, className: styles.terminal });
++        polygon.bindTooltip(
++          `<strong>${terminal.name}</strong><br/>${lang === "ID" ? "Klik untuk masuk peta 3D" : "Click to open the 3D map"}`,
++          { permanent: true, direction: "top", className: styles.tooltip, offset: [0, -6] },
++        );
++        polygon.on("mouseover", () => polygon.setStyle(HOVER_STYLE));
++        polygon.on("mouseout", () => polygon.setStyle(BASE_STYLE));
++        if (terminal.href) {
++          const href = terminal.href;
++          polygon.on("click", () => router.push(href));
++        }
++        polygon.addTo(map);
++        allBounds.extend(polygon.getBounds());
++      }
++      if (allBounds.isValid()) map.fitBounds(allBounds.pad(0.6));
++
++      cleanup = () => map.remove();
++    });
++
++    return () => {
++      disposed = true;
++      cleanup();
++    };
++  }, [lang, router]);
++
++  return <div ref={containerRef} className={styles.map} role="region" aria-label={lang === "ID" ? "Peta Bandara Juanda. Klik area Terminal 1 untuk membuka peta 3D." : "Juanda Airport map. Click Terminal 1 to open the 3D map."} />;
++}
+diff --git a/src/components/map3d/Map3DPreview.module.css b/src/components/map3d/Map3DPreview.module.css
+index 94554af..ed61212 100644
+--- a/src/components/map3d/Map3DPreview.module.css
++++ b/src/components/map3d/Map3DPreview.module.css
+@@ -18,7 +18,7 @@
+ .frame { position: relative; min-width: 0; height: clamp(320px, 32vw, 400px); overflow: hidden; border: 1px solid rgba(255,255,255,.65); border-radius: 18px; background: #e3e9e7; }
+ .canvas { pointer-events: none; }
+ .placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: #31566b; font-size: 13px; }
+-.frameCaption { position: absolute; left: 18px; bottom: 18px; z-index: 1; padding: 9px 12px; border-radius: 8px; background: #fff; color: #16415a; font-size: 12px; font-weight: 600; box-shadow: 0 3px 12px rgba(24,52,62,.12); pointer-events: none; }
++.frameCaption { position: absolute; left: 18px; bottom: 18px; z-index: 1000; padding: 9px 12px; border-radius: 8px; background: #fff; color: #16415a; font-size: 12px; font-weight: 600; box-shadow: 0 3px 12px rgba(24,52,62,.12); pointer-events: none; }
+ 
+ @media (max-width: 760px) {
+   .section { width: min(100% - 32px, 540px); grid-template-columns: 1fr; gap: 24px; margin-bottom: 48px; }
+diff --git a/src/components/map3d/Map3DPreview.tsx b/src/components/map3d/Map3DPreview.tsx
+index 6f34423..57c26a7 100644
+--- a/src/components/map3d/Map3DPreview.tsx
++++ b/src/components/map3d/Map3DPreview.tsx
+@@ -7,8 +7,8 @@ import { ArrowUpRight } from "lucide-react";
+ import { useMapStore } from "@/store/mapStore";
+ import styles from "./Map3DPreview.module.css";
+ 
+-const PreviewCanvas = dynamic(
+-  () => import("./Map3DPreviewCanvas").then((module) => module.Map3DPreviewCanvas),
++const OverviewMap = dynamic(
++  () => import("@/components/map2d/JuandaOverviewMap").then((module) => module.JuandaOverviewMap),
+   { ssr: false },
+ );
+ 
+@@ -46,9 +46,9 @@ export function Map3DPreview() {
+           <ArrowUpRight size={18} aria-hidden="true" />
+         </Link>
+       </div>
+-      <div className={styles.frame} aria-label={lang === "ID" ? "Cuplikan 3D area tengah Terminal 1" : "3D preview of central Terminal 1"}>
+-        {visible ? <PreviewCanvas /> : <span className={styles.placeholder} role="status">{lang === "ID" ? "Memuat pratinjau peta..." : "Loading map preview..."}</span>}
+-        <span className={styles.frameCaption}>{lang === "ID" ? "Cuplikan area tengah Terminal 1" : "Central Terminal 1 preview"}</span>
++      <div className={styles.frame} aria-label={lang === "ID" ? "Peta Bandara Juanda" : "Juanda Airport map"}>
++        {visible ? <OverviewMap /> : <span className={styles.placeholder} role="status">{lang === "ID" ? "Memuat peta bandara..." : "Loading airport map..."}</span>}
++        <span className={styles.frameCaption}>{lang === "ID" ? "Klik area Terminal 1 untuk masuk ke 3D" : "Click Terminal 1 to enter 3D"}</span>
+       </div>
+     </section>
+   );
+diff --git a/src/lib/map2d/juanda-terminals.ts b/src/lib/map2d/juanda-terminals.ts
+new file mode 100644
+index 0000000..25183e5
+--- /dev/null
++++ b/src/lib/map2d/juanda-terminals.ts
+@@ -0,0 +1,196 @@
++// Footprint gedung Terminal 1 Bandara Juanda.
++// Sumber: OpenStreetMap way 177630771 (aeroway=terminal), diambil 7 Okt 2026.
++// Lisensi data: ODbL, wajib atribusi "© OpenStreetMap contributors".
++export type LatLng = [number, number];
++
++export type TerminalArea = {
++  id: "T1" | "T2";
++  name: string;
++  href: string | null;
++  polygon: LatLng[];
++};
++
++export const JUANDA_CENTER: LatLng = [-7.3752, 112.7952];
++
++export const TERMINAL_1_POLYGON: LatLng[] = [
++  [-7.375516, 112.795793],
++  [-7.375504, 112.795716],
++  [-7.375535, 112.795711],
++  [-7.375507, 112.795539],
++  [-7.375476, 112.795544],
++  [-7.375471, 112.795514],
++  [-7.375502, 112.795509],
++  [-7.375474, 112.795336],
++  [-7.375443, 112.795341],
++  [-7.375428, 112.795247],
++  [-7.375467, 112.795241],
++  [-7.375462, 112.795211],
++  [-7.375457, 112.795172],
++  [-7.375354, 112.794542],
++  [-7.375349, 112.794514],
++  [-7.375256, 112.793936],
++  [-7.375251, 112.793909],
++  [-7.375246, 112.793873],
++  [-7.375206, 112.793879],
++  [-7.375201, 112.793846],
++  [-7.375231, 112.793841],
++  [-7.375203, 112.793668],
++  [-7.375172, 112.793673],
++  [-7.375168, 112.793643],
++  [-7.375198, 112.793638],
++  [-7.375171, 112.793465],
++  [-7.37514, 112.79347],
++  [-7.375118, 112.793339],
++  [-7.375114, 112.793311],
++  [-7.375103, 112.793243],
++  [-7.375134, 112.793238],
++  [-7.375106, 112.793065],
++  [-7.375075, 112.793071],
++  [-7.37507, 112.79304],
++  [-7.375101, 112.793035],
++  [-7.375073, 112.792863],
++  [-7.375042, 112.792868],
++  [-7.375031, 112.792803],
++  [-7.375027, 112.792776],
++  [-7.375015, 112.792703],
++  [-7.375041, 112.792699],
++  [-7.375026, 112.792606],
++  [-7.375013, 112.792526],
++  [-7.374987, 112.79253],
++  [-7.374982, 112.7925],
++  [-7.375013, 112.792495],
++  [-7.374985, 112.792323],
++  [-7.374954, 112.792328],
++  [-7.374944, 112.792267],
++  [-7.374939, 112.792237],
++  [-7.374928, 112.792165],
++  [-7.374959, 112.79216],
++  [-7.374931, 112.791987],
++  [-7.3749, 112.791992],
++  [-7.374895, 112.791962],
++  [-7.374926, 112.791957],
++  [-7.374898, 112.791785],
++  [-7.374867, 112.79179],
++  [-7.374857, 112.791729],
++  [-7.374852, 112.7917],
++  [-7.374846, 112.791657],
++  [-7.37462, 112.791695],
++  [-7.374774, 112.792647],
++  [-7.374797, 112.792792],
++  [-7.374697, 112.792808],
++  [-7.37469, 112.792766],
++  [-7.374479, 112.792801],
++  [-7.374474, 112.792771],
++  [-7.374393, 112.792784],
++  [-7.3744, 112.792827],
++  [-7.374367, 112.792832],
++  [-7.37437, 112.792848],
++  [-7.374336, 112.792853],
++  [-7.374314, 112.792723],
++  [-7.374196, 112.792742],
++  [-7.374225, 112.792921],
++  [-7.374162, 112.792932],
++  [-7.374082, 112.792945],
++  [-7.374125, 112.793211],
++  [-7.374056, 112.793222],
++  [-7.373965, 112.793237],
++  [-7.373977, 112.793307],
++  [-7.373988, 112.793377],
++  [-7.374076, 112.793362],
++  [-7.374148, 112.793351],
++  [-7.37418, 112.793553],
++  [-7.374264, 112.79354],
++  [-7.374324, 112.79353],
++  [-7.374356, 112.793727],
++  [-7.374298, 112.793736],
++  [-7.374212, 112.79375],
++  [-7.374255, 112.794015],
++  [-7.374186, 112.794026],
++  [-7.374096, 112.794041],
++  [-7.374108, 112.794117],
++  [-7.374119, 112.794185],
++  [-7.374204, 112.794171],
++  [-7.374279, 112.794159],
++  [-7.374322, 112.794425],
++  [-7.374411, 112.794411],
++  [-7.374466, 112.794402],
++  [-7.374507, 112.794657],
++  [-7.374494, 112.794659],
++  [-7.374573, 112.795145],
++  [-7.374586, 112.795142],
++  [-7.374617, 112.795334],
++  [-7.374568, 112.795343],
++  [-7.374473, 112.795358],
++  [-7.374505, 112.795555],
++  [-7.374446, 112.795565],
++  [-7.374346, 112.795581],
++  [-7.374357, 112.795651],
++  [-7.374368, 112.795723],
++  [-7.374469, 112.795706],
++  [-7.374528, 112.795697],
++  [-7.374561, 112.795898],
++  [-7.374659, 112.795881],
++  [-7.374704, 112.795874],
++  [-7.374736, 112.79607],
++  [-7.374692, 112.796077],
++  [-7.374592, 112.796094],
++  [-7.374625, 112.796296],
++  [-7.374585, 112.796302],
++  [-7.374466, 112.796322],
++  [-7.374478, 112.7964],
++  [-7.374489, 112.796469],
++  [-7.374609, 112.796449],
++  [-7.374649, 112.796443],
++  [-7.374681, 112.796642],
++  [-7.374784, 112.796625],
++  [-7.374818, 112.796619],
++  [-7.374847, 112.7968],
++  [-7.375194, 112.798941],
++  [-7.375478, 112.798894],
++  [-7.375436, 112.798632],
++  [-7.37568, 112.798592],
++  [-7.375723, 112.798858],
++  [-7.376006, 112.798811],
++  [-7.376032, 112.798807],
++  [-7.376018, 112.798719],
++  [-7.375906, 112.798016],
++  [-7.375826, 112.797527],
++  [-7.375798, 112.797532],
++  [-7.375793, 112.797499],
++  [-7.375826, 112.797493],
++  [-7.375789, 112.797474],
++  [-7.375776, 112.797397],
++  [-7.375807, 112.797392],
++  [-7.37578, 112.79722],
++  [-7.375748, 112.797225],
++  [-7.375743, 112.797194],
++  [-7.375775, 112.797189],
++  [-7.375747, 112.797017],
++  [-7.375715, 112.797022],
++  [-7.375706, 112.796961],
++  [-7.375701, 112.796936],
++  [-7.375689, 112.796859],
++  [-7.37572, 112.796854],
++  [-7.375692, 112.796682],
++  [-7.375661, 112.796687],
++  [-7.375656, 112.796656],
++  [-7.375687, 112.796651],
++  [-7.375659, 112.796479],
++  [-7.375628, 112.796484],
++  [-7.375608, 112.796359],
++  [-7.375604, 112.796333],
++  [-7.375591, 112.796255],
++  [-7.375622, 112.79625],
++  [-7.375594, 112.796077],
++  [-7.375563, 112.796082],
++  [-7.375558, 112.796052],
++  [-7.375589, 112.796047],
++  [-7.375561, 112.795874],
++  [-7.37553, 112.795879],
++  [-7.37552, 112.795819],
++  [-7.375516, 112.795793],
++];
++
++export const JUANDA_TERMINALS: TerminalArea[] = [
++  { id: "T1", name: "Terminal 1", href: "/map", polygon: TERMINAL_1_POLYGON },
++];

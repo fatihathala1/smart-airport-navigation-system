@@ -1,0 +1,260 @@
+.hero {
+  position: relative;
+  min-height: clamp(620px, calc(100svh - 72px), 800px);
+  padding: 0 clamp(20px, 5vw, 72px);
+  border-radius: 34px 34px 0 0;
+  background: url("/bg-home.jpg") center 35% / cover no-repeat;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* Satu lapisan warna rata dari kiri, bukan gradasi pelangi. Teks tetap terbaca di atas foto. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(5, 40, 84, 0.92) 0%, rgba(5, 40, 84, 0.78) 38%, rgba(5, 40, 84, 0.12) 78%, rgba(5, 40, 84, 0) 100%);
+  pointer-events: none;
+}
+
+.inner {
+  position: relative;
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 72px 0 120px;
+}
+
+.copy {
+  max-width: 600px;
+  color: #ffffff;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #bfe3f7;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 28px;
+  height: 3px;
+  background: #5cc2f0;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(40px, 4.6vw, 68px);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+}
+
+.subtitle {
+  margin: 20px 0 0;
+  max-width: 34em;
+  font-size: clamp(16px, 1.3vw, 19px);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.search {
+  display: flex;
+  align-items: stretch;
+  margin-top: 36px;
+  max-width: 560px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(3, 25, 54, 0.35);
+}
+
+.search:focus-within {
+  outline: 3px solid #5cc2f0;
+  outline-offset: 2px;
+}
+
+.field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 0 18px;
+  color: #0756a8;
+}
+
+.field input {
+  flex: 1;
+  min-width: 0;
+  height: 60px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #142328;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.field input::placeholder {
+  color: #7a8d94;
+  font-weight: 500;
+}
+
+.clear {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #5e6f75;
+  cursor: pointer;
+}
+
+.clear:hover {
+  background: #eef3f5;
+}
+
+.submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 10px;
+  background: #0756a8;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.submit:hover {
+  background: #064585;
+}
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.quickLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #bfe3f7;
+}
+
+.chip {
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(5, 40, 84, 0.45);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.chip:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #ffffff;
+}
+
+/* Papan info bergaya penunjuk bandara: fakta nyata cakupan peta, bukan hiasan. */
+.board {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0756a8;
+  border-top: 4px solid #5cc2f0;
+}
+
+.boardInner {
+  width: min(1280px, calc(100% - 2 * clamp(20px, 5vw, 72px)));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 20px;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.cell:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.cellLabel {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #bfe3f7;
+}
+
+.cellValue {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 860px) {
+  .hero {
+    min-height: auto;
+    align-items: flex-start;
+    border-radius: 24px 24px 0 0;
+  }
+  .hero::before {
+    background: rgba(5, 40, 84, 0.78);
+  }
+  .inner {
+    padding: 48px 0 250px;
+  }
+  .search {
+    flex-direction: column;
+    max-width: none;
+  }
+  .submit {
+    justify-content: center;
+    min-height: 48px;
+  }
+  .boardInner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cell,
+  .cell:first-child {
+    padding: 12px 14px;
+    border-left: 0;
+  }
+  .cell:nth-child(even) {
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .cell:nth-child(n + 3) {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .cellValue {
+    font-size: 17px;
+  }
+}
