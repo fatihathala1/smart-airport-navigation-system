@@ -2,6 +2,7 @@
 
 import { DEPARTURE_AREAS, formatCounterRange } from "@/lib/map3d/departures";
 import { AirlineLogo } from "./AirlineLogo";
+import { useMapStore } from "@/store/mapStore";
 
 type DepartureListProps = {
   value: number | null;
@@ -9,9 +10,10 @@ type DepartureListProps = {
 };
 
 export function DepartureList({ value, onChange }: DepartureListProps) {
+  const lang = useMapStore((state) => state.lang);
   return (
     <fieldset className={"departure-fieldset"}>
-      <legend className={"departure-legend"}>Pilih area Departure</legend>
+      <legend className={"departure-legend"}>{lang === "EN" ? "Choose a Departure area" : "Pilih area Departure"}</legend>
       <ul className={"departure-list"}>
         {DEPARTURE_AREAS.map((area) => {
           const selected = value === area.number;
@@ -32,9 +34,9 @@ export function DepartureList({ value, onChange }: DepartureListProps) {
                   <span className={"departure-range"}>{formatCounterRange(area.counters)}</span>
                 </span>
                 {area.note && <span className={"departure-note"}>{area.note}</span>}
-                {!area.active && <span className={"departure-note"}>Tidak beroperasi</span>}
+                {!area.active && <span className={"departure-note"}>{lang === "EN" ? "Not operating" : "Tidak beroperasi"}</span>}
                 {area.airlines.length > 0 && (
-                  <ul className={"departure-airlines"} aria-label={`Maskapai Departure ${area.number}`}>
+                  <ul className={"departure-airlines"} aria-label={`${lang === "EN" ? "Airlines at" : "Maskapai"} Departure ${area.number}`}>
                     {area.airlines.map((airline) => (
                       <li key={airline.slug} className={"departure-airline"}>
                         <AirlineLogo slug={airline.slug} name={airline.name} />

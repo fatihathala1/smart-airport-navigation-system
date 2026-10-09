@@ -10,7 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, useProgress } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import {
@@ -63,7 +63,8 @@ import {
   type FloorTransition,
   type RoutePlace,
 } from "@/lib/map3d/multi-floor-route";
-import { defaultMapObjectConfig, getMapObjectPhotoUrl, readMapObjectConfigs, type MapObjectConfig } from "@/lib/map3d/admin-object-config";
+import { defaultMapObjectConfig, fetchMapObjectConfigsFromDb, getMapObjectPhotoUrl, readMapObjectConfigs, type MapObjectConfig } from "@/lib/map3d/admin-object-config";
+import { useMapStore } from "@/store/mapStore";
 
 type ViewerApi = {
   resetView: () => void;
@@ -77,12 +78,33 @@ type ViewerApi = {
 
 type CameraMode = "map" | "pov";
 
+const mapCopy = {
+  ID: {
+    loading: "MEMUAT MODEL LANTAI", directions: "Petunjuk arah", from: "Dari", to: "Ke", chooseStart: "Pilih titik awal", chooseDestination: "Pilih tujuan", searchStart: "Cari titik awal", searchDestination: "Cari tujuan", clearSearch: "Hapus pencarian", noResults: "Tidak ditemukan. Coba nama tenant, kode building, atau nomor gate.", routeHint: "Rute terdekat menghindari tembok dan pilar, melalui bukaan pintu yang ada pada model.", chooseStartHint: "Titik awal berada di area jalan terdekat. Pilih tujuan.", selectStartHint: "Pilih posisi awal terlebih dahulu.", noSafeRoute: "Tidak ditemukan jalur aman pada lantai ini. Coba titik awal atau tujuan lain.", noFloorRoute: "Tidak ditemukan jalur lewat eskalator atau tangga menuju lantai tujuan.", stepTitle: "Langkah perjalanan", previous: "Sebelumnya", next: "Berikutnya", mapView: "Lihat peta", simulation: "Mulai simulasi 3D", pause: "Jeda", resume: "Lanjut", center: "Pusatkan", estimate: "Perkiraan", minutes: "menit", arrive: "Tiba di tujuan", straight: "Jalan lurus", left: "Belok kiri", right: "Belok kanan", floorDirection: "Ikuti papan petunjuk ke lantai tujuan", operationalHours: "Jam operasional", open24: "Buka 24 jam", activePeriod: "Masa aktif", now: "Sekarang", unspecified: "Tidak ditentukan", facility: "FASILITAS BANDARA", tenant: "TENANT KOMERSIAL", frontPhoto: "Tampak depan", resetRoute: "Hapus rute", showMap: "Tampilkan seluruh peta", zoomIn: "Perbesar peta", zoomOut: "Perkecil peta", hideExterior: "Sembunyikan area luar gedung", showExterior: "Tampilkan area luar gedung", compass: "Arah mata angin pada model peta" },
+  EN: {
+    loading: "LOADING FLOOR MODEL", directions: "Directions", from: "From", to: "To", chooseStart: "Choose starting point", chooseDestination: "Choose destination", searchStart: "Search starting point", searchDestination: "Search destination", clearSearch: "Clear search", noResults: "No results. Try a tenant name, building code, or gate number.", routeHint: "The shortest route avoids walls and pillars through the model's available doorways.", chooseStartHint: "Your start is on the nearest walkway. Choose a destination.", selectStartHint: "Choose a starting point first.", noSafeRoute: "No safe route was found on this floor. Try another start or destination.", noFloorRoute: "No route via an escalator or staircase was found to the destination floor.", stepTitle: "Walking steps", previous: "Previous", next: "Next", mapView: "View map", simulation: "Start 3D simulation", pause: "Pause", resume: "Resume", center: "Recenter", estimate: "Estimated", minutes: "min", arrive: "Arrive at destination", straight: "Walk straight", left: "Turn left", right: "Turn right", floorDirection: "Follow signs to the destination floor", operationalHours: "Operating hours", open24: "Open 24 hours", activePeriod: "Active period", now: "Now", unspecified: "Not specified", facility: "AIRPORT FACILITY", tenant: "COMMERCIAL TENANT", frontPhoto: "Front view", resetRoute: "Clear route", showMap: "Show full map", zoomIn: "Zoom in", zoomOut: "Zoom out", hideExterior: "Hide exterior area", showExterior: "Show exterior area", compass: "Map compass" },
+} as const;
 const CameraController = forwardRef<
   ViewerApi,
-  { bounds: SceneBounds | null; viewMode: CameraMode }
->(function CameraController({ bounds, viewMode }, ref) {
+  { bounds: SceneBounds | null; viewMode: CameraMode; onHeadingChange: (heading: number) => void }
+>(function CameraController({ bounds, viewMode, onHeadingChange }, ref) {
     const { camera, invalidate, size: viewportSize } = useThree();
     const controlsRef = useRef<OrbitControlsImpl>(null);
+    const lastHeadingRef = useRef(Number.NaN);
+
+    useFrame(() => {
+      const direction = camera.getWorldDirection(new THREE.Vector3());
+      direction.y = 0;
+      if (direction.lengthSq() < 0.0001) return;
+      direction.normalize();
+      // Three.js looks down -Z. Convert the camera heading to the CSS angle
+      // needed to keep the world north marker pointing to true north.
+      const heading = THREE.MathUtils.radToDeg(Math.atan2(direction.x, -direction.z));
+      if (!Number.isFinite(lastHeadingRef.current) || Math.abs(heading - lastHeadingRef.current) > 0.35) {
+        lastHeadingRef.current = heading;
+        onHeadingChange(-heading);
+      }
+    });
 
     const getFitDistance = useCallback(
       (box: THREE.Box3, viewDirection: THREE.Vector3, margin: number) => {
@@ -292,7 +314,7 @@ const CameraController = forwardRef<
   },
 );
 
-function LoadingOverlay({ modelReady }: { modelReady: boolean }) {
+function LoadingOverlay({ modelReady, lang }: { modelReady: boolean; lang: "ID" | "EN" }) {
   const { progress } = useProgress();
   if (!isMapModelLoading(modelReady)) return null;
   return (
@@ -301,7 +323,7 @@ function LoadingOverlay({ modelReady }: { modelReady: boolean }) {
         <Box size={22} strokeWidth={1.6} />
       </div>
       <div className="loader-copy">
-        <span>MEMUAT MODEL LANTAI</span>
+        <span>{mapCopy[lang].loading}</span>
         <strong>{Math.round(progress)}%</strong>
       </div>
       <div className="loader-track">
@@ -355,7 +377,7 @@ export function AirportWayfinding() {
   const [routeWorldPoints, setRouteWorldPoints] = useState<RouteWorldPoint[]>([]);
   const [routeTransitions, setRouteTransitions] = useState<FloorTransition[]>([]);
   const [routePointFloors, setRoutePointFloors] = useState<FloorId[]>([]);
-  const [routeMessage, setRouteMessage] = useState("Pilih posisi awal terlebih dahulu.");
+  const [routeMessage, setRouteMessage] = useState<string>(mapCopy.ID.selectStartHint);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [selectingStart, setSelectingStart] = useState(false);
   const [viewMode, setViewMode] = useState<CameraMode>("map");
@@ -367,9 +389,17 @@ export function AirportWayfinding() {
   const [floorView, setFloorView] = useState<FloorView>("ALL");
   const [showExterior, setShowExterior] = useState(true);
   const [exteriorAttribution, setExteriorAttribution] = useState<string | null>(null);
+  const [compassRotation, setCompassRotation] = useState(0);
+  const lang = useMapStore((state) => state.lang);
+  const copy = mapCopy[lang];
   useEffect(() => {
+    // Muat dari DB terlebih dahulu, kemudian listen event localStorage
+    // dari tab admin untuk sinkronisasi real-time
+    fetchMapObjectConfigsFromDb()
+      .then(setMapObjectConfigs)
+      .catch(() => setMapObjectConfigs(readMapObjectConfigs()));
+
     const sync = () => setMapObjectConfigs(readMapObjectConfigs());
-    sync();
     window.addEventListener("storage", sync);
     window.addEventListener("todjuanda-map-config-change", sync);
     return () => {
@@ -422,6 +452,9 @@ export function AirportWayfinding() {
     [routeWorldPoints],
   );
   const routeSessionActive = Boolean(routeMetrics);
+  useEffect(() => {
+    if (!startPoint && !routeSessionActive) setRouteMessage(copy.selectStartHint);
+  }, [copy.selectStartHint, routeSessionActive, startPoint]);
   const routeSteps = useMemo(
     () => routeMetrics
       ? createRouteSteps(routeMetrics, routeTransitions.map((transition) => ({
@@ -467,20 +500,22 @@ export function AirportWayfinding() {
       if (!navigation) return;
       const snapped = snapPlace(navigation, place);
       if (!snapped) {
-        setRouteMessage("Tidak ada area jalan yang valid di dekat titik awal.");
+        setRouteMessage(copy.selectStartHint);
         return;
       }
       setStartPoint(snapped);
       setStartName(name);
       clearRoute();
-      setRouteMessage("Titik awal berada di area jalan terdekat. Pilih tujuan.");
+      setRouteMessage(copy.chooseStartHint);
       setSelectingStart(false);
       setViewMode("map");
-      // Titik awal di lantai yang sedang disembunyikan tetap harus terlihat.
-      setFloorView((view) => view === "ALL" || view === snapped.floor ? view : snapped.floor);
+      // Setelah titik awal dipilih, tujuan boleh diklik di lantai mana pun.
+      // Jangan menyembunyikan L2 ketika titik awal berada di L1 karena itu
+      // membuat mesh tujuan L2 tidak menerima raycast sama sekali.
+      setFloorView((view) => multiFloor ? "ALL" : (view === "ALL" || view === snapped.floor ? view : snapped.floor));
       viewerApi.current?.focusPoint(new THREE.Vector3(snapped.point[0], placeElevation(navigation, snapped), snapped.point[1]));
     },
-    [clearRoute, navigation],
+    [clearRoute, lang, multiFloor, navigation],
   );
 
   const chooseEntryPoint = useCallback(
@@ -523,9 +558,7 @@ export function AirportWayfinding() {
         setRoutePointFloors([]);
         setDestinationPoint(null);
         setDestinationName(label);
-        setRouteMessage(start.floor === record.floor
-          ? "Tidak ditemukan jalur aman pada lantai ini. Coba titik awal atau tujuan lain."
-          : "Tidak ditemukan jalur lewat eskalator atau tangga menuju lantai tujuan.");
+        setRouteMessage(start.floor === record.floor ? copy.noSafeRoute : copy.noFloorRoute);
         return false;
       }
 
@@ -536,26 +569,26 @@ export function AirportWayfinding() {
       setDestinationPoint(end ? { floor: record.floor, point: [end[0], end[2]] } : null);
       setDestinationName(label);
       setRouteMessage(route.transitions.length
-        ? `Rute melewati ${route.transitions.map((transition) => transition.label.toLocaleLowerCase("id-ID")).join(", ")}.`
-        : "Rute terdekat menghindari tembok dan pilar, melalui bukaan pintu yang ada pada model.");
+        ? `${lang === "ID" ? "Rute melewati" : "Route via"} ${route.transitions.map((transition) => transition.label.toLocaleLowerCase(lang === "ID" ? "id-ID" : "en-US")).join(", ")}.`
+        : copy.routeHint);
       setSelected(createSelectedObject(record.object));
       // Mulai dari lantai titik awal. Lantai lain disembunyikan agar rute tidak
       // tertutup pelat lantai di atasnya.
       if (multiFloor) setFloorView(start.floor);
       return true;
     },
-    [mapObjectConfigs, multiFloor, navigation],
+    [copy.noFloorRoute, copy.noSafeRoute, copy.routeHint, lang, mapObjectConfigs, multiFloor, navigation],
   );
 
   const calculateRoute = useCallback(
     (record: SceneObjectRecord) => {
       if (!startPoint || !navigation) {
-        setRouteMessage("Pilih posisi awal terlebih dahulu.");
+        setRouteMessage(copy.selectStartHint);
         return;
       }
       planRoute(startPoint, record);
     },
-    [navigation, planRoute, startPoint],
+    [copy.selectStartHint, navigation, planRoute, startPoint],
   );
 
   /** Pintu masuk keberangkatan terdekat ke sebuah objek, sebagai titik awal penumpang. */
@@ -579,7 +612,7 @@ export function AirportWayfinding() {
       if (!navigation) return;
       const start = snapPlace(navigation, recordCenter(from));
       if (!start) {
-        setRouteMessage(`Tidak ada area jalan di dekat ${fromName}.`);
+        setRouteMessage(`${lang === "ID" ? "Tidak ada area jalan di dekat" : "No walkway near"} ${fromName}.`);
         return;
       }
       setSelectingStart(false);
@@ -588,19 +621,19 @@ export function AirportWayfinding() {
       setStartName(fromName);
       planRoute(start, to);
     },
-    [navigation, planRoute],
+    [lang, navigation, planRoute],
   );
 
   const routeToDeparture = useCallback(
     (departure: number) => {
       const target = objects.find((record) => record.selectableLabel === `Departure ${departure}`);
       if (!target) {
-        setRouteMessage(`Area Departure ${departure} belum ditandai pada peta.`);
+        setRouteMessage(`${lang === "ID" ? "Area Departure" : "Departure area"} ${departure} ${lang === "ID" ? "belum ditandai pada peta." : "is not marked on the map."}`);
         return;
       }
       const entrance = nearestEntrance(target);
       if (!entrance) {
-        setRouteMessage("Pintu masuk keberangkatan belum ditandai pada peta.");
+        setRouteMessage(lang === "ID" ? "Pintu masuk keberangkatan belum ditandai pada peta." : "Departure entrances are not marked on the map yet.");
         return;
       }
       startPassengerRoute(entrance, entranceLabel(entrance.name), target);
@@ -612,7 +645,7 @@ export function AirportWayfinding() {
     (gate: number, departure: number | null) => {
       const target = gateRecords.get(gate);
       if (!target) {
-        setRouteMessage(`Gate ${gate} tidak ada pada peta Lantai 2.`);
+        setRouteMessage(lang === "ID" ? `Gate ${gate} tidak ada pada peta Lantai 2.` : `Gate ${gate} is not available on the second-floor map.`);
         return;
       }
       const checkIn = departure === null ? null : objects.find((record) => record.selectableLabel === `Departure ${departure}`);
@@ -678,9 +711,9 @@ export function AirportWayfinding() {
     setViewMode("map");
     clearRoute();
     setRouteMessage(multiFloor
-      ? "Klik area lantai atau building pada peta untuk memilih titik awal. Pilih lantai lewat tombol lantai."
-      : "Klik area lantai atau building pada peta untuk memilih titik awal.");
-  }, [clearRoute, multiFloor]);
+      ? (lang === "EN" ? "Click a floor area or building to choose your starting point. Use the floor buttons to switch floors." : "Klik area lantai atau building pada peta untuk memilih titik awal. Pilih lantai lewat tombol lantai.")
+      : (lang === "EN" ? "Click a floor area or building to choose your starting point." : "Klik area lantai atau building pada peta untuk memilih titik awal."));
+  }, [clearRoute, lang, multiFloor]);
 
   const showMapView = useCallback(() => {
     setViewMode("map");
@@ -749,13 +782,13 @@ export function AirportWayfinding() {
     setStartPoint(null);
     setStartName(null);
     clearRoute();
-    setRouteMessage("Pilih posisi awal terlebih dahulu.");
+    setRouteMessage(copy.selectStartHint);
     setSelected(null);
     setQuery("");
     setSelectingStart(false);
     setViewMode("map");
     window.requestAnimationFrame(() => viewerApi.current?.resetView());
-  }, [clearRoute]);
+  }, [clearRoute, copy.selectStartHint]);
 
   // Kedua lantai ada dalam satu model, jadi berpindah lantai tidak memuat
   // ulang apa pun dan rute yang sedang aktif tetap ada.
@@ -854,6 +887,7 @@ export function AirportWayfinding() {
             <SceneModel
               modelUrl={TERMINAL_MODEL_URL}
               floorView={shownFloorView}
+              showObjectLabels
               selectedUuid={selected?.uuid ?? null}
               onSelect={handleSelect}
               onSelectFloor={selectingStart && navigation ? (point) => commitStartPoint({ floor: floorAtHeight(navigation, point.y), point: [point.x, point.z] }, "Posisi pada peta") : undefined}
@@ -877,6 +911,7 @@ export function AirportWayfinding() {
             ref={viewerApi}
             bounds={bounds}
             viewMode={viewMode}
+            onHeadingChange={setCompassRotation}
           />
           <RoutePlaybackController
             metrics={routeMetrics}
@@ -891,63 +926,63 @@ export function AirportWayfinding() {
         </Canvas>
       </div>
 
-      <LoadingOverlay modelReady={bounds !== null} />
+      <LoadingOverlay modelReady={bounds !== null} lang={lang} />
       <FloorSwitcher view={shownFloorView} floors={modelFloors.length ? modelFloors : ["L1"]} onSelect={changeFloor} />
 
-      <aside className="sea-planner" aria-label="Pencarian rute">
+      <aside className="sea-planner" aria-label={lang === "ID" ? "Pencarian rute" : "Route search"}>
         <div className="sea-planner-heading">
           <span>TERMINAL 1 · {floorViewLabel(shownFloorView, modelFloors.length ? modelFloors : ["L1"]).toLocaleUpperCase("id-ID")}</span>
-          <h1>Petunjuk arah</h1>
+          <h1>{copy.directions}</h1>
         </div>
         <div className="sea-trip-fields">
           <button type="button" className={selectingStart ? "is-current" : ""} onClick={beginStartSelection} disabled={!navigation}>
             <span className="sea-pin is-origin" />
-            <span><small>Dari</small><strong>{startName ?? "Pilih titik awal"}</strong></span>
+            <span><small>{copy.from}</small><strong>{startName ?? copy.chooseStart}</strong></span>
           </button>
           <button type="button" className={!selectingStart ? "is-current" : ""} onClick={() => { setSelectingStart(false); setQuery(""); setSearchFocused(true); }} disabled={!startPoint}>
             <span className="sea-pin is-destination" />
-            <span><small>Ke</small><strong>{routeSessionActive ? destinationName : "Pilih tujuan"}</strong></span>
+            <span><small>{copy.to}</small><strong>{routeSessionActive ? destinationName : copy.chooseDestination}</strong></span>
           </button>
         </div>
         <div className="sea-search-wrap">
           <label className="sea-search">
             <Search size={18} />
-            <input value={query} onChange={(event) => { setQuery(event.target.value); setSearchFocused(true); }} onFocus={() => setSearchFocused(true)} onBlur={() => window.setTimeout(() => setSearchFocused(false), 140)} placeholder={selectingStart || !startPoint ? `Cari titik awal (${searchPlaceholderExample})` : `Cari tujuan (${searchPlaceholderExample})`} aria-label={selectingStart || !startPoint ? "Cari titik awal" : "Cari tujuan"} />
-            {query && <button type="button" onClick={() => setQuery("")} aria-label="Hapus pencarian"><X size={16} /></button>}
+            <input value={query} onChange={(event) => { setQuery(event.target.value); setSearchFocused(true); }} onFocus={() => setSearchFocused(true)} onBlur={() => window.setTimeout(() => setSearchFocused(false), 140)} placeholder={`${selectingStart || !startPoint ? copy.searchStart : copy.searchDestination} (${searchPlaceholderExample})`} aria-label={selectingStart || !startPoint ? copy.searchStart : copy.searchDestination} />
+            {query && <button type="button" onClick={() => setQuery("")} aria-label={copy.clearSearch}><X size={16} /></button>}
           </label>
           {searchFocused && query && <div className="sea-search-results">
             {searchResults.length ? searchResults.map((record) => {
               const displayName = mapObjectConfigs[record.name]?.displayName?.trim();
               const floorNote = multiFloor ? ` · ${FLOOR_LABELS[record.floor]}` : "";
               return <button key={record.uuid} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => chooseSearchResult(record)}><MapPin size={16} /><span><strong>{displayName || record.selectableLabel || record.name}</strong><small>{displayName || record.selectableLabel ? `${record.name} · ${record.metadata.category}` : record.metadata.category}{floorNote}</small></span></button>;
-            }) : <p>Tidak ditemukan. Coba nama tenant, kode building, atau nomor gate.</p>}
+            }) : <p>{copy.noResults}</p>}
           </div>}
         </div>
         <p className="sea-hint" role="status">{gridError ?? routeMessage}</p>
         {routeMetrics && routeSteps.length > 0 && <div className="sea-route-details">
           <div className="sea-route-summary"><div><strong>{Math.round(routeMetrics.totalDistance)} m</strong><span>Perkiraan {Math.max(1, Math.ceil(routeMetrics.totalDistance / 1.35 / 60))} menit{routeFloorsText ? ` · ${routeFloorsText}` : ""}</span></div><button type="button" onClick={resetRoute} aria-label="Hapus rute"><X size={18} /></button></div>
-          <div className="sea-step-header"><h2>Langkah perjalanan</h2><span>{activeStepIndex + 1} / {routeSteps.length}</span></div>
+          <div className="sea-step-header"><h2>{copy.stepTitle}</h2><span>{activeStepIndex + 1} / {routeSteps.length}</span></div>
           <ol className="sea-step-list">{routeSteps.map((step, index) => <li key={`${step.kind}-${step.startIndex}`}><button type="button" className={index === activeStepIndex ? "is-active" : ""} onClick={() => selectRouteStep(index)} aria-current={index === activeStepIndex ? "step" : undefined}><span className="sea-step-number">{index + 1}</span><span><strong>{step.label}</strong><small>{step.kind === "arrive" ? destinationName : step.kind === "up" || step.kind === "down" ? "Ikuti papan petunjuk ke lantai tujuan" : `Sekitar ${Math.round(step.distance)} m${multiFloor && routePointFloors[step.startIndex] ? ` · ${FLOOR_LABELS[routePointFloors[step.startIndex]]}` : ""}`}</small></span></button></li>)}</ol>
-          <div className="sea-step-controls"><button type="button" onClick={() => selectRouteStep(activeStepIndex - 1)} disabled={activeStepIndex === 0}>Sebelumnya</button><button type="button" onClick={() => selectRouteStep(activeStepIndex + 1)} disabled={activeStepIndex >= routeSteps.length - 1}>Berikutnya <ChevronRight size={16} /></button></div>
-          <div className="sea-simulation-controls"><button type="button" onClick={viewMode === "pov" ? showMapView : restartActiveRoute}>{viewMode === "pov" ? "Lihat peta" : "Mulai simulasi 3D"}</button>{viewMode === "pov" && <><button type="button" onClick={toggleRoutePause}>{routePaused ? "Lanjut" : "Jeda"}</button><button type="button" onClick={recenterActiveRoute}>Pusatkan</button></>}</div>
+          <div className="sea-step-controls"><button type="button" onClick={() => selectRouteStep(activeStepIndex - 1)} disabled={activeStepIndex === 0}>{copy.previous}</button><button type="button" onClick={() => selectRouteStep(activeStepIndex + 1)} disabled={activeStepIndex >= routeSteps.length - 1}>{copy.next} <ChevronRight size={16} /></button></div>
+          <div className="sea-simulation-controls"><button type="button" onClick={viewMode === "pov" ? showMapView : restartActiveRoute}>{viewMode === "pov" ? copy.mapView : copy.simulation}</button>{viewMode === "pov" && <><button type="button" onClick={toggleRoutePause}>{routePaused ? copy.resume : copy.pause}</button><button type="button" onClick={recenterActiveRoute}>{copy.center}</button></>}</div>
         </div>}
       </aside>
 
-      <div className="sea-map-actions" aria-label="Kontrol peta"><button type="button" onClick={showMapView} disabled={!bounds} aria-label="Tampilkan seluruh peta"><RotateCcw size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomIn()} disabled={!bounds} aria-label="Perbesar peta"><Plus size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomOut()} disabled={!bounds} aria-label="Perkecil peta"><Minus size={18} /></button><button type="button" className="map-exterior-toggle" onClick={() => setShowExterior((value) => !value)} disabled={!bounds || shownFloorView === "L2"} aria-pressed={showExterior} aria-label={showExterior ? "Sembunyikan area luar gedung" : "Tampilkan area luar gedung"} title="Area luar gedung"><Trees size={18} /></button></div>
+      <div className="sea-map-actions" aria-label={lang === "ID" ? "Kontrol peta" : "Map controls"}><button type="button" onClick={showMapView} disabled={!bounds} aria-label={copy.showMap}><RotateCcw size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomIn()} disabled={!bounds} aria-label={copy.zoomIn}><Plus size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomOut()} disabled={!bounds} aria-label={copy.zoomOut}><Minus size={18} /></button><button type="button" className="map-exterior-toggle" onClick={() => setShowExterior((value) => !value)} disabled={!bounds || shownFloorView === "L2"} aria-pressed={showExterior} aria-label={showExterior ? copy.hideExterior : copy.showExterior} title={lang === "ID" ? "Area luar gedung" : "Exterior area"}><Trees size={18} /></button></div>
       {exteriorAttribution && <p className="map-attribution">Area luar: {exteriorAttribution}</p>}
 
-      <div className="map-compass" aria-label="Arah mata angin pada model peta">
-        <span className="map-compass-label map-compass-north">U</span>
-        <span className="map-compass-label map-compass-east">T</span>
+      <div className="map-compass" aria-label={copy.compass} style={{ transform: `rotate(${compassRotation}deg)` }}>
+        <span className="map-compass-label map-compass-north">{lang === "ID" ? "U" : "N"}</span>
+        <span className="map-compass-label map-compass-east">{lang === "ID" ? "T" : "E"}</span>
         <span className="map-compass-label map-compass-south">S</span>
-        <span className="map-compass-label map-compass-west">B</span>
+        <span className="map-compass-label map-compass-west">{lang === "ID" ? "B" : "W"}</span>
         <span className="map-compass-center">＋</span>
       </div>
 
       {selected && selectedLocationConfig && <aside className="sea-location-info" aria-label={`Informasi ${selectedLocationConfig.displayName || selected.name}`}>
         {getMapObjectPhotoUrl(selectedLocationConfig.photoUrl) && <img src={getMapObjectPhotoUrl(selectedLocationConfig.photoUrl)} alt={`Tampak depan ${selectedLocationConfig.displayName || selected.name}`} />}
         <div className="sea-location-info-body">
-          <span className="sea-location-kicker">{selectedLocationConfig.entityType === "FACILITY" ? "FASILITAS BANDARA" : "TENANT KOMERSIAL"}</span>
+          <span className="sea-location-kicker">{selectedLocationConfig.entityType === "FACILITY" ? copy.facility : copy.tenant}</span>
           <h2>{selectedLocationConfig.displayName || selected.name}</h2>
           <span className="sea-location-category">{selected.category}{multiFloor ? ` · ${selected.location.replace(/^Terminal 1 - /, "")}` : ""}</span>
           {selectedLocationConfig.description && <p>{selectedLocationConfig.description}</p>}

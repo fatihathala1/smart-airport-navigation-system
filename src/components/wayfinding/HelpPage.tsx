@@ -162,9 +162,18 @@ export function HelpPage() {
         <div className={styles.heroGlow} aria-hidden="true" />
         <div className={styles.heroInner}>
           <div className={styles.heroCopy}>
+            <div className={styles.heroEyebrow}>
+              <span className={styles.heroEyebrowDot} aria-hidden="true" />
+              {lang === "ID" ? "PANDUAN WAYFINDING · TERMINAL 1" : "WAYFINDING GUIDE · TERMINAL 1"}
+            </div>
             <h1 id="help-title">{t.title}</h1>
             <p>{t.intro}</p>
             <div className={styles.heroActions}><a className={styles.primaryButton} href="#panduan"><span>{t.start}</span><ArrowRight size={19} /></a><Link className={styles.ghostButton} href="/map">{t.map}<ArrowRight size={17} /></Link></div>
+            <div className={styles.heroMeta} aria-label={lang === "ID" ? "Ringkasan panduan" : "Guide summary"}>
+              <span><strong>04</strong> {lang === "ID" ? "langkah inti" : "core steps"}</span>
+              <span className={styles.heroMetaDivider} aria-hidden="true" />
+              <span><strong>3D</strong> {lang === "ID" ? "peta interaktif" : "interactive map"}</span>
+            </div>
           </div>
           <div className={styles.heroArt} aria-hidden="true">
             <span className={styles.heroArtLabel}>TERMINAL WAYFINDING / 01—04</span>

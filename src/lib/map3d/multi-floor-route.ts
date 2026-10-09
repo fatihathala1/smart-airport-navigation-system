@@ -158,6 +158,10 @@ export function findFloorRoute(navigation: FloorNavigation, start: RoutePlace, t
     .filter((connector) => connectorAllows(connector, travel))
     .flatMap((connector) => {
       const path = going(connector);
+      // Landing dari GLB kadang berada beberapa sentimeter di luar sel lantai
+      // karena ujung tangga/eskalator tidak persis menempel pada pelat FF.
+      // `walkTo` akan snap landing ke sel jalan terdekat; A* tetap memeriksa
+      // seluruh obstacle sehingga snap tidak dapat melewati tembok/pilar.
       const first = walkTo(startGrid, start.point, path.enter);
       if (!first) return [];
       const firstLength = pathLength(first);

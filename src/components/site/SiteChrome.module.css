@@ -656,3 +656,12 @@
     justify-content: flex-start;
   }
 }
+
+@media (max-width: 420px) {
+  .mapHeader .headerInner { padding-left: 44px; padding-right: 8px; gap: 6px; }
+  .mapHeader .headerAirportLogo { width: 118px; }
+  .mapHeader .logoDivider,
+  .mapHeader .toDjuandaLogo { display: none; }
+  .mapHeader .headerRightArea { gap: 5px; }
+  .mapHeader .languageSwitch button { min-width: 34px; padding: 0 6px; font-size: 10px; }
+}
