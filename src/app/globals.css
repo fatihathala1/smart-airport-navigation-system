@@ -201,7 +201,7 @@ button:active { transform: translateY(1px); }
 /* North Arrow & Scale Indicator */
 .compass-indicator { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: rgba(33, 44, 54, 0.85); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px); font-size: 11px; font-weight: 750; color: #ffffff; }
 .compass-arrow { display: inline-block; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 11px solid var(--danger); transform: rotate(0deg); }
-.map-compass { position: absolute; left: 18px; top: 18px; z-index: 10; width: 72px; height: 72px; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 50%; background: rgba(33, 44, 54, 0.86); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px); color: #dbeafe; font-size: 11px; font-weight: 800; pointer-events: none; }
+.map-compass { position: absolute; left: 20px; bottom: 20px; z-index: 12; width: 72px; height: 72px; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 50%; background: rgba(33, 44, 54, 0.86); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px); color: #dbeafe; font-size: 11px; font-weight: 800; pointer-events: none; }
 .map-compass::before, .map-compass::after { content: ""; position: absolute; background: rgba(255, 255, 255, 0.22); }
 .map-compass::before { left: 50%; top: 11px; bottom: 11px; width: 1px; transform: translateX(-50%); }
 .map-compass::after { top: 50%; left: 11px; right: 11px; height: 1px; transform: translateY(-50%); }

@@ -250,3 +250,45 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([actorId, createdAt])
 }
+
+/// Konfigurasi tampilan dan operasional untuk setiap objek pada model GLB.
+/// Key-nya adalah nama objek GLB (contoh: T1-GF-01, T1-GF-AVSEC-01).
+/// Data ini disinkronkan dari admin portal ke peta publik.
+model MapObjectConfig {
+  id           String   @id @default(cuid())
+  /// Nama objek GLB, misal T1-GF-01 atau T1-GF-AVSEC-01
+  objectName   String   @unique
+  /// Nama tampilan untuk pengunjung
+  displayName  String   @default("")
+  /// Jenis: TENANT atau FACILITY
+  entityType   String   @default("TENANT")
+  /// Warna hex override (#RRGGBB), kosong = default kategori
+  color        String   @default("")
+  /// Status occupancy: OCCUPIED | OBSTACLE | WALKABLE
+  occupancy    String   @default("OCCUPIED")
+  /// Deskripsi / layanan
+  description  String   @default("")
+  /// URL foto tampak depan
+  photoUrl     String   @default("")
+  /// URL website
+  websiteUrl   String   @default("")
+  /// URL Instagram / sosial media lain
+  instagramUrl String   @default("")
+  /// Kontak (telepon / email)
+  contact      String   @default("")
+  /// Jam buka (HH:MM)
+  openTime     String   @default("")
+  /// Jam tutup (HH:MM)
+  closeTime    String   @default("")
+  /// Masa aktif mulai (ISO date)
+  activeFrom   String   @default("")
+  /// Masa aktif sampai (ISO date)
+  activeUntil  String   @default("")
+  /// Konfigurasi pintu masuk (JSON array MapObjectDoor[])
+  entryDoors   Json     @default("[]")
+  updatedById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([objectName])
+}

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ThreeEvent } from "@react-three/fiber";
+import { ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { Html, useGLTF } from "@react-three/drei";
+import { Baby, Building2, Headphones, Landmark, Luggage, ShieldCheck, Store, Toilet } from "lucide-react";
 import { clone as cloneScene } from "three/examples/jsm/utils/SkeletonUtils.js";
 import * as THREE from "three";
 import {
@@ -66,6 +67,8 @@ type SceneModelProps = {
   modelUrl?: string;
   /** Lantai yang ditampilkan pada model bertingkat. Bawaan: semua lantai. */
   floorView?: FloorView;
+  /** Tampilkan nama dan ikon lokasi untuk pengunjung. */
+  showObjectLabels?: boolean;
 };
 
 /**
@@ -278,7 +281,7 @@ function isFloorSurfaceName(objectName: string) {
   return getObjectMetadata(objectName).key === "visitor";
 }
 
-export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntryPoint, onReady, objectConfigs = {}, modelUrl = GROUND_FLOOR_MODEL_URL, floorView = "ALL" }: SceneModelProps) {
+export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntryPoint, onReady, objectConfigs = {}, modelUrl = GROUND_FLOOR_MODEL_URL, floorView = "ALL", showObjectLabels = false }: SceneModelProps) {
   const gltf = useGLTF(modelUrl);
   const sourceScene = gltf.scene;
   const sourceParser = gltf.parser as typeof gltf.parser & {
@@ -329,10 +332,21 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
         object.userData.runtimeVisibilityReason = "admin-configured-walkable";
       }
       const metadata = getObjectMetadata(sourceObjectName);
+      const objectFloor = floorOfObject(object);
       const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material];
       const runtimeMaterials = sourceMaterials.map((sourceMaterial) => {
         const runtimeMaterial = sourceMaterial.clone();
         prepareRuntimeMaterial(runtimeMaterial, sourceObjectName);
+        // Kursi pada ekspor lantai 2 dibuat hitam agar mudah dibedakan dari
+        // area duduk lantai dasar. Hanya objek yang benar-benar berada di
+        // grup LEVEL__L2 yang diubah.
+        if (objectFloor === "L2" && metadata.key === "seating") {
+          const colorMaterial = runtimeMaterial as ColorMaterial;
+          colorMaterial.color?.set("#000000");
+          colorMaterial.userData.baseColor = colorMaterial.color?.getHex();
+          colorMaterial.userData.runtimeColorKey = "seating";
+          colorMaterial.userData.runtimeColor = "#000000";
+        }
         if (objectConfig?.occupancy === "OBSTACLE") {
           const colorMaterial = runtimeMaterial as ColorMaterial;
           colorMaterial.color?.set("#68747C");
@@ -365,6 +379,40 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
   const selectedEntryDoors = selectedEntryObject
     ? effectiveObjectConfigs[selectedEntryObjectName]?.entryDoors ?? defaultMapObjectConfig(selectedEntryObjectName).entryDoors
     : undefined;
+
+  const objectLabels = useMemo(() => {
+    if (!showObjectLabels) return [];
+    const labels: Array<{ key: string; name: string; category: ObjectMetadata["key"]; floor: FloorId; position: [number, number, number] }> = [];
+    const seenLabels = new Set<string>();
+    model.updateWorldMatrix(true, true);
+    model.traverse((object) => {
+      if (typeof object.userData.gltfNodeIndex !== "number") return;
+      const sourceName = object.userData.sourceObjectName || object.name;
+      if (!isSelectableBuildingName(sourceName)) return;
+      const metadata = getObjectMetadata(sourceName, floorOfObject(object));
+      const floor = floorOfObject(object);
+      const labelKey = `${floor}:${sourceName}`;
+      if (seenLabels.has(labelKey)) return;
+      // XRAY dan area duduk sengaja tidak diberi label agar tampilan tidak
+      // terlalu penuh. Avsec tetap dilabeli karena bukan objek XRAY.
+      if (/xray|area[-_ ]?duduk|seat|kursi/i.test(sourceName) || metadata.key === "seating") return;
+      const config = effectiveObjectConfigs[sourceName] ?? defaultMapObjectConfig(sourceName);
+      if (config.occupancy === "WALKABLE" || object.visible === false) return;
+      const box = new THREE.Box3().setFromObject(object);
+      if (box.isEmpty()) return;
+      const center = box.getCenter(new THREE.Vector3());
+      const displayName = config.displayName.trim() || getSelectableLabel(sourceName) || (config.entityType === "FACILITY" ? metadata.category : sourceName);
+      labels.push({
+        key: object.uuid,
+        name: displayName,
+        category: metadata.key,
+        floor,
+        position: [center.x, box.max.y + 0.45, center.z],
+      });
+      seenLabels.add(labelKey);
+    });
+    return labels;
+  }, [effectiveObjectConfigs, model, showObjectLabels]);
 
   useLayoutEffect(() => {
     model.updateWorldMatrix(true, true);
@@ -408,14 +456,15 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
         }
       }
       const nodeIndex = object.userData.gltfNodeIndex;
-      if (typeof nodeIndex !== "number" || nodeDefinitions[nodeIndex]?.mesh === undefined) return;
       const sourceObjectName = object.userData.sourceObjectName || object.name;
+      const isGeneratedFloorPatch = /^FLOOR_CONNECTOR_PAD_L2_/i.test(sourceObjectName);
+      if ((typeof nodeIndex !== "number" || nodeDefinitions[nodeIndex]?.mesh === undefined) && !isGeneratedFloorPatch) return;
       objects.push({
         uuid: object.uuid,
         name: sourceObjectName,
         object,
         metadata: getObjectMetadata(sourceObjectName, floorOfObject(object)),
-        nodeIndex,
+        nodeIndex: typeof nodeIndex === "number" ? nodeIndex : -1,
         selectable: isSelectableBuildingName(sourceObjectName),
         selectableLabel: getSelectableLabel(sourceObjectName),
         floor: floorOfObject(object),
@@ -519,7 +568,47 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
         }}
       />
       {selectedEntryObject && selectedEntryDoors && !/^DOOR__/i.test(selectedEntryObjectName) && <EntryDoorMarkers object={selectedEntryObject} objectName={selectedEntryObjectName} doors={selectedEntryDoors} onSelect={onSelectEntryPoint} />}
+      {showObjectLabels && floorView !== "ALL" && objectLabels.filter((label) => floorView === label.floor).map((label) => (
+        <ObjectLabelMarker key={label.key} label={label.name} category={label.category} position={label.position} />
+      ))}
     </>
+  );
+}
+
+function ObjectLabelIcon({ category }: { category: ObjectMetadata["key"] }) {
+  if (category === "toilet") return <Toilet size={14} aria-hidden="true" />;
+  if (category === "nursery") return <Baby size={14} aria-hidden="true" />;
+  if (category === "prayer-room") return <Landmark size={14} aria-hidden="true" />;
+  if (category === "security") return <ShieldCheck size={14} aria-hidden="true" />;
+  if (category === "customer-service") return <Headphones size={14} aria-hidden="true" />;
+  if (category === "baggage-claim" || category === "baggage-wrap") return <Luggage size={14} aria-hidden="true" />;
+  if (category === "building") return <Store size={14} aria-hidden="true" />;
+  return <Building2 size={14} aria-hidden="true" />;
+}
+
+function ObjectLabelMarker({ label, category, position }: { label: string; category: ObjectMetadata["key"]; position: [number, number, number] }) {
+  const { camera } = useThree();
+  const [visible, setVisible] = useState(true);
+  const lastCheck = useRef(0);
+  const markerPosition = useMemo(() => new THREE.Vector3(...position), [position]);
+
+  useFrame((state) => {
+    // Membatasi pemeriksaan supaya banyak label tidak memicu render setiap
+    // frame ketika kamera sedang bergerak.
+    if (state.clock.elapsedTime - lastCheck.current < 0.12) return;
+    lastCheck.current = state.clock.elapsedTime;
+    const nextVisible = camera.position.distanceTo(markerPosition) <= 420;
+    setVisible((current) => current === nextVisible ? current : nextVisible);
+  });
+
+  if (!visible) return null;
+  return (
+    <Html position={position} center distanceFactor={14} style={{ pointerEvents: "none" }}>
+      <span className="map-object-label">
+        <span className="map-object-label-icon"><ObjectLabelIcon category={category} /></span>
+        <strong>{label}</strong>
+      </span>
+    </Html>
   );
 }
 

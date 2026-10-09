@@ -2,7 +2,7 @@
 // bertumpuk, supaya aplikasi cukup memuat satu file untuk kedua lantai.
 //
 // Masukan : public/models/buildings-ground-floor.glb   (Lantai 1)
-//           data/models/t1-lantai-2.glb                (Lantai 2)
+//           data/models/t1-lantai-2.glb                (Lantai 2, salinan T1-FF.glb terbaru)
 // Keluaran: public/models/t1-gabungan.glb
 //
 // Jalankan: node scripts/merge-floors.mjs
@@ -33,7 +33,7 @@ const TARGET = path.join(ROOT, "public/models/t1-gabungan.glb");
  *      selisihnya dipakai, rata-rata sisa jarak pilar 0,25 m.
  * Y: eskalator dan tangga di file FF turun 3,0 m dari pelat FF ke lantai GF.
  */
-const FF_OFFSET = [-0.79, 3.0, 9.23];
+const FF_OFFSET = [-1.06, 3.0, 8.80];
 
 /**
  * File FF ikut membawa salinan eskalator dan tangga GF (nama `T1-GF-...`) yang
@@ -196,6 +196,10 @@ lower.children = copySource(writer, ground, { dropNode: () => false, rename: (na
 const top = addLevel("LEVEL__L2", "L2", "Lantai 2", FF_OFFSET);
 let renamed = 0;
 const upperResult = copySource(writer, upper, {
+  // The FF export contains navigation helper meshes named T1-GF-... as well
+  // as the actual escalator/stair meshes.  Keep the latter: they are the
+  // visible upper landing that must meet the GF connector.  Only discard the
+  // duplicate helper meshes that would otherwise be mistaken for GF objects.
   dropNode: (node) => DROP_FROM_UPPER.test(node.name ?? ""),
   rename: (name) => {
     if (!groundNames.has(name)) return name;
@@ -204,6 +208,37 @@ const upperResult = copySource(writer, upper, {
   },
 });
 top.children = upperResult.roots;
+
+// Pada ekspor FF, empat bukaan di sekitar landing tangga/eskalator tidak
+// memiliki segitiga lantai. Tambahkan pelat tipis pada sisi lantai 2 agar
+// ujung konektor bertemu permukaan jalan dan grid navigasi tidak terputus.
+const patchMaterial = writer.out.materials.push({
+  name: "Floor connector patch",
+  pbrMetallicRoughness: {
+    baseColorFactor: [0.82, 0.85, 0.87, 1],
+    roughnessFactor: 0.82,
+    metallicFactor: 0,
+  },
+}) - 1;
+function addFloorPatch(name, centerX, centerZ, width, depth) {
+  const vertices = new Float32Array([
+    -width / 2, 0, -depth / 2, width / 2, 0, -depth / 2,
+    width / 2, 0, depth / 2, -width / 2, 0, depth / 2,
+  ]);
+  const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+  const positionOffset = writer.appendBytes(Buffer.from(vertices.buffer));
+  const indexOffset = writer.appendBytes(Buffer.from(indices.buffer));
+  const positionView = writer.out.bufferViews.push({ buffer: 0, byteOffset: positionOffset, byteLength: vertices.byteLength, target: 34962 }) - 1;
+  const indexView = writer.out.bufferViews.push({ buffer: 0, byteOffset: indexOffset, byteLength: indices.byteLength, target: 34963 }) - 1;
+  const positionAccessor = writer.out.accessors.push({ bufferView: positionView, componentType: 5126, count: 4, type: "VEC3", min: [-width / 2, 0, -depth / 2], max: [width / 2, 0, depth / 2] }) - 1;
+  const indexAccessor = writer.out.accessors.push({ bufferView: indexView, componentType: 5123, count: 6, type: "SCALAR", min: [0], max: [3] }) - 1;
+  const mesh = writer.out.meshes.push({ name, primitives: [{ attributes: { POSITION: positionAccessor }, indices: indexAccessor, material: patchMaterial }] }) - 1;
+  const node = { name, mesh, translation: [centerX - FF_OFFSET[0], 0.025, centerZ - FF_OFFSET[2]] };
+  writer.out.nodes.push(node);
+  top.children.push(writer.out.nodes.length - 1);
+}
+addFloorPatch("FLOOR_CONNECTOR_PAD_L2_01", 128.45, -14.55, 12, 6);
+addFloorPatch("FLOOR_CONNECTOR_PAD_L2_02", 218.90, -14.55, 12, 6);
 
 const output = writer.finish();
 writeFileSync(TARGET, output);

@@ -31,6 +31,11 @@ export type FloorConnector = {
 };
 
 const CONNECTOR_NAME = /(eks|eskalator|escalator)[\s_-]*(naik|turun)|tangga|stair/i;
+// Jalur antarlantai Terminal 1 memakai konektor resmi berikut. Empat objek
+// NAIK/TANGGA adalah akses dari L1 ke L2; dua objek TURUN adalah akses balik
+// dari L2 ke L1. Konektor lain tetap dapat tampil sebagai objek 3D, tetapi
+// tidak dipakai sebagai transisi navigasi.
+const ALLOWED_INTERFLOOR_CONNECTOR = /T1-GF-(?:EKS NAIK-0[12]|TANGGA-0[12]|EKS TURUN-(?:09|10))(?:$|__)/i;
 
 /** Titik dalam jarak ini dari ketinggian lantai dianggap sebagai ujung. */
 const END_TOLERANCE = 0.35;
@@ -48,6 +53,10 @@ export function connectorKind(name: string): ConnectorKind {
 }
 
 export function connectorAllows(connector: FloorConnector, travel: "up" | "down") {
+  if (/T1-GF-/i.test(connector.name)) {
+    if (travel === "down") return /T1-GF-EKS TURUN-(?:09|10)(?:$|__)/i.test(connector.name);
+    return /T1-GF-(?:EKS NAIK-0[12]|TANGGA-0[12])(?:$|__)/i.test(connector.name);
+  }
   return connector.direction === "both" || connector.direction === travel;
 }
 
@@ -80,6 +89,9 @@ export function detectFloorConnectors(
   const connectors: FloorConnector[] = [];
   for (const { name, object } of objects) {
     if (!CONNECTOR_NAME.test(name)) continue;
+    // Pada model Terminal 1, terapkan daftar empat konektor resmi. Fixture
+    // atau model generik tanpa prefix T1-GF tetap memakai deteksi nama umum.
+    if (/T1-GF-/i.test(name) && !ALLOWED_INTERFLOOR_CONNECTOR.test(name)) continue;
     const vertices = worldVertices(object);
     const low = vertices.filter((point) => point[1] <= lowerY + END_TOLERANCE);
     const high = vertices.filter((point) => point[1] >= upperY - END_TOLERANCE);
