@@ -25,16 +25,25 @@ export function JuandaOverviewMap() {
       if (disposed) return;
       const map = L.map(container, { center: JUANDA_CENTER, zoom: 16, scrollWheelZoom: false, zoomSnap: 0.25, zoomControl: true, attributionControl: true });
 
-      const street = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap contributors",
+      const googleHybrid = L.tileLayer("https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
+        maxZoom: 20,
+        subdomains: ["0", "1", "2", "3"],
+        attribution: "&copy; Google Maps",
       });
-      const satellite = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-        maxZoom: 19,
-        attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics",
+      const googleStreet = L.tileLayer("https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+        maxZoom: 20,
+        subdomains: ["0", "1", "2", "3"],
+        attribution: "&copy; Google Maps",
       });
-      satellite.addTo(map);
-      L.control.layers({ [lang === "ID" ? "Satelit" : "Satellite"]: satellite, [lang === "ID" ? "Peta" : "Street"]: street }, {}, { position: "topright" }).addTo(map);
+      googleHybrid.addTo(map);
+      L.control.layers(
+        {
+          [lang === "ID" ? "Google Satelit" : "Google Satellite"]: googleHybrid,
+          [lang === "ID" ? "Google Peta" : "Google Street"]: googleStreet,
+        },
+        {},
+        { position: "topright" },
+      ).addTo(map);
 
       const allBounds = L.latLngBounds([]);
       for (const terminal of JUANDA_TERMINALS) {

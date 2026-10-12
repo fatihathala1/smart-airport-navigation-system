@@ -49,6 +49,9 @@ export function SiteHeader() {
           <Link href="/map" className={styles.navLink} data-active={isMapPage}>
             Maps
           </Link>
+          <Link href="/about" className={styles.navLink} data-active={pathname === "/about"}>
+            About
+          </Link>
           <Link href="/help" className={styles.navLink} data-active={pathname === "/help"}>
             Help
           </Link>
