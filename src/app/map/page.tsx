@@ -8,9 +8,9 @@ export const metadata = {
 
 export default function MapPage() {
   return (
-    <>
+    <div className="map-page-shell">
       <SiteHeader />
       <Map3DClient />
-    </>
+    </div>
   );
 }

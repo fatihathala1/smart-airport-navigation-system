@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Plane, X } from "lucide-react";
 import { DepartureList } from "./DepartureList";
 import { useMapStore } from "@/store/mapStore";
 
@@ -72,21 +73,42 @@ export function PassengerRoadmap({ routeReady = false, gates = [], onRouteToDepa
         aria-controls="passenger-roadmap"
         onClick={() => setOpen((current) => !current)}
       >
-        {en ? "Are you a passenger?" : "Apakah kamu penumpang?"}
-        <span aria-hidden="true">{open ? "−" : "+"}</span>
+        <Plane size={15} className="passenger-pill-icon" aria-hidden="true" />
+        <span className="passenger-pill-text">{en ? "Passenger Guide" : "Panduan Penumpang"}</span>
+        <span className="passenger-pill-toggle" aria-hidden="true">{open ? "−" : "+"}</span>
       </button>
+
+      {open && (
+        <div
+          className="passenger-roadmap-backdrop"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       <section className="passenger-roadmap" id="passenger-roadmap" hidden={!open} aria-labelledby="passenger-roadmap-title">
-      <div className="passenger-roadmap-inner">
-        <div className="passenger-roadmap-intro">
-          <span className="passenger-roadmap-kicker">Panduan penumpang · Terminal 1</span>
-          <h2 id="passenger-roadmap-title">{en ? "From check-in to your gate" : "Dari check-in sampai ke gate"}</h2>
-          <p>{en ? "Follow the departure sequence. Departure is a check-in area, not a counter number." : "Ikuti urutan keberangkatan. Area Departure adalah area check-in, bukan nomor loket."}</p>
-          <div className="passenger-roadmap-summary" aria-live="polite">
-            <span>{en ? "Your journey plan" : "Rencana perjalananmu"}</span>
-            <strong>{departure ? `Departure ${departure}` : (en ? "Choose a Departure area" : "Pilih area Departure")}</strong>
-            <span>{gateAnswer === "yes" && gateNumber !== null ? `Gate ${gateNumber}` : "Nomor gate menunggu informasi di tiket"}</span>
-          </div>
+        <div className="passenger-roadmap-top-bar">
+          <span className="passenger-roadmap-top-title">{en ? "Passenger Guide" : "Panduan Penumpang"}</span>
+          <button
+            type="button"
+            className="passenger-roadmap-close-btn"
+            onClick={() => setOpen(false)}
+            aria-label={en ? "Close guide" : "Tutup panduan"}
+          >
+            <X size={18} />
+          </button>
         </div>
+        <div className="passenger-roadmap-inner">
+          <div className="passenger-roadmap-intro">
+            <span className="passenger-roadmap-kicker">Panduan penumpang · Terminal 1</span>
+            <h2 id="passenger-roadmap-title">{en ? "From check-in to your gate" : "Dari check-in sampai ke gate"}</h2>
+            <p>{en ? "Follow the departure sequence. Departure is a check-in area, not a counter number." : "Ikuti urutan keberangkatan. Area Departure adalah area check-in, bukan nomor loket."}</p>
+            <div className="passenger-roadmap-summary" aria-live="polite">
+              <span>{en ? "Your journey plan" : "Rencana perjalananmu"}</span>
+              <strong>{departure ? `Departure ${departure}` : (en ? "Choose a Departure area" : "Pilih area Departure")}</strong>
+              <span>{gateAnswer === "yes" && gateNumber !== null ? `Gate ${gateNumber}` : "Nomor gate menunggu informasi di tiket"}</span>
+            </div>
+          </div>
 
         <ol className="passenger-roadmap-steps">
           <li className="passenger-roadmap-step">

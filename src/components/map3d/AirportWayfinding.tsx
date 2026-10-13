@@ -15,9 +15,16 @@ import { OrbitControls, useProgress } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import {
   Box,
+  ChevronDown,
+  ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  Navigation,
   MapPin,
   Minus,
+  Compass,
+  Pause,
+  Play,
   Plus,
   RotateCcw,
   Search,
@@ -80,7 +87,7 @@ type CameraMode = "map" | "pov";
 
 const mapCopy = {
   ID: {
-    loading: "MEMUAT MODEL LANTAI", directions: "Petunjuk arah", from: "Dari", to: "Ke", chooseStart: "Pilih titik awal", chooseDestination: "Pilih tujuan", searchStart: "Cari titik awal", searchDestination: "Cari tujuan", clearSearch: "Hapus pencarian", noResults: "Tidak ditemukan. Coba nama tenant, kode building, atau nomor gate.", routeHint: "Rute terdekat menghindari tembok dan pilar, melalui bukaan pintu yang ada pada model.", chooseStartHint: "Titik awal berada di area jalan terdekat. Pilih tujuan.", selectStartHint: "Pilih posisi awal terlebih dahulu.", noSafeRoute: "Tidak ditemukan jalur aman pada lantai ini. Coba titik awal atau tujuan lain.", noFloorRoute: "Tidak ditemukan jalur lewat eskalator atau tangga menuju lantai tujuan.", stepTitle: "Langkah perjalanan", previous: "Sebelumnya", next: "Berikutnya", mapView: "Lihat peta", simulation: "Mulai simulasi 3D", pause: "Jeda", resume: "Lanjut", center: "Pusatkan", estimate: "Perkiraan", minutes: "menit", arrive: "Tiba di tujuan", straight: "Jalan lurus", left: "Belok kiri", right: "Belok kanan", floorDirection: "Ikuti papan petunjuk ke lantai tujuan", operationalHours: "Jam operasional", open24: "Buka 24 jam", activePeriod: "Masa aktif", now: "Sekarang", unspecified: "Tidak ditentukan", facility: "FASILITAS BANDARA", tenant: "TENANT KOMERSIAL", frontPhoto: "Tampak depan", resetRoute: "Hapus rute", showMap: "Tampilkan seluruh peta", zoomIn: "Perbesar peta", zoomOut: "Perkecil peta", hideExterior: "Sembunyikan area luar gedung", showExterior: "Tampilkan area luar gedung", compass: "Arah mata angin pada model peta" },
+    loading: "MEMUAT MODEL LANTAI", directions: "Petunjuk arah", from: "Dari", to: "Ke", chooseStart: "Pilih titik awal", chooseDestination: "Pilih tujuan", searchStart: "Cari titik awal", searchDestination: "Cari tujuan", clearSearch: "Hapus pencarian", noResults: "Tidak ditemukan. Coba nama tenant, kode building, atau nomor gate.", routeHint: "Rute terdekat menghindari tembok dan pilar, melalui bukaan pintu yang ada pada model.", chooseStartHint: "Titik awal berada di area jalan terdekat. Pilih tujuan.", selectStartHint: "Pilih posisi awal terlebih dahulu.", noSafeRoute: "Tidak ditemukan jalur aman pada lantai ini. Coba titik awal atau tujuan lain.", noFloorRoute: "Tidak ditemukan jalur lewat eskalator atau tangga menuju lantai tujuan.", stepTitle: "Langkah perjalanan", previous: "Sebelumnya", next: "Berikutnya", mapView: "Lihat peta", simulation: "Mulai simulasi 3D", pause: "Jeda", resume: "Lanjutkan", center: "Pusatkan", estimate: "Perkiraan", minutes: "menit", arrive: "Tiba di tujuan", straight: "Jalan lurus", left: "Belok kiri", right: "Belok kanan", floorDirection: "Ikuti papan petunjuk ke lantai tujuan", operationalHours: "Jam operasional", open24: "Buka 24 jam", activePeriod: "Masa aktif", now: "Sekarang", unspecified: "Tidak ditentukan", facility: "FASILITAS BANDARA", tenant: "TENANT KOMERSIAL", frontPhoto: "Tampak depan", resetRoute: "Hapus rute", showMap: "Tampilkan seluruh peta", zoomIn: "Perbesar peta", zoomOut: "Perkecil peta", hideExterior: "Sembunyikan area luar gedung", showExterior: "Tampilkan area luar gedung", compass: "Arah mata angin pada model peta" },
   EN: {
     loading: "LOADING FLOOR MODEL", directions: "Directions", from: "From", to: "To", chooseStart: "Choose starting point", chooseDestination: "Choose destination", searchStart: "Search starting point", searchDestination: "Search destination", clearSearch: "Clear search", noResults: "No results. Try a tenant name, building code, or gate number.", routeHint: "The shortest route avoids walls and pillars through the model's available doorways.", chooseStartHint: "Your start is on the nearest walkway. Choose a destination.", selectStartHint: "Choose a starting point first.", noSafeRoute: "No safe route was found on this floor. Try another start or destination.", noFloorRoute: "No route via an escalator or staircase was found to the destination floor.", stepTitle: "Walking steps", previous: "Previous", next: "Next", mapView: "View map", simulation: "Start 3D simulation", pause: "Pause", resume: "Resume", center: "Recenter", estimate: "Estimated", minutes: "min", arrive: "Arrive at destination", straight: "Walk straight", left: "Turn left", right: "Turn right", floorDirection: "Follow signs to the destination floor", operationalHours: "Operating hours", open24: "Open 24 hours", activePeriod: "Active period", now: "Now", unspecified: "Not specified", facility: "AIRPORT FACILITY", tenant: "COMMERCIAL TENANT", frontPhoto: "Front view", resetRoute: "Clear route", showMap: "Show full map", zoomIn: "Zoom in", zoomOut: "Zoom out", hideExterior: "Hide exterior area", showExterior: "Show exterior area", compass: "Map compass" },
 } as const;
@@ -390,6 +397,24 @@ export function AirportWayfinding() {
   const [showExterior, setShowExterior] = useState(true);
   const [exteriorAttribution, setExteriorAttribution] = useState<string | null>(null);
   const [compassRotation, setCompassRotation] = useState(0);
+  const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleSheetTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleSheetTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartY.current = null;
+    if (deltaY < -28) {
+      setMobileSheetExpanded(true);
+    } else if (deltaY > 28) {
+      setMobileSheetExpanded(false);
+    }
+  }, []);
+
   const lang = useMapStore((state) => state.lang);
   const copy = mapCopy[lang];
   useEffect(() => {
@@ -551,6 +576,7 @@ export function AirportWayfinding() {
       setRouteProgress(null);
       setRoutePaused(false);
       setActiveStepIndex(0);
+      setMobileSheetExpanded(false);
       setViewMode("map");
       if (!route) {
         setRouteWorldPoints([]);
@@ -842,6 +868,7 @@ export function AirportWayfinding() {
       data-destination-location={destinationName ?? ""}
       data-route-active={routeSessionActive ? "true" : "false"}
       data-route-paused={routePaused ? "true" : "false"}
+      data-has-selected={Boolean(selected)}
     >
       <PassengerRoadmap
         routeReady={Boolean(navigation)}
@@ -929,17 +956,49 @@ export function AirportWayfinding() {
       <LoadingOverlay modelReady={bounds !== null} lang={lang} />
       <FloorSwitcher view={shownFloorView} floors={modelFloors.length ? modelFloors : ["L1"]} onSelect={changeFloor} />
 
-      <aside className="sea-planner" aria-label={lang === "ID" ? "Pencarian rute" : "Route search"}>
-        <div className="sea-planner-heading">
-          <span>TERMINAL 1 · {floorViewLabel(shownFloorView, modelFloors.length ? modelFloors : ["L1"]).toLocaleUpperCase("id-ID")}</span>
-          <h1>{copy.directions}</h1>
+      <aside
+        className="sea-planner"
+        data-expanded={mobileSheetExpanded ? "true" : "false"}
+        data-route-active={routeSessionActive ? "true" : "false"}
+        data-view-mode={viewMode}
+        aria-label={lang === "ID" ? "Pencarian rute" : "Route search"}
+      >
+        <div
+          className="sea-sheet-handle"
+          onClick={() => setMobileSheetExpanded((prev) => !prev)}
+          onTouchStart={handleSheetTouchStart}
+          onTouchEnd={handleSheetTouchEnd}
+          aria-hidden="true"
+        />
+        <div
+          className="sea-planner-heading"
+          onClick={() => setMobileSheetExpanded((prev) => !prev)}
+          onTouchStart={handleSheetTouchStart}
+          onTouchEnd={handleSheetTouchEnd}
+        >
+          <div className="sea-planner-heading-titles">
+            <h1>{copy.directions}</h1>
+            <span>TERMINAL 1 · {floorViewLabel(shownFloorView, modelFloors.length ? modelFloors : ["L1"]).toLocaleUpperCase("id-ID")}</span>
+          </div>
+          <button
+            type="button"
+            className="sea-planner-mobile-toggle"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMobileSheetExpanded((prev) => !prev);
+            }}
+            aria-label={mobileSheetExpanded ? "Kecilkan panel" : "Perbesar panel"}
+          >
+            {mobileSheetExpanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+          </button>
         </div>
+        <div className="sea-planner-body">
         <div className="sea-trip-fields">
-          <button type="button" className={selectingStart ? "is-current" : ""} onClick={beginStartSelection} disabled={!navigation}>
+          <button type="button" className={selectingStart ? "is-current" : ""} onClick={() => { beginStartSelection(); setMobileSheetExpanded(true); }} disabled={!navigation}>
             <span className="sea-pin is-origin" />
             <span><small>{copy.from}</small><strong>{startName ?? copy.chooseStart}</strong></span>
           </button>
-          <button type="button" className={!selectingStart ? "is-current" : ""} onClick={() => { setSelectingStart(false); setQuery(""); setSearchFocused(true); }} disabled={!startPoint}>
+          <button type="button" className={!selectingStart ? "is-current" : ""} onClick={() => { setSelectingStart(false); setQuery(""); setSearchFocused(true); setMobileSheetExpanded(true); }} disabled={!startPoint}>
             <span className="sea-pin is-destination" />
             <span><small>{copy.to}</small><strong>{routeSessionActive ? destinationName : copy.chooseDestination}</strong></span>
           </button>
@@ -947,7 +1006,7 @@ export function AirportWayfinding() {
         <div className="sea-search-wrap">
           <label className="sea-search">
             <Search size={18} />
-            <input value={query} onChange={(event) => { setQuery(event.target.value); setSearchFocused(true); }} onFocus={() => setSearchFocused(true)} onBlur={() => window.setTimeout(() => setSearchFocused(false), 140)} placeholder={`${selectingStart || !startPoint ? copy.searchStart : copy.searchDestination} (${searchPlaceholderExample})`} aria-label={selectingStart || !startPoint ? copy.searchStart : copy.searchDestination} />
+            <input value={query} onChange={(event) => { setQuery(event.target.value); setSearchFocused(true); }} onFocus={() => { setSearchFocused(true); setMobileSheetExpanded(true); }} onBlur={() => window.setTimeout(() => setSearchFocused(false), 140)} placeholder={`${selectingStart || !startPoint ? copy.searchStart : copy.searchDestination} (${searchPlaceholderExample})`} aria-label={selectingStart || !startPoint ? copy.searchStart : copy.searchDestination} />
             {query && <button type="button" onClick={() => setQuery("")} aria-label={copy.clearSearch}><X size={16} /></button>}
           </label>
           {searchFocused && query && <div className="sea-search-results">
@@ -963,9 +1022,71 @@ export function AirportWayfinding() {
           <div className="sea-route-summary"><div><strong>{Math.round(routeMetrics.totalDistance)} m</strong><span>Perkiraan {Math.max(1, Math.ceil(routeMetrics.totalDistance / 1.35 / 60))} menit{routeFloorsText ? ` · ${routeFloorsText}` : ""}</span></div><button type="button" onClick={resetRoute} aria-label="Hapus rute"><X size={18} /></button></div>
           <div className="sea-step-header"><h2>{copy.stepTitle}</h2><span>{activeStepIndex + 1} / {routeSteps.length}</span></div>
           <ol className="sea-step-list">{routeSteps.map((step, index) => <li key={`${step.kind}-${step.startIndex}`}><button type="button" className={index === activeStepIndex ? "is-active" : ""} onClick={() => selectRouteStep(index)} aria-current={index === activeStepIndex ? "step" : undefined}><span className="sea-step-number">{index + 1}</span><span><strong>{step.label}</strong><small>{step.kind === "arrive" ? destinationName : step.kind === "up" || step.kind === "down" ? "Ikuti papan petunjuk ke lantai tujuan" : `Sekitar ${Math.round(step.distance)} m${multiFloor && routePointFloors[step.startIndex] ? ` · ${FLOOR_LABELS[routePointFloors[step.startIndex]]}` : ""}`}</small></span></button></li>)}</ol>
-          <div className="sea-step-controls"><button type="button" onClick={() => selectRouteStep(activeStepIndex - 1)} disabled={activeStepIndex === 0}>{copy.previous}</button><button type="button" onClick={() => selectRouteStep(activeStepIndex + 1)} disabled={activeStepIndex >= routeSteps.length - 1}>{copy.next} <ChevronRight size={16} /></button></div>
-          <div className="sea-simulation-controls"><button type="button" onClick={viewMode === "pov" ? showMapView : restartActiveRoute}>{viewMode === "pov" ? copy.mapView : copy.simulation}</button>{viewMode === "pov" && <><button type="button" onClick={toggleRoutePause}>{routePaused ? copy.resume : copy.pause}</button><button type="button" onClick={recenterActiveRoute}>{copy.center}</button></>}</div>
         </div>}
+        </div>
+        {routeMetrics && routeSteps.length > 0 && (
+          <div className="sea-route-actions">
+            <div className="sea-step-controls">
+              <button
+                type="button"
+                className="sea-btn-card sea-btn-step-prev"
+                onClick={() => selectRouteStep(activeStepIndex - 1)}
+                disabled={activeStepIndex === 0}
+              >
+                <ChevronLeft size={13} />
+                <span>{copy.previous}</span>
+              </button>
+              <button
+                type="button"
+                className="sea-btn-card sea-btn-step-next"
+                onClick={() => selectRouteStep(activeStepIndex + 1)}
+                disabled={activeStepIndex >= routeSteps.length - 1}
+              >
+                <span>{copy.next}</span>
+                <ChevronRight size={13} />
+              </button>
+            </div>
+            <div className={`sea-simulation-controls${viewMode === "pov" ? " is-pov" : ""}`}>
+              {viewMode === "pov" ? (
+                <>
+                  <button
+                    type="button"
+                    className="sea-btn-card sea-btn-pov-map"
+                    onClick={showMapView}
+                  >
+                    <RotateCcw size={12} />
+                    <span>{copy.mapView}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sea-btn-card sea-btn-pov-pause"
+                    onClick={toggleRoutePause}
+                  >
+                    {routePaused ? <Play size={12} fill="currentColor" /> : <Pause size={12} />}
+                    <span>{routePaused ? copy.resume : copy.pause}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sea-btn-card sea-btn-pov-center"
+                    onClick={recenterActiveRoute}
+                  >
+                    <Compass size={12} />
+                    <span>{copy.center}</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="sea-btn-card sea-btn-simulation-primary"
+                  onClick={restartActiveRoute}
+                >
+                  <Play size={13} fill="currentColor" />
+                  <span>{copy.simulation}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </aside>
 
       <div className="sea-map-actions" aria-label={lang === "ID" ? "Kontrol peta" : "Map controls"}><button type="button" onClick={showMapView} disabled={!bounds} aria-label={copy.showMap}><RotateCcw size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomIn()} disabled={!bounds} aria-label={copy.zoomIn}><Plus size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomOut()} disabled={!bounds} aria-label={copy.zoomOut}><Minus size={18} /></button><button type="button" className="map-exterior-toggle" onClick={() => setShowExterior((value) => !value)} disabled={!bounds || shownFloorView === "L2"} aria-pressed={showExterior} aria-label={showExterior ? copy.hideExterior : copy.showExterior} title={lang === "ID" ? "Area luar gedung" : "Exterior area"}><Trees size={18} /></button></div>
@@ -980,6 +1101,15 @@ export function AirportWayfinding() {
       </div>
 
       {selected && selectedLocationConfig && <aside className="sea-location-info" aria-label={`Informasi ${selectedLocationConfig.displayName || selected.name}`}>
+        <div className="sea-sheet-handle" aria-hidden="true" />
+        <button
+          type="button"
+          className="sea-location-close-btn"
+          onClick={() => setSelected(null)}
+          aria-label={lang === "ID" ? "Tutup informasi tempat" : "Close place information"}
+        >
+          <X size={18} />
+        </button>
         {getMapObjectPhotoUrl(selectedLocationConfig.photoUrl) && <img src={getMapObjectPhotoUrl(selectedLocationConfig.photoUrl)} alt={`Tampak depan ${selectedLocationConfig.displayName || selected.name}`} />}
         <div className="sea-location-info-body">
           <span className="sea-location-kicker">{selectedLocationConfig.entityType === "FACILITY" ? copy.facility : copy.tenant}</span>
@@ -990,6 +1120,45 @@ export function AirportWayfinding() {
           {(selectedLocationConfig.activeFrom || selectedLocationConfig.activeUntil) && <div className="sea-location-hours"><strong>Masa aktif</strong><span>{selectedLocationConfig.activeFrom || "Sekarang"} – {selectedLocationConfig.activeUntil || "Tidak ditentukan"}</span></div>}
           {selectedLocationConfig.contact && <div className="sea-location-contact">{selectedLocationConfig.contact}</div>}
           <div className="sea-location-links">{selectedLocationConfig.websiteUrl && <a href={selectedLocationConfig.websiteUrl} target="_blank" rel="noreferrer">Website</a>}{selectedLocationConfig.instagramUrl && <a href={selectedLocationConfig.instagramUrl} target="_blank" rel="noreferrer">Instagram</a>}</div>
+          <div className="sea-location-actions">
+            <button
+              type="button"
+              className="sea-loc-action-route"
+              onClick={() => {
+                const record = objects.find((item) => item.uuid === selected.uuid);
+                if (record) {
+                  if (startPoint) {
+                    calculateRoute(record);
+                  } else {
+                    const entrance = nearestEntrance(record);
+                    if (entrance) {
+                      startPassengerRoute(entrance, entranceLabel(entrance.name), record);
+                    } else {
+                      setBuildingAsStart(record);
+                    }
+                  }
+                  setSelected(null);
+                }
+              }}
+            >
+              <Navigation size={15} />
+              <span>{copy.directions}</span>
+            </button>
+            <button
+              type="button"
+              className="sea-loc-action-start"
+              onClick={() => {
+                const record = objects.find((item) => item.uuid === selected.uuid);
+                if (record) {
+                  setBuildingAsStart(record);
+                  setSelected(null);
+                }
+              }}
+            >
+              <MapPin size={15} />
+              <span>{copy.chooseStart}</span>
+            </button>
+          </div>
         </div>
       </aside>}
 
