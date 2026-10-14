@@ -85,8 +85,12 @@ async function main() {
   const users = [
     { email: "superadmin@juanda-airport.local", name: "Super Administrator Juanda", role: "SUPER_ADMIN" as const },
     { email: "admin.komersil@juanda-airport.local", name: "Admin Komersil Juanda", role: "AIRPORT_ADMIN" as const },
+    { email: "superadmin@juanda-airport.com", name: "Super Administrator Juanda", role: "SUPER_ADMIN" as const },
+    { email: "admin.komersil@juanda-airport.com", name: "Admin Komersil Juanda", role: "AIRPORT_ADMIN" as const },
+    { email: "admin@juanda-airport.com", name: "Admin Juanda", role: "SUPER_ADMIN" as const },
+    { email: "admin@juanda-airport.local", name: "Admin Juanda", role: "SUPER_ADMIN" as const },
   ];
-  for (const user of users) await prisma.user.upsert({ where: { email: user.email }, update: { passwordHash, name: user.name, role: user.role }, create: { ...user, passwordHash } });
+  for (const user of users) await prisma.user.upsert({ where: { email: user.email }, update: { passwordHash, name: user.name, role: user.role, active: true }, create: { ...user, passwordHash, active: true } });
 
   for (const location of qrLocations) await prisma.qRLocation.upsert({ where: { locationId: location.locationId }, update: { label: location.label }, create: { locationId: location.locationId, label: location.label, floorId: floorRows.get(location.floorId)!.id, nodeId: nodeRows.get(location.nodeId)!.id, isMock: true } });
 
