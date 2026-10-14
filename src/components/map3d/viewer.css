@@ -2215,10 +2215,11 @@
   .map3d-root .sea-map-actions {
     top: auto;
     right: 10px;
-    bottom: calc(min(48svh, 246px) + 12px);
+    bottom: calc(min(48svh, 246px) + 34px);
     flex-direction: column;
-    padding: 3px;
-    border-radius: 12px;
+    padding: 2.5px;
+    gap: 3px;
+    border-radius: 10px;
     background: rgba(14, 30, 43, 0.92);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(150, 190, 214, 0.28);
@@ -2227,23 +2228,27 @@
     transition: bottom 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .map3d-root .viewer-shell[data-route-active="true"] .sea-map-actions {
-    bottom: 106px;
+    bottom: 102px;
   }
   .map3d-root .sea-map-actions button {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+  .map3d-root .sea-map-actions button svg {
+    width: 14px;
+    height: 14px;
   }
   .map3d-root .map-compass {
     left: 10px;
-    bottom: calc(min(48svh, 246px) + 12px);
-    width: 48px;
-    height: 48px;
+    bottom: calc(min(48svh, 246px) + 34px);
+    width: 44px;
+    height: 44px;
     z-index: 15;
     transition: bottom 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .map3d-root .viewer-shell[data-route-active="true"] .map-compass {
-    bottom: 106px;
+    bottom: 102px;
   }
   .map3d-root .map-attribution {
     display: none;
@@ -2253,7 +2258,7 @@
   .map3d-root .sea-location-info {
     position: absolute;
     right: 10px;
-    bottom: 10px;
+    bottom: 22px;
     left: 10px;
     width: auto;
     max-height: min(45svh, 340px);
@@ -2274,7 +2279,7 @@
     height: 4px;
     border-radius: 999px;
     background: rgba(150, 190, 214, 0.45);
-    margin: 8px auto 2px;
+    margin: 6px auto 2px;
     flex-shrink: 0;
     cursor: pointer;
   }
@@ -2383,7 +2388,7 @@
   .map3d-root .sea-planner {
     position: absolute;
     right: 10px;
-    bottom: 10px;
+    bottom: 22px;
     left: 10px;
     width: auto;
     border-radius: 18px;
@@ -2425,8 +2430,8 @@
 
   /* Collapsed state when route is active (non-POV) */
   .map3d-root .sea-planner[data-route-active="true"]:not([data-expanded="true"]) {
-    height: 54px !important;
-    max-height: 54px !important;
+    height: 66px !important;
+    max-height: 66px !important;
     overflow: hidden !important;
   }
 
@@ -2453,7 +2458,7 @@
   .map3d-root .sea-planner[data-view-mode="pov"][data-expanded="true"] {
     height: auto !important;
     max-height: min(44svh, 280px) !important;
-    bottom: 12px;
+    bottom: 22px;
     left: 10px;
     right: 10px;
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
@@ -2461,11 +2466,11 @@
   }
 
   /* Mode Simulasi 3D POV Tertutup (Collapsed) - tombol panah bawah ditekan:
-     Panel mengecil ke tinggi header 54px sehingga seluruh pemandangan 3D bebas terbuka! */
+     Panel mengecil ke tinggi header 66px sehingga seluruh pemandangan 3D bebas terbuka! */
   .map3d-root .sea-planner[data-view-mode="pov"]:not([data-expanded="true"]) {
-    height: 54px !important;
-    max-height: 54px !important;
-    bottom: 10px;
+    height: 66px !important;
+    max-height: 66px !important;
+    bottom: 22px;
     left: 10px;
     right: 10px;
     overflow: hidden !important;
@@ -2476,30 +2481,34 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 7px 14px 6px;
+    padding: 5px 16px 14px;
     cursor: pointer;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
 
+  .map3d-root .sea-planner[data-expanded="true"] .sea-planner-heading {
+    padding: 5px 16px 10px;
+  }
+
   .map3d-root .sea-planner-heading-titles {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 2px;
     min-width: 0;
     flex: 1;
   }
 
   .map3d-root .sea-planner-heading span {
-    font-size: 9px;
+    font-size: 9.5px;
     font-weight: 700;
     letter-spacing: 0.06em;
     color: #7dd3fc;
-    line-height: 1.1;
+    line-height: 1.15;
     text-transform: uppercase;
   }
   .map3d-root .sea-planner-heading h1 {
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 700;
     margin: 0;
     line-height: 1.2;
@@ -2508,8 +2517,8 @@
   }
 
   .map3d-root .sea-planner-mobile-toggle {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
     display: grid;
     place-items: center;
     border: 1px solid rgba(150, 190, 214, 0.35);
@@ -2517,10 +2526,16 @@
     background: rgba(255, 255, 255, 0.12);
     color: #e7f1f7;
     cursor: pointer;
+    align-self: center;
+    margin-top: -4px;
     transition: transform 0.15s ease, background 0.15s ease;
   }
+  .map3d-root .sea-planner-mobile-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
   .map3d-root .sea-planner-mobile-toggle:active {
-    transform: scale(0.9);
+    transform: translateY(-4px) scale(0.9);
     background: rgba(255, 255, 255, 0.25);
   }
 
