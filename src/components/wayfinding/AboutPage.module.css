@@ -139,6 +139,7 @@
 .heroGradientText {
   background: linear-gradient(135deg, #7be4fb 0%, #00a3da 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

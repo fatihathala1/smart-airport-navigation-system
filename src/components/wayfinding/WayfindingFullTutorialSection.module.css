@@ -157,6 +157,7 @@
   display: inline-block;
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   font-size: clamp(4.8rem, 6.5vw, 7.2rem);
   font-weight: 800;
