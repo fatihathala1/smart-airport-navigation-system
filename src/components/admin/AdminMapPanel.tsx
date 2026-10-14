@@ -10,6 +10,8 @@ import { floors, spaces } from "@/data/demo-wayfinding";
 import type { MapSpace, TerminalCode } from "@/types";
 import { SceneModel, type SceneBounds, type SceneObjectRecord } from "@/components/map3d/SceneModel";
 import type { SelectedObject } from "@/lib/map3d/object-metadata";
+import { FLOOR_LABELS, type FloorId } from "@/lib/map3d/floors";
+import { TERMINAL_MODEL_URL } from "@/lib/map3d/assets";
 import { defaultMapObjectConfig, fetchMapObjectConfigsFromDb, getMapObjectPhotoUrl, readMapObjectConfigs, saveMapObjectConfigToDb, writeMapObjectConfigs, type MapObjectConfig, type MapObjectConfigByName, type MapObjectDoorSide, type MapObjectOccupancy } from "@/lib/map3d/admin-object-config";
 
 function LegacyAdminMapPanel() {
@@ -132,9 +134,10 @@ function EditorField({ label, children }: { label: string; children: React.React
   return <label className="admin-object-field"><span>{label}</span>{children}</label>;
 }
 
-export function AdminMapPanel() {
+export function AdminMapPanel({ initialObjectName = null }: { initialObjectName?: string | null }) {
   const [bounds, setBounds] = useState<SceneBounds | null>(null);
   const [objects, setObjects] = useState<SceneObjectRecord[]>([]);
+  const [floorView, setFloorView] = useState<FloorId>("L1");
   const [selected, setSelected] = useState<SelectedObject | null>(null);
   const [configs, setConfigs] = useState<MapObjectConfigByName>({});
   const [draft, setDraft] = useState<MapObjectConfig | null>(null);
@@ -149,7 +152,10 @@ export function AdminMapPanel() {
       .catch(() => setConfigs(readMapObjectConfigs()));
   }, []);
   const handleReady = useCallback((nextBounds: SceneBounds, nextObjects: SceneObjectRecord[]) => { setBounds(nextBounds); setObjects(nextObjects); }, []);
-  const editableObjects = useMemo(() => objects.filter((record) => record.selectable && /^(T1|TI)-GF-|^T1-FF-|^BAGGAGE|^DOOR__|^tembok[-_]pillar|^tembok_pilar_/i.test(record.name)), [objects]);
+  const editableObjects = useMemo(
+    () => objects.filter((record) => record.floor === floorView && (record.metadata.key === "visitor" || (record.selectable && /^(T1|TI)-GF-|^T1-FF-|^BAGGAGE|^DOOR__|^tembok[-_]pillar|^tembok_pilar_/i.test(record.name)))),
+    [floorView, objects],
+  );
   const selectRecord = useCallback((record: SceneObjectRecord) => {
     setSelected({ ...record.metadata, uuid: record.uuid, name: record.name, position: [0, 0, 0] });
     setDraft(configs[record.name] ?? defaultMapObjectConfig(record.name));
@@ -159,6 +165,13 @@ export function AdminMapPanel() {
     const record = objects.find((item) => item.uuid === selection.uuid);
     if (record?.selectable) selectRecord(record);
   }, [objects, selectRecord]);
+  useEffect(() => {
+    if (!initialObjectName || selected?.name === initialObjectName) return;
+    const record = objects.find((item) => item.name === initialObjectName);
+    if (!record) return;
+    setFloorView(record.floor);
+    selectRecord(record);
+  }, [initialObjectName, objects, selectRecord, selected?.name]);
   const updateDraft = <K extends keyof MapObjectConfig>(key: K, value: MapObjectConfig[K]) => setDraft((current) => current ? { ...current, [key]: value } : current);
     const updateDoor = (index: number, key: "side" | "open" | "position", value: string | boolean) => setDraft((current) => {
       if (!current) return current;
@@ -193,9 +206,10 @@ export function AdminMapPanel() {
   };
 
   return <div className="content-box admin-map-box admin-object-editor">
-    <div className="box-header admin-map-header"><div className="box-title"><h2>Editor lokasi 3D Terminal 1</h2><p>Pilih area T1-GF, tenant, Avsec, toilet, nursery, MAN, atau musholla untuk mengatur identitas dan operasional.</p></div><div className="admin-map-summary"><span><Layers3 size={15} /> T1 &bull; Ground Floor</span><strong>{editableObjects.length} objek dapat diatur</strong></div></div>
-    <div className="admin-map-canvas admin-3d-editor-canvas"><Canvas dpr={[1, 1.5]} camera={{ fov: 55, near: 0.01, far: 100000, position: [20, 20, 20] }}><color attach="background" args={["#102d3d"]} /><ambientLight intensity={0.9} /><hemisphereLight intensity={1.1} color="#ffffff" groundColor="#65747d" /><directionalLight position={[12, 24, 10]} intensity={1.7} /><Suspense fallback={null}><SceneModel selectedUuid={selected?.uuid ?? null} onSelect={selectObject} onReady={handleReady} objectConfigs={configs} /></Suspense><AdminCamera bounds={bounds} /></Canvas>{!bounds && <div className="admin-3d-loading">Memuat model GLB...</div>}</div>
-    <div className="admin-object-editor-layout"><aside className="admin-object-list"><div className="admin-object-list-header"><strong>Objek editable</strong><span>{editableObjects.length}</span></div><div className="admin-object-list-scroll">{editableObjects.map((record) => <button type="button" key={record.uuid} className={record.uuid === selected?.uuid ? "is-selected" : ""} onClick={() => selectRecord(record)}><strong>{configs[record.name]?.displayName || record.selectableLabel || record.name}</strong><small>{record.name} &bull; {configs[record.name]?.occupancy === "WALKABLE" ? "Bisa dilalui" : configs[record.name]?.occupancy === "OBSTACLE" ? "Obstacle" : record.metadata.category}</small></button>)}</div></aside>
+    <div className="box-header admin-map-header"><div className="box-title"><h2>Editor lokasi 3D Terminal 1</h2><p>Pilih tenant, fasilitas, gate, area keberangkatan, atau struktur yang dapat dikonfigurasi pada kedua lantai.</p></div><div className="admin-map-summary"><span><Layers3 size={15} /> T1 &bull; {FLOOR_LABELS[floorView]}</span><strong>{editableObjects.length} objek dapat diatur</strong></div></div>
+    <div className="admin-map-selectors admin-3d-floor-selector" aria-label="Pilih lantai editor 3D">{(["L1", "L2"] as FloorId[]).map((floor) => <button key={floor} type="button" aria-pressed={floorView === floor} onClick={() => { setFloorView(floor); setSelected(null); setDraft(null); setSaved(false); }}>{FLOOR_LABELS[floor]}</button>)}</div>
+    <div className="admin-map-canvas admin-3d-editor-canvas"><Canvas dpr={[1, 1.5]} camera={{ fov: 55, near: 0.01, far: 100000, position: [20, 20, 20] }}><color attach="background" args={["#102d3d"]} /><ambientLight intensity={0.9} /><hemisphereLight intensity={1.1} color="#ffffff" groundColor="#65747d" /><directionalLight position={[12, 24, 10]} intensity={1.7} /><Suspense fallback={null}><SceneModel modelUrl={TERMINAL_MODEL_URL} floorView={floorView} showObjectLabels selectedUuid={selected?.uuid ?? null} onSelect={selectObject} onSelectFloor={(_, objectName) => { const record = objectName ? objects.find((item) => item.floor === floorView && item.name === objectName) : undefined; if (record) selectRecord(record); }} onReady={handleReady} objectConfigs={configs} /></Suspense><AdminCamera bounds={bounds} /></Canvas>{!bounds && <div className="admin-3d-loading">Memuat model gabungan Terminal 1...</div>}</div>
+    <div className="admin-object-editor-layout"><aside className="admin-object-list"><div className="admin-object-list-header"><strong>Objek editable · {FLOOR_LABELS[floorView]}</strong><span>{editableObjects.length}</span></div><div className="admin-object-list-scroll">{editableObjects.map((record) => <button type="button" key={record.uuid} className={record.uuid === selected?.uuid ? "is-selected" : ""} onClick={() => selectRecord(record)}><strong>{configs[record.name]?.displayName || record.selectableLabel || record.name}</strong><small>{record.name} &bull; {configs[record.name]?.occupancy === "WALKABLE" ? "Bisa dilalui" : configs[record.name]?.occupancy === "OBSTACLE" ? "Obstacle" : record.metadata.category}</small></button>)}{!editableObjects.length && <div className="admin-object-empty"><strong>Belum ada objek editable</strong><span>Objek Lantai 2 yang dapat dikonfigurasi akan muncul setelah model selesai dimuat.</span></div>}</div></aside>
       <section className="admin-object-form">{!draft ? <div className="admin-object-empty"><ImageIcon size={22} /><strong>Pilih objek dari model</strong><span>Data tenant/fasilitas, jam aktif, foto, dan status rute akan muncul di sini.</span></div> : <><div className="admin-object-form-heading"><div><small>OBJEK TERPILIH</small><h3>{selected?.name}</h3></div><span className="admin-object-pill">{draft.entityType === "TENANT" ? "Tenant" : "Fasilitas"}</span></div><div className="admin-object-form-grid">
         <EditorField label="Nama tampilan"><input value={draft.displayName} onChange={(event) => updateDraft("displayName", event.target.value)} placeholder="Contoh: Kopi Juanda" /></EditorField>
         <EditorField label="Jenis data"><select value={draft.entityType} onChange={(event) => updateDraft("entityType", event.target.value as MapObjectConfig["entityType"])}><option value="TENANT">Tenant komersial</option><option value="FACILITY">Fasilitas / layanan</option></select></EditorField><EditorField label="Warna objek"><span className="admin-object-color-field"><input type="color" value={draft.color || "#D8C7A7"} onChange={(event) => updateDraft("color", event.target.value)} /><input value={draft.color} onChange={(event) => updateDraft("color", event.target.value)} placeholder="#D8C7A7" pattern="^#[0-9a-fA-F]{6}$" /></span></EditorField>

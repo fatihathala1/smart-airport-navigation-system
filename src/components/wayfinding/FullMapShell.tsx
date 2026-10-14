@@ -109,7 +109,29 @@ export function FullMapShell() {
   const [pendingDestination, setPendingDestination] = useState<MapSpace | null>(null);
   const [currentTime, setCurrentTime] = useState("");
   const [currentDateStr, setCurrentDateStr] = useState("");
+  const [directoryTenants, setDirectoryTenants] = useState<Array<{ spaceCode: string; name: string; status: string; hours: string }>>([]);
   const store = useMapStore();
+  useEffect(() => {
+    let active = true;
+    fetch("/api/tenants", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => { if (active && Array.isArray(payload?.tenants)) setDirectoryTenants(payload.tenants); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+  const mappedSpaces = useMemo(() => {
+    const byCode = new Map(directoryTenants.map((tenant) => [tenant.spaceCode, tenant]));
+    return spaces.map((space) => {
+      const tenant = byCode.get(space.code);
+      if (!tenant) return space;
+      return {
+        ...space,
+        label: tenant.name,
+        status: tenant.status as MapSpace["status"],
+        tenant: { name: tenant.name, status: tenant.status as "ACTIVE" | "INACTIVE" | "TEMPORARILY_CLOSED", hours: tenant.hours || "24 Jam Operasional" },
+      };
+    });
+  }, [directoryTenants]);
   useEffect(() => {
     if (pendingDestination) originDialog.current?.showModal();
     else originDialog.current?.close();
@@ -162,17 +184,17 @@ export function FullMapShell() {
     actions.clearRoute();
     actions.setQuery(filter.query);
     actions.setCategory(filter.category);
-    const matches = findFacilities(spaces, terminal, filter.category, filter.query);
+    const matches = findFacilities(mappedSpaces, terminal, filter.category, filter.query);
     const currentFloor = useMapStore.getState().floorId;
     if (!matches.some((space) => space.floorId === currentFloor) && matches[0]) actions.setFloorId(matches[0].floorId);
     actions.setIsSearchOpen(searchParams.get("directory") === "true");
-  }, [searchParams]);
+  }, [mappedSpaces, searchParams]);
 
-  const matchingSpaces = useMemo(() => findFacilities(spaces, store.terminal, store.category, store.query), [store.terminal, store.category, store.query]);
+  const matchingSpaces = useMemo(() => findFacilities(mappedSpaces, store.terminal, store.category, store.query), [mappedSpaces, store.terminal, store.category, store.query]);
   const visibleSpaces = useMemo(() => matchingSpaces.filter((space) => space.floorId === store.floorId), [matchingSpaces, store.floorId]);
 
-  const selected = spaces.find((s) => s.id === store.selectedSpaceId) ?? null;
-  const terminalSpaces = spaces.filter((s) => s.terminal === store.terminal && s.status === "ACTIVE");
+  const selected = mappedSpaces.find((s) => s.id === store.selectedSpaceId) ?? null;
+  const terminalSpaces = mappedSpaces.filter((s) => s.terminal === store.terminal && s.status === "ACTIVE");
   const currentOriginSpace =
     terminalSpaces.find((s) => s.anchorNodeId === store.fromNodeId) ??
     terminalSpaces.find((s) => s.anchorNodeId === store.currentNodeId);
@@ -207,7 +229,7 @@ export function FullMapShell() {
     store.clearRoute();
     store.setCategory(category);
     store.setQuery("");
-    const matches = findFacilities(spaces, store.terminal, category);
+    const matches = findFacilities(mappedSpaces, store.terminal, category);
     if (!matches.some((space) => space.floorId === store.floorId) && matches[0]) store.setFloorId(matches[0].floorId);
   };
 
@@ -327,7 +349,7 @@ export function FullMapShell() {
               <ul className="timeline-steps">
                 {store.routeStatus === "ready" && store.route ? (
                   store.route.nodes.map((node, idx) => {
-                    const spaceForNode = spaces.find((s) => s.anchorNodeId === node.id);
+                    const spaceForNode = mappedSpaces.find((s) => s.anchorNodeId === node.id);
                     return (
                       <li key={node.id} className="timeline-step">
                         <div className={`step-dot ${idx === 0 ? "origin" : idx === store.route!.nodes.length - 1 ? "active" : "mid"}`} />
@@ -494,7 +516,7 @@ export function FullMapShell() {
               }
 
               // Also try to open the space detail if a space is anchored here
-              const spaceAtNode = spaces.find((s) => s.anchorNodeId === nodeId);
+              const spaceAtNode = mappedSpaces.find((s) => s.anchorNodeId === nodeId);
               if (spaceAtNode) selectSpace(spaceAtNode);
             }}>
               <Crosshair size={17} /><span>{t.whereAmI}</span>

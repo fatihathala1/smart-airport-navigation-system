@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
@@ -17,14 +17,14 @@ import {
   LogOut,
   Map,
   MapPinned,
-  Plus,
+  Pencil,
   RotateCcw,
   Search,
   ShieldCheck,
   SlidersHorizontal,
   Store,
   Tags,
-  UserPlus,
+  Trash2,
   Users,
   X,
 } from "lucide-react";
@@ -33,24 +33,60 @@ import type { AdminRole } from "@/types";
 type SheetData = any;
 import { AdminMapPanel } from "@/components/admin/AdminMapPanel";
 import { DashboardAnalytics } from "@/components/admin/DashboardAnalytics";
+import { MapStage } from "@/components/wayfinding/MapStage";
+import { routeEdges, routeNodes, spaces } from "@/data/demo-wayfinding";
+import { fetchMapObjectConfigsFromDb, readMapObjectConfigs, type MapObjectConfig, type MapObjectConfigByName } from "@/lib/map3d/admin-object-config";
+import type { TerminalCode } from "@/types";
 
-// Initial Demo Data for Admin Komersil
-const INITIAL_TENANTS = [
-  { id: "ten-01", name: "Kopi Juanda", category: "Kuliner & F&B", terminal: "T1", floor: "Lantai 1", spaceCode: "T1-L1-001", status: "ACTIVE", hours: "06:00 - 22:00" },
-  { id: "ten-02", name: "Dapur Nusantara", category: "Kuliner & F&B", terminal: "T1", floor: "Lantai 1", spaceCode: "T1-L1-002", status: "ACTIVE", hours: "07:00 - 21:30" },
-  { id: "ten-03", name: "Soto Cak Har", category: "Kuliner & F&B", terminal: "T1", floor: "Lantai 1", spaceCode: "T1-L1-003", status: "ACTIVE", hours: "06:30 - 21:00" },
-  { id: "ten-04", name: "Batik Angkasa", category: "Toko & Fashion", terminal: "T1", floor: "Lantai 2", spaceCode: "T1-L2-005", status: "ACTIVE", hours: "08:00 - 20:00" },
-  { id: "ten-05", name: "Starbucks Juanda", category: "Kuliner & F&B", terminal: "T2", floor: "Lantai 1", spaceCode: "T2-L1-001", status: "ACTIVE", hours: "05:00 - 23:00" },
-  { id: "ten-06", name: "Nusantara Fashion", category: "Toko & Fashion", terminal: "T2", floor: "Lantai 1", spaceCode: "T2-L1-004", status: "TEMPORARILY_CLOSED", hours: "08:00 - 20:00" },
-  { id: "ten-07", name: "Ayam Rempah Juanda", category: "Kuliner & F&B", terminal: "T2", floor: "Lantai 2", spaceCode: "T2-L2-002", status: "ACTIVE", hours: "07:00 - 21:00" },
-  { id: "ten-08", name: "Kantor Layanan Maskapai", category: "Kantor & Layanan", terminal: "T1", floor: "Lantai 1", spaceCode: "T1-L1-010", status: "ACTIVE", hours: "24 Jam Operasional" },
-];
+type TenantRow = {
+  id: string; name: string; category: string; terminal: TerminalCode; floor: string; floorCode?: string; spaceCode: string; status: string; hours: string;
+};
 
-const INITIAL_USERS = [
-  { id: "usr-01", name: "Super Administrator Juanda", email: "superadmin@juanda-airport.local", role: "SUPER_ADMIN" as AdminRole, status: "ACTIVE", lastLogin: "Hari ini, 08:30" },
-  { id: "usr-02", name: "Admin Komersil Juanda", email: "admin.komersil@juanda-airport.local", role: "AIRPORT_ADMIN" as AdminRole, status: "ACTIVE", lastLogin: "Kemarin, 14:15" },
-  { id: "usr-03", name: "Siti Rahma (Operator T1)", email: "siti.t1@juanda-airport.com", role: "AIRPORT_ADMIN" as AdminRole, status: "ACTIVE", lastLogin: "24 Aug 2026" },
-  { id: "usr-04", name: "Dewi Lestari (Operator T2)", email: "dewi.t2@juanda-airport.com", role: "AIRPORT_ADMIN" as AdminRole, status: "INACTIVE", lastLogin: "18 Aug 2026" },
+type AdminUserRow = {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole;
+  status: string;
+  lastLogin: string;
+};
+
+type GraphEdgeRow = { id: string; label: string; from: string; to: string; floorId: string };
+type GraphMetrics = { nodes: number; edges: number; connectors: number; accessiblePercent: number };
+
+function mapObjectCategory(config: MapObjectConfig) {
+  const value = `${config.objectName} ${config.displayName}`;
+  if (/(?:^|[-_ ])(?:TL|TOILET)(?:$|[-_ ])/i.test(value)) return "Toilet";
+  if (/(?:^|[-_ ])ATM(?:$|[-_ ])/i.test(value)) return "ATM";
+  if (/(?:^|[-_ ])MUS(?:$|[-_ ])|MUSH?OL/i.test(value)) return "Mushola";
+  if (/(?:AVSEC|BAGGAGE|GATE|DOOR|INFORMASI|LAYANAN)/i.test(value)) return "Fasilitas & Layanan";
+  return config.entityType === "TENANT" ? "Komersial" : "Fasilitas Umum";
+}
+
+function mapConfigsToDirectory(configs: MapObjectConfigByName): TenantRow[] {
+  return Object.values(configs)
+    .filter((config) => config.displayName.trim() || /(?:ATM|TOILET|T1-(?:GF|FF)-)/i.test(config.objectName))
+    .map((config) => {
+      const floorCode = /-FF-/i.test(config.objectName) ? "FF" : "GF";
+      const terminal = /^T2-/i.test(config.objectName) ? "T2" : "T1";
+      return {
+        id: config.objectName,
+        name: config.displayName.trim() || config.objectName,
+        category: mapObjectCategory(config),
+        terminal,
+        floor: floorCode === "FF" ? "Lantai 2" : "Lantai 1",
+        floorCode,
+        spaceCode: config.objectName,
+        status: config.occupancy === "WALKABLE" ? "TEMPORARILY_CLOSED" : "ACTIVE",
+        hours: config.openTime || config.closeTime ? `${config.openTime || "--:--"} - ${config.closeTime || "--:--"}` : "Belum diatur",
+      } satisfies TenantRow;
+    })
+    .sort((a, b) => a.spaceCode.localeCompare(b.spaceCode, "id-ID", { numeric: true }));
+}
+
+const INITIAL_USERS: AdminUserRow[] = [
+  { id: "fallback-super-admin", name: "Super Administrator Juanda", email: "superadmin@juanda-airport.local", role: "SUPER_ADMIN" as AdminRole, status: "ACTIVE", lastLogin: "Data akun aktif" },
+  { id: "fallback-commercial-admin", name: "Admin Komersil Juanda", email: "admin.komersil@juanda-airport.local", role: "AIRPORT_ADMIN" as AdminRole, status: "ACTIVE", lastLogin: "Data akun aktif" },
 ];
 
 const AUDIT_LOGS = [
@@ -67,11 +103,23 @@ export function AdminDashboardClient({
 }) {
   const activeRole = user.role;
   const [activeTab, setActiveTab] = useState<string>("overview");
-  const [tenants, setTenants] = useState(INITIAL_TENANTS);
+  const [mapObjectToEdit, setMapObjectToEdit] = useState<string | null>(null);
+  const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [users, setUsers] = useState(INITIAL_USERS);
+  const [editingUser, setEditingUser] = useState<AdminUserRow | null>(null);
+  const [editingPassword, setEditingPassword] = useState("");
+  const [deletingUser, setDeletingUser] = useState<AdminUserRow | null>(null);
+  const [userActionError, setUserActionError] = useState<string | null>(null);
+  const [savingUser, setSavingUser] = useState(false);
+  const [graphMetrics, setGraphMetrics] = useState<GraphMetrics>({ nodes: routeNodes.length, edges: routeEdges.length, connectors: 0, accessiblePercent: 0 });
+  const [graphEdges, setGraphEdges] = useState<GraphEdgeRow[]>([]);
+  const [graphClosures, setGraphClosures] = useState<GraphEdgeRow[]>([]);
+  const [selectedGraphEdge, setSelectedGraphEdge] = useState("");
+  const [graphLoading, setGraphLoading] = useState(false);
+  const [graphError, setGraphError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddTenantModal, setShowAddTenantModal] = useState(false);
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showTenantPlacement, setShowTenantPlacement] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<"excel" | "pdf" | null>(null);
   const [reportFilters, setReportFilters] = useState({ terminal: "ALL", category: "ALL", status: "ALL" });
   const [pendingStatusChange, setPendingStatusChange] = useState<{
@@ -91,49 +139,67 @@ export function AdminDashboardClient({
     hours: "07:00 - 21:00",
   });
 
-  // New Admin User Form state
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    role: "AIRPORT_ADMIN" as AdminRole,
-    password: "",
-  });
+  useEffect(() => {
+    const applyConfigs = (configs: MapObjectConfigByName) => setTenants(mapConfigsToDirectory(configs));
+    const cachedConfigs = readMapObjectConfigs();
+    fetchMapObjectConfigsFromDb().then((databaseConfigs) => applyConfigs({ ...cachedConfigs, ...databaseConfigs })).catch(() => applyConfigs(cachedConfigs));
+    const handleConfigChange = (event: Event) => applyConfigs((event as CustomEvent<MapObjectConfigByName>).detail ?? readMapObjectConfigs());
+    window.addEventListener("todjuanda-map-config-change", handleConfigChange);
+    return () => window.removeEventListener("todjuanda-map-config-change", handleConfigChange);
+  }, []);
 
-  const handleAddTenant = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (activeRole !== "SUPER_ADMIN") return;
+    fetch("/api/admin/users", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("users unavailable");
+        const payload = await response.json() as { users?: typeof INITIAL_USERS };
+        if (Array.isArray(payload.users)) setUsers(payload.users);
+      })
+      .catch(() => undefined);
+  }, [activeRole]);
+
+  useEffect(() => {
+    if (activeRole !== "SUPER_ADMIN" || activeTab !== "graph") return;
+    setGraphLoading(true);
+    fetch("/api/admin/route-graph", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Data graph belum tersedia dari server");
+        return await response.json() as { metrics: GraphMetrics; availableEdges: GraphEdgeRow[]; closures: GraphEdgeRow[] };
+      })
+      .then((payload) => { setGraphMetrics(payload.metrics); setGraphEdges(payload.availableEdges ?? []); setGraphClosures(payload.closures ?? []); setSelectedGraphEdge(payload.availableEdges?.[0]?.id ?? ""); setGraphError(null); })
+      .catch((error) => setGraphError(error instanceof Error ? error.message : "Gagal memuat graph"))
+      .finally(() => setGraphLoading(false));
+  }, [activeRole, activeTab]);
+
+  const occupiedSpaceCodes = useMemo(() => new Set(tenants.map((tenant) => tenant.spaceCode).filter(Boolean)), [tenants]);
+  const placementFloorId = `${newTenant.terminal}-${newTenant.floor.endsWith("2") ? "L2" : "L1"}`;
+  const availableTenantBlocks = useMemo(
+    () => spaces.filter((space) => space.terminal === newTenant.terminal && space.floorId === placementFloorId && space.type === "TENANT" && !occupiedSpaceCodes.has(space.code)),
+    [newTenant.terminal, occupiedSpaceCodes, placementFloorId],
+  );
+
+  const handleAddTenant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTenant.name || !newTenant.spaceCode) return;
-    const created = {
-      id: `ten-${Date.now()}`,
-      name: newTenant.name,
-      category: newTenant.category,
-      terminal: newTenant.terminal,
-      floor: newTenant.floor,
-      spaceCode: newTenant.spaceCode,
-      status: "ACTIVE",
-      hours: newTenant.hours,
-    };
-    setTenants([created, ...tenants]);
+    const requestBody = { ...newTenant, status: "ACTIVE" };
+    let created: TenantRow;
+    try {
+      const response = await fetch("/api/tenants", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(requestBody) });
+      if (!response.ok) throw new Error("Gagal menyimpan tenant");
+      const payload = await response.json() as { tenant: TenantRow };
+      created = payload.tenant;
+    } catch {
+      // Tetap membuat pengalaman editor bisa dipakai saat database lokal belum aktif.
+      created = { id: `local-${Date.now()}`, name: newTenant.name, category: newTenant.category, terminal: newTenant.terminal as TerminalCode, floor: newTenant.floor, spaceCode: newTenant.spaceCode, status: "ACTIVE", hours: newTenant.hours };
+    }
+    setTenants((current) => [created, ...current]);
     setNewTenant({ name: "", category: "Kuliner & F&B", terminal: "T1", floor: "Lantai 1", spaceCode: "", hours: "07:00 - 21:00" });
     setShowAddTenantModal(false);
+    setShowTenantPlacement(false);
   };
 
-  const handleAddUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUser.name || !newUser.email) return;
-    const created = {
-      id: `usr-${Date.now()}`,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      status: "ACTIVE",
-      lastLogin: "Baru saja",
-    };
-    setUsers([created, ...users]);
-    setNewUser({ name: "", email: "", role: "AIRPORT_ADMIN", password: "" });
-    setShowAddUserModal(false);
-  };
-
-  const confirmStatusChange = () => {
+  const confirmStatusChange = async () => {
     if (!pendingStatusChange) return;
     if (pendingStatusChange.entity === "tenant") {
       setTenants(
@@ -144,15 +210,80 @@ export function AdminDashboardClient({
         )
       );
     } else {
-      setUsers(
-        users.map((account) =>
-          account.id === pendingStatusChange.id
-            ? { ...account, status: account.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" }
-            : account
-        )
-      );
+      const nextActive = pendingStatusChange.currentStatus !== "ACTIVE";
+      try {
+        const response = await fetch("/api/admin/users", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: pendingStatusChange.id, active: nextActive }) });
+        if (!response.ok) throw new Error("user update failed");
+        const payload = await response.json() as { user?: (typeof INITIAL_USERS)[number] };
+        if (payload.user) setUsers((current) => current.map((account) => account.id === payload.user?.id ? payload.user : account));
+      } catch {
+        // Jangan mengubah UI jika status database gagal disimpan.
+      }
     }
     setPendingStatusChange(null);
+  };
+
+  const saveEditedUser = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingUser || savingUser) return;
+    setSavingUser(true);
+    setUserActionError(null);
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingUser.id, name: editingUser.name, email: editingUser.email, password: editingPassword || undefined }),
+      });
+      const payload = await response.json() as { user?: AdminUserRow; error?: string };
+      if (!response.ok || !payload.user) throw new Error(payload.error ?? "Gagal memperbarui akun");
+      setUsers((current) => current.map((account) => account.id === payload.user?.id ? payload.user : account));
+      setEditingUser(null);
+      setEditingPassword("");
+    } catch (error) {
+      setUserActionError(error instanceof Error ? error.message : "Gagal memperbarui akun");
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deletingUser || savingUser) return;
+    setSavingUser(true);
+    setUserActionError(null);
+    try {
+      const response = await fetch("/api/admin/users", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: deletingUser.id }) });
+      const payload = await response.json() as { deletedId?: string; error?: string };
+      if (!response.ok || !payload.deletedId) throw new Error(payload.error ?? "Gagal menghapus akun");
+      setUsers((current) => current.filter((account) => account.id !== payload.deletedId));
+      setDeletingUser(null);
+    } catch (error) {
+      setUserActionError(error instanceof Error ? error.message : "Gagal menghapus akun");
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
+  const toggleGraphEdge = async (edgeId: string, active: boolean) => {
+    setGraphError(null);
+    try {
+      const response = await fetch("/api/admin/route-graph", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ edgeId, active }) });
+      const payload = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Gagal memperbarui jalur");
+      setGraphEdges((current) => active ? current : current.filter((edge) => edge.id !== edgeId));
+      if (active) {
+        const moved = graphClosures.find((edge) => edge.id === edgeId);
+        if (moved) {
+          setGraphEdges((current) => [moved, ...current.filter((edge) => edge.id !== edgeId)]);
+          setGraphClosures((current) => current.filter((edge) => edge.id !== edgeId));
+        }
+      } else {
+        setGraphClosures((current) => current.filter((edge) => edge.id !== edgeId));
+      }
+      setGraphMetrics((current) => ({ ...current, edges: active ? current.edges + 1 : Math.max(0, current.edges - 1) }));
+      setSelectedGraphEdge("");
+    } catch (error) {
+      setGraphError(error instanceof Error ? error.message : "Gagal memperbarui jalur");
+    }
   };
 
   const tenantCategories = [...new Set(tenants.map((tenant) => tenant.category))].sort();
@@ -177,7 +308,7 @@ export function AdminDashboardClient({
 
   const tenantReportRows = reportTenants.map((tenant, index) => ({
     No: index + 1,
-    "Nama Tenant": tenant.name,
+    "Nama Bangunan": tenant.name,
     Kategori: tenant.category,
     Terminal: tenant.terminal,
     Lantai: tenant.floor,
@@ -211,15 +342,15 @@ export function AdminDashboardClient({
           height: 30,
           alignVertical: "center",
         }),
-        mergedRow("LAPORAN TENANT KOMERSIL", { fontWeight: "bold", fontSize: 12, height: 24 }),
+        mergedRow("DIREKTORI BANGUNAN PETA TERMINAL", { fontWeight: "bold", fontSize: 12, height: 24 }),
         mergedRow(`Tanggal ekspor: ${new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date())}`),
         mergedRow(`Filter laporan: ${exportFilterSummary}`),
-        mergedRow(`Jumlah data: ${tenantReportRows.length} tenant`),
+        mergedRow(`Jumlah data: ${tenantReportRows.length} objek peta`),
         [null, null, null, null, null, null, null, null],
-        ["No", "Nama Tenant", "Kategori", "Terminal", "Lantai", "Space Code", "Jam Operasional", "Status"].map(tableHeader),
+        ["No", "Nama Bangunan", "Kategori", "Terminal", "Lantai", "Kode Objek", "Jam Operasional", "Status"].map(tableHeader),
         ...tenantReportRows.map((row, index) => [
           { value: row.No, type: Number, align: "center" as const, backgroundColor: index % 2 ? "#F3F7F8" : undefined },
-          { value: row["Nama Tenant"], backgroundColor: index % 2 ? "#F3F7F8" : undefined },
+          { value: row["Nama Bangunan"], backgroundColor: index % 2 ? "#F3F7F8" : undefined },
           { value: row.Kategori, backgroundColor: index % 2 ? "#F3F7F8" : undefined },
           { value: row.Terminal, align: "center" as const, backgroundColor: index % 2 ? "#F3F7F8" : undefined },
           { value: row.Lantai, backgroundColor: index % 2 ? "#F3F7F8" : undefined },
@@ -233,9 +364,9 @@ export function AdminDashboardClient({
           { width: 6 }, { width: 28 }, { width: 22 }, { width: 10 },
           { width: 14 }, { width: 16 }, { width: 22 }, { width: 20 },
         ],
-        sheet: "Laporan Tenant",
+        sheet: "Direktori Peta",
       });
-      await excelFile.toFile(`laporan-tenant-juanda-${new Date().toISOString().slice(0, 10)}.xlsx`);
+      await excelFile.toFile(`direktori-peta-terminal-${new Date().toISOString().slice(0, 10)}.xlsx`);
     } finally {
       setExportingFormat(null);
     }
@@ -258,7 +389,7 @@ export function AdminDashboardClient({
       document.setFont("helvetica", "bold");
       document.text("INJOURNEY AIRPORTS", 14, 10);
       document.setFontSize(17);
-      document.text("Laporan Tenant Komersil", 14, 20);
+      document.text("Direktori Bangunan Peta Terminal", 14, 20);
       document.setFontSize(9);
       document.setFont("helvetica", "normal");
       document.text("Bandara Internasional Juanda", 14, 26);
@@ -266,10 +397,10 @@ export function AdminDashboardClient({
       document.setTextColor(94, 111, 117);
       document.text(`Tanggal ekspor: ${new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(new Date())}`, 14, 38);
       document.text(`Filter: ${exportFilterSummary}`, 14, 43);
-      document.text(`Jumlah data: ${reportTenants.length} tenant`, 240, 38);
+      document.text(`Jumlah data: ${reportTenants.length} objek`, 240, 38);
       autoTable(document, {
         startY: 48,
-        head: [["No", "Nama Tenant", "Kategori", "Lokasi", "Space Code", "Jam Operasional", "Status"]],
+        head: [["No", "Nama Bangunan", "Kategori", "Lokasi", "Kode Objek", "Jam Operasional", "Status"]],
         body: reportTenants.map((tenant, index) => [
           index + 1,
           tenant.name,
@@ -289,7 +420,7 @@ export function AdminDashboardClient({
           document.text(`Halaman ${pageNumber}`, 283, 200, { align: "right" });
         },
       });
-      document.save(`laporan-tenant-juanda-${new Date().toISOString().slice(0, 10)}.pdf`);
+      document.save(`direktori-peta-terminal-${new Date().toISOString().slice(0, 10)}.pdf`);
     } finally {
       setExportingFormat(null);
     }
@@ -366,7 +497,7 @@ export function AdminDashboardClient({
               onClick={() => setActiveTab("tenants")}
             >
               <Store size={18} />
-              <span>Manajemen Tenant</span>
+              <span>Direktori Peta</span>
             </button>
 
             {activeRole === "AIRPORT_ADMIN" && (
@@ -437,27 +568,26 @@ export function AdminDashboardClient({
               <h1>
                 {activeRole === "SUPER_ADMIN"
                   ? "Manajemen Sistem & Keamanan Wayfinding"
-                  : "Kelola Tenant & Fasilitas Komersil Bandara Juanda"}
+                  : "Kelola Direktori Bangunan & Fasilitas Peta Bandara Juanda"}
               </h1>
               <p>
                 {activeRole === "SUPER_ADMIN"
                   ? "Pusat kendali hak akses pengguna, pemantauan graph rute A*, serta audit log log aktivitas sistem."
-                  : "Kelola status tenant, alokasi ruang komersil Terminal 1 & 2, serta jam operasional fasilitas."}
+                  : "Kelola nama, kategori, kode objek, dan jam operasional langsung dari model terminal."}
               </p>
             </div>
           </div>
 
-          {/* Stats Metrics Cards */}
-          <div className="metrics-grid">
-            {activeRole === "AIRPORT_ADMIN" ? (
+          {/* Operational metrics are intentionally shown only to Airport Admin. */}
+          {activeRole === "AIRPORT_ADMIN" && <div className="metrics-grid">
               <>
                 <div className="metric-card">
                   <div className="metric-icon fnb">
                     <Store size={22} />
                   </div>
                   <div>
-                    <strong>{tenants.length} Tenant</strong>
-                    <span>Terdaftar di T1 & T2</span>
+                    <strong>{tenants.length} Objek Peta</strong>
+                    <span>Bangunan dan fasilitas terkonfigurasi</span>
                   </div>
                 </div>
                 <div className="metric-card">
@@ -488,92 +618,52 @@ export function AdminDashboardClient({
                   </div>
                 </div>
               </>
-            ) : (
-              <>
-                <div className="metric-card">
-                  <div className="metric-icon sec">
-                    <ShieldCheck size={22} />
-                  </div>
-                  <div>
-                    <strong>Sistem 100% Aman</strong>
-                    <span>Prepared Queries & RBAC</span>
-                  </div>
-                </div>
-                <div className="metric-card">
-                  <div className="metric-icon users">
-                    <Users size={22} />
-                  </div>
-                  <div>
-                    <strong>{users.length} Akun Admin</strong>
-                    <span>1 Superadmin, 3 Airport Admin</span>
-                  </div>
-                </div>
-                <div className="metric-card">
-                  <div className="metric-icon graph">
-                    <MapPinned size={22} />
-                  </div>
-                  <div>
-                    <strong>142 Nodes / 286 Edges</strong>
-                    <span>A* Routing Engine</span>
-                  </div>
-                </div>
-                <div className="metric-card">
-                  <div className="metric-icon logs">
-                    <FileClock size={22} />
-                  </div>
-                  <div>
-                    <strong>{AUDIT_LOGS.length} Log Aktivitas</strong>
-                    <span>Audit Log Terverifikasi</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          </div>}
 
           {/* Dynamic Content Views */}
           {activeTab === "overview" && <DashboardAnalytics tenants={tenants} />}
 
-          {activeTab === "map" && <AdminMapPanel />}
+          {activeTab === "map" && <AdminMapPanel initialObjectName={mapObjectToEdit} />}
 
           {/* AIRPORT ADMIN: TENANTS TAB */}
           {activeTab === "tenants" && (
             <div className="content-box">
               <div className="box-header">
                 <div className="box-title">
-                  <h2>Direktori Tenant Komersil</h2>
-                  <p>Daftar tenant yang menempati space di Terminal 1 dan Terminal 2 Juanda</p>
+                  <h2>Direktori Bangunan Peta Terminal</h2>
+                  <p>Daftar commercial, toilet, ATM, dan fasilitas yang sudah dikonfigurasi pada model terminal</p>
                 </div>
                 <div className="box-actions">
                   <div className="search-input-wrapper">
                     <Search size={16} />
                     <input
                       type="text"
-                      placeholder="Cari tenant..."
+                      placeholder="Cari nama atau kode objek..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  <button type="button" className="btn-primary" onClick={() => setShowAddTenantModal(true)}>
-                    <Plus size={16} /> Tambah Tenant
+                  <button type="button" className="btn-primary" onClick={() => setActiveTab("map")}>
+                    <MapPinned size={16} /> Kelola di Peta
                   </button>
                 </div>
               </div>
 
-              <div className="report-command-bar" aria-label="Filter laporan tenant">
+              <div className="report-command-bar" aria-label="Filter direktori bangunan peta">
                 <div className="report-command-header">
                   <div className="report-command-title">
                     <span><SlidersHorizontal size={18} /></span>
                     <div>
-                      <small>PUSAT LAPORAN TENANT</small>
+                      <small>DIREKTORI OBJEK PETA</small>
                       <strong>Atur data sebelum diekspor</strong>
                     </div>
                   </div>
                   <div className="report-command-actions">
                     <div className="report-command-count" aria-live="polite">
                       <strong>{reportTenants.length}</strong>
-                      <span>tenant siap diekspor</span>
+                      <span>objek siap diekspor</span>
                     </div>
-                    <div className="export-action-group" aria-label="Ekspor laporan tenant">
+                    <div className="export-action-group" aria-label="Ekspor direktori objek peta">
                       <button
                         type="button"
                         className="btn-export excel"
@@ -663,7 +753,7 @@ export function AdminDashboardClient({
                 <div className="report-filter-summary">
                   <span>Filter aktif</span>
                   {reportFilters.terminal === "ALL" && reportFilters.category === "ALL" && reportFilters.status === "ALL" ? (
-                    <strong>Semua data tenant ditampilkan</strong>
+                    <strong>Semua bangunan dan fasilitas peta ditampilkan</strong>
                   ) : (
                     <div>
                       {reportFilters.terminal !== "ALL" && <i>Terminal {reportFilters.terminal.slice(1)}</i>}
@@ -678,10 +768,10 @@ export function AdminDashboardClient({
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Nama Tenant</th>
+                      <th>Nama Bangunan / Lokasi</th>
                       <th>Kategori</th>
                       <th>Lokasi</th>
-                      <th>Space Code</th>
+                      <th>Kode Objek Peta</th>
                       <th>Jam Operasional</th>
                       <th>Status</th>
                       <th>Aksi</th>
@@ -712,11 +802,11 @@ export function AdminDashboardClient({
                           <button
                             type="button"
                             className={`status-action-button ${t.status === "ACTIVE" ? "deactivate" : "activate"}`}
-                            onClick={() => setPendingStatusChange({ entity: "tenant", id: t.id, name: t.name, currentStatus: t.status })}
-                            aria-label={`${t.status === "ACTIVE" ? "Tutup sementara" : "Aktifkan kembali"} tenant ${t.name}`}
+                            onClick={() => { setMapObjectToEdit(t.spaceCode); setActiveTab("map"); }}
+                            aria-label={`Edit ${t.name} pada peta terminal`}
                           >
-                            {t.status === "ACTIVE" ? <CirclePause size={15} /> : <CirclePlay size={15} />}
-                            <span>{t.status === "ACTIVE" ? "Tutup sementara" : "Aktifkan kembali"}</span>
+                            <MapPinned size={15} />
+                            <span>Edit di peta</span>
                           </button>
                         </td>
                       </tr>
@@ -724,7 +814,7 @@ export function AdminDashboardClient({
                     {!filteredTenants.length && (
                       <tr>
                         <td colSpan={7} className="table-empty-result">
-                          Tidak ada tenant yang sesuai dengan filter atau pencarian.
+                          Belum ada objek peta yang sesuai. Beri nama objek melalui Editor Lokasi 3D terlebih dahulu.
                         </td>
                       </tr>
                     )}
@@ -805,11 +895,12 @@ export function AdminDashboardClient({
               <div className="box-header">
                 <div className="box-title">
                   <h2>Akun & Hak Akses Administrator</h2>
-                  <p>Manajemen autentikasi RBAC (Role-Based Access Control) untuk pengelola Juanda</p>
+                  <p>Terintegrasi dengan akun autentikasi aktif: Super Admin dan Admin Komersial</p>
                 </div>
-                <button type="button" className="btn-primary" onClick={() => setShowAddUserModal(true)}>
-                  <UserPlus size={16} /> Tambah Admin Baru
-                </button>
+                <div className="report-command-count" aria-label="Jumlah akun administrator">
+                  <strong>{users.length}</strong>
+                  <span>akun terintegrasi</span>
+                </div>
               </div>
 
               <div className="table-responsive">
@@ -833,7 +924,7 @@ export function AdminDashboardClient({
                         <td>{u.email}</td>
                         <td>
                           <span className={`role-pill ${u.role === "SUPER_ADMIN" ? "super" : "airport"}`}>
-                            {u.role === "SUPER_ADMIN" ? "SUPERADMIN" : "AIRPORT ADMIN"}
+                            {u.role === "SUPER_ADMIN" ? "SUPER ADMIN" : "ADMIN KOMERSIAL"}
                           </span>
                         </td>
                         <td>{u.lastLogin}</td>
@@ -843,15 +934,22 @@ export function AdminDashboardClient({
                           </span>
                         </td>
                         <td>
-                          <button
-                            type="button"
-                            className={`status-action-button ${u.status === "ACTIVE" ? "deactivate" : "activate"}`}
-                            onClick={() => setPendingStatusChange({ entity: "user", id: u.id, name: u.name, currentStatus: u.status })}
-                            aria-label={`${u.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"} akun ${u.name}`}
-                          >
-                            {u.status === "ACTIVE" ? <CirclePause size={15} /> : <CirclePlay size={15} />}
-                            <span>{u.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}</span>
-                          </button>
+                          <div className="admin-user-actions">
+                            <button
+                              type="button"
+                              className={`status-action-button ${u.status === "ACTIVE" ? "deactivate" : "activate"}`}
+                              onClick={() => setPendingStatusChange({ entity: "user", id: u.id, name: u.name, currentStatus: u.status })}
+                              disabled={u.email === user.email || u.role === "SUPER_ADMIN"}
+                              aria-label={`${u.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"} akun ${u.name}`}
+                            >
+                              {u.email === user.email || u.role === "SUPER_ADMIN" ? <ShieldCheck size={15} /> : u.status === "ACTIVE" ? <CirclePause size={15} /> : <CirclePlay size={15} />}
+                              <span>{u.email === user.email ? "Akun saat ini" : u.role === "SUPER_ADMIN" ? "Dilindungi" : u.status === "ACTIVE" ? "Nonaktifkan" : "Aktifkan"}</span>
+                            </button>
+                            {u.role === "AIRPORT_ADMIN" && <>
+                              <button type="button" className="admin-user-action edit" onClick={() => { setUserActionError(null); setEditingPassword(""); setEditingUser({ ...u }); }} aria-label={`Edit akun ${u.name}`}><Pencil size={15} /> Edit</button>
+                              <button type="button" className="admin-user-action delete" onClick={() => { setUserActionError(null); setDeletingUser(u); }} aria-label={`Hapus akun ${u.name}`}><Trash2 size={15} /> Hapus</button>
+                            </>}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -875,19 +973,25 @@ export function AdminDashboardClient({
                 <div className="graph-card">
                   <h3>Graph Metrics</h3>
                   <ul>
-                    <li>Total Navigation Nodes: <strong>142 Nodes</strong></li>
-                    <li>Total Pedestrian Edges: <strong>286 Edges</strong></li>
-                    <li>Koneksi Vertikal (Lift/Tangga): <strong>8 Connector Nodes</strong></li>
-                    <li>Jalur Ramah Kursi Roda: <strong>96% Accessible</strong></li>
+                    <li>Total Navigation Nodes: <strong>{graphLoading ? "Memuat..." : `${graphMetrics.nodes} Nodes`}</strong></li>
+                    <li>Total Pedestrian Edges: <strong>{graphLoading ? "Memuat..." : `${graphMetrics.edges} Edges aktif`}</strong></li>
+                    <li>Koneksi Vertikal (Lift/Tangga): <strong>{graphMetrics.connectors} Connector Nodes</strong></li>
+                    <li>Jalur Ramah Kursi Roda: <strong>{graphMetrics.accessiblePercent}% Accessible</strong></li>
                   </ul>
                 </div>
 
                 <div className="graph-card">
                   <h3>Penutupan Jalur Darurat (Emergency Closure)</h3>
                   <p>Gunakan untuk memblokir jalur lorong saat renovasi tanpa menggambar ulang peta visual:</p>
-                  <button type="button" className="btn-secondary">
-                    <AlertTriangle size={15} /> Tutup Lorong Keberangkatan T1-L1
-                  </button>
+                  {graphEdges.length ? <div className="graph-closure-control">
+                    <select value={selectedGraphEdge} onChange={(event) => setSelectedGraphEdge(event.target.value)} aria-label="Pilih edge untuk ditutup">
+                      <option value="">Pilih edge aktif...</option>
+                      {graphEdges.map((edge) => <option key={edge.id} value={edge.id}>{edge.label} · {edge.floorId}</option>)}
+                    </select>
+                    <button type="button" className="btn-secondary" disabled={!selectedGraphEdge} onClick={() => toggleGraphEdge(selectedGraphEdge, false)}><AlertTriangle size={15} /> Tutup jalur terpilih</button>
+                  </div> : <p className="graph-empty-state">Belum ada edge aktif yang dapat ditutup pada database graph.</p>}
+                  {graphClosures.length > 0 && <div className="graph-closure-list"><strong>Jalur sedang ditutup</strong>{graphClosures.map((edge) => <div key={edge.id}><span>{edge.label}</span><button type="button" onClick={() => toggleGraphEdge(edge.id, true)}>Buka kembali</button></div>)}</div>}
+                  {graphError && <p className="graph-error" role="alert">{graphError}</p>}
                 </div>
               </div>
             </div>
@@ -1030,15 +1134,23 @@ export function AdminDashboardClient({
                 </label>
               </div>
               <label>
-                <span>Space Code (Polygon ID)</span>
+                <span>Blok peta tenant</span>
                 <input
                   type="text"
-                  required
-                  placeholder="Misal: T1-L1-012"
+                  readOnly
+                  placeholder="Pilih blok kosong di peta"
                   value={newTenant.spaceCode}
-                  onChange={(e) => setNewTenant({ ...newTenant, spaceCode: e.target.value })}
                 />
+                <small>{newTenant.spaceCode ? `Blok terpilih: ${newTenant.spaceCode}` : "Blok harus dipilih dari peta agar tidak bertabrakan dengan tenant lain."}</small>
               </label>
+              <button
+                type="button"
+                className="btn-secondary tenant-map-picker-button"
+                onClick={() => { setShowAddTenantModal(false); setShowTenantPlacement(true); }}
+                disabled={!availableTenantBlocks.length}
+              >
+                Pilih blok di peta ({availableTenantBlocks.length} tersedia)
+              </button>
               <label>
                 <span>Jam Operasional</span>
                 <input
@@ -1052,7 +1164,7 @@ export function AdminDashboardClient({
                 <button type="button" className="btn-secondary" onClick={() => setShowAddTenantModal(false)}>
                   Batal
                 </button>
-                <button type="submit" className="btn-primary">
+                <button type="submit" className="btn-primary" disabled={!newTenant.spaceCode}>
                   Simpan Tenant
                 </button>
               </div>
@@ -1061,70 +1173,73 @@ export function AdminDashboardClient({
         </div>
       )}
 
-      {/* Add Admin User Modal */}
-      {showAddUserModal && (
-        <div className="modal-overlay" onClick={() => setShowAddUserModal(false)}>
-          <div className="admin-modal-card" onClick={(e) => e.stopPropagation()}>
+      {showTenantPlacement && (
+        <div className="modal-overlay" onClick={() => setShowTenantPlacement(false)}>
+          <div className="admin-modal-card admin-tenant-placement-modal" onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
-              <h3>Tambah Administrator Baru</h3>
-              <button type="button" onClick={() => setShowAddUserModal(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleAddUser} className="admin-form">
-              <label>
-                <span>Nama Lengkap Staff</span>
-                <input
-                  type="text"
-                  required
-                  placeholder="Misal: Ahmad Fauzi"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                />
-              </label>
-              <label>
-                <span>Email Resmi</span>
-                <input
-                  type="email"
-                  required
-                  placeholder="ahmad@juanda-airport.com"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                />
-              </label>
-              <label>
-                <span>Role Hak Akses</span>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as AdminRole })}
-                >
-                  <option value="AIRPORT_ADMIN">Admin Komersil (Airport Admin)</option>
-                  <option value="SUPER_ADMIN">Superadmin (System Executive)</option>
-                </select>
-              </label>
-              <label>
-                <span>Password (Akan di-hash Bcrypt)</span>
-                <input
-                  type="password"
-                  required
-                  placeholder="Minimal 8 karakter"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                />
-              </label>
-
-              <div className="form-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowAddUserModal(false)}>
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary">
-                  Buat Akun Admin
-                </button>
+              <div>
+                <h3>Pilih blok kosong di peta</h3>
+                <p>{newTenant.terminal} · {newTenant.floor} · hanya blok tenant yang belum terisi</p>
               </div>
+              <button type="button" onClick={() => setShowTenantPlacement(false)}><X size={18} /></button>
+            </div>
+            {availableTenantBlocks.length ? (
+              <div className="admin-tenant-placement-map">
+                <MapStage
+                  terminal={newTenant.terminal as TerminalCode}
+                  floorId={placementFloorId}
+                  spaces={availableTenantBlocks}
+                  selectedId={availableTenantBlocks.find((space) => space.code === newTenant.spaceCode)?.id ?? null}
+                  route={null}
+                  fromId={null}
+                  toId={null}
+                  currentId={null}
+                  onSelect={(space) => {
+                    setNewTenant((current) => ({ ...current, spaceCode: space.code }));
+                    setShowTenantPlacement(false);
+                    setShowAddTenantModal(true);
+                  }}
+                  overview
+                />
+              </div>
+            ) : <p className="admin-empty-state">Tidak ada blok tenant kosong untuk terminal dan lantai ini.</p>}
+            <div className="form-actions">
+              <button type="button" className="btn-secondary" onClick={() => setShowTenantPlacement(false)}>Batal</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingUser && (
+        <div className="modal-overlay" onClick={() => { if (!savingUser) setEditingUser(null); }}>
+          <div className="admin-modal-card" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <div><h3>Edit Admin Komersial</h3><p>Perubahan langsung digunakan untuk login berikutnya.</p></div>
+              <button type="button" onClick={() => setEditingUser(null)} disabled={savingUser}><X size={18} /></button>
+            </div>
+            <form className="admin-form" onSubmit={saveEditedUser}>
+              <label><span>Nama administrator</span><input required minLength={2} value={editingUser.name} onChange={(event) => setEditingUser({ ...editingUser, name: event.target.value })} /></label>
+              <label><span>Email login</span><input required type="email" value={editingUser.email} onChange={(event) => setEditingUser({ ...editingUser, email: event.target.value })} /></label>
+              <label><span>Hak akses</span><input value="Admin Komersial" readOnly /></label>
+              <label><span>Password baru (opsional)</span><input type="password" minLength={8} value={editingPassword} onChange={(event) => setEditingPassword(event.target.value)} placeholder="Kosongkan jika tidak diubah" /></label>
+              {userActionError && <p className="admin-user-action-error" role="alert">{userActionError}</p>}
+              <div className="form-actions"><button type="button" className="btn-secondary" onClick={() => setEditingUser(null)} disabled={savingUser}>Batal</button><button type="submit" className="btn-primary" disabled={savingUser}>{savingUser ? "Menyimpan..." : "Simpan Perubahan"}</button></div>
             </form>
           </div>
         </div>
       )}
+
+      {deletingUser && (
+        <div className="modal-overlay" onClick={() => { if (!savingUser) setDeletingUser(null); }}>
+          <div className="admin-modal-card status-confirmation-card" onClick={(event) => event.stopPropagation()}>
+            <div className="status-confirmation-icon deactivate"><Trash2 size={24} /></div>
+            <div className="status-confirmation-copy"><span>KONFIRMASI HAPUS AKUN</span><h3>Hapus Admin Komersial?</h3><p>Akun <strong>{deletingUser.name}</strong> ({deletingUser.email}) akan dihapus permanen dan tidak dapat digunakan untuk login.</p></div>
+            {userActionError && <p className="admin-user-action-error" role="alert">{userActionError}</p>}
+            <div className="form-actions"><button type="button" className="btn-secondary" onClick={() => setDeletingUser(null)} disabled={savingUser}>Batal</button><button type="button" className="status-confirm-button deactivate" onClick={confirmDeleteUser} disabled={savingUser}>{savingUser ? "Menghapus..." : "Ya, hapus akun"}</button></div>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }

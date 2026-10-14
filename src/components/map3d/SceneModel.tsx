@@ -59,7 +59,7 @@ export type SceneBounds = {
 type SceneModelProps = {
   selectedUuid: string | null;
   onSelect: (selection: SelectedObject) => void;
-  onSelectFloor?: (point: THREE.Vector3) => void;
+  onSelectFloor?: (point: THREE.Vector3, objectName?: string) => void;
   onSelectEntryPoint?: (point: THREE.Vector3, objectName: string, side: MapObjectDoor["side"]) => void;
   onReady: (bounds: SceneBounds, objects: SceneObjectRecord[]) => void;
   objectConfigs?: MapObjectConfigByName;
@@ -401,7 +401,9 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
       const box = new THREE.Box3().setFromObject(object);
       if (box.isEmpty()) return;
       const center = box.getCenter(new THREE.Vector3());
-      const displayName = config.displayName.trim() || getSelectableLabel(sourceName) || (config.entityType === "FACILITY" ? metadata.category : sourceName);
+      // Editor menampilkan kode asli objek agar setiap bangunan dapat
+      // dicocokkan langsung dengan denah/model (contoh: T1-GF-02).
+      const displayName = sourceName;
       labels.push({
         key: object.uuid,
         name: displayName,
@@ -528,7 +530,7 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
       if (isSelectableBuildingName(sourceName)) {
         onSelect(createSelectedObject(selectedObject));
       } else if (isFloorSurfaceName(sourceName)) {
-        onSelectFloor?.(event.point.clone());
+        onSelectFloor?.(event.point.clone(), sourceName);
       }
     }
   };
@@ -606,7 +608,7 @@ function ObjectLabelMarker({ label, category, position }: { label: string; categ
     <Html position={position} center distanceFactor={14} style={{ pointerEvents: "none" }}>
       <span className="map-object-label">
         <span className="map-object-label-icon"><ObjectLabelIcon category={category} /></span>
-        <strong>{label}</strong>
+        <strong title={label}>{label}</strong>
       </span>
     </Html>
   );

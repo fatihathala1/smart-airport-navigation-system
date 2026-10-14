@@ -10,11 +10,20 @@ export const routeRequestSchema = z.object({
 });
 export const tenantUpdateSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),
+  category: z.string().trim().min(2).max(80).optional(),
   description: z.string().trim().min(1).max(2_000).nullable().optional(),
   logoUrl: optionalUrl,
   photoUrl: optionalUrl,
   contact: z.string().trim().max(160).nullable().optional(),
   website: optionalUrl,
   status: z.enum(["ACTIVE", "INACTIVE", "TEMPORARILY_CLOSED"]).optional(),
+}).strict();
+export const tenantCreateSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  category: z.string().trim().min(2).max(80),
+  spaceCode: z.string().trim().min(2).max(80),
+  description: z.string().trim().max(2_000).optional().default(""),
+  status: z.enum(["ACTIVE", "INACTIVE", "TEMPORARILY_CLOSED"]).optional().default("ACTIVE"),
+  hours: z.string().trim().max(80).optional().default(""),
 }).strict();
 export const imageUploadPolicy = { allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"] as const, maxBytes: 5 * 1024 * 1024 };

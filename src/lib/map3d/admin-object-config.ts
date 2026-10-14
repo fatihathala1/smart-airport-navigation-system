@@ -41,7 +41,7 @@ export function getMapObjectPhotoUrl(value: string | undefined | null): string {
 }
 
 export function defaultMapObjectConfig(objectName: string): MapObjectConfig {
-  const isFacility = /(?:-avsec-|-tl-|-nr-|-man-|-mus-)/i.test(objectName);
+  const isFacility = /(?:-avsec-|-tl-|-atm-|-nr-|-man-|-mus-|toilet|mushola|restroom)|^(?:floor_|area_visitor)/i.test(objectName);
   return {
     objectName,
     displayName: "",
@@ -97,16 +97,16 @@ export async function fetchMapObjectConfigsFromDb(): Promise<MapObjectConfigByNa
   const response = await fetch("/api/admin/map-objects", { cache: "no-store" });
   if (!response.ok) throw new Error(`Gagal mengambil konfigurasi peta: ${response.status}`);
   const raw = await response.json() as Record<string, Partial<MapObjectConfig>>;
-  const configs: MapObjectConfigByName = Object.fromEntries(
+  const databaseConfigs: MapObjectConfigByName = Object.fromEntries(
     Object.entries(raw).map(([objectName, config]) => [
       objectName,
       { ...defaultMapObjectConfig(objectName), ...config, objectName, entryDoors: config.entryDoors?.slice(0, 4) ?? defaultMapObjectConfig(objectName).entryDoors },
     ]),
   );
   // Simpan ke localStorage sebagai cache
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(MAP_OBJECT_CONFIG_STORAGE_KEY, JSON.stringify(configs));
-  }
+  if (typeof window === "undefined") return databaseConfigs;
+  const configs = { ...readMapObjectConfigs(), ...databaseConfigs };
+  window.localStorage.setItem(MAP_OBJECT_CONFIG_STORAGE_KEY, JSON.stringify(configs));
   return configs;
 }
 

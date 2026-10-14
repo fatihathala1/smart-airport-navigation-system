@@ -91,6 +91,7 @@ model Tenant {
   id          String            @id @default(cuid())
   name        String
   slug        String            @unique
+  category    String            @default("Kuliner & F&B")
   description String?
   logoUrl     String?
   photoUrl    String?
