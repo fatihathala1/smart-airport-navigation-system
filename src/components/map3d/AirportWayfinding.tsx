@@ -24,6 +24,8 @@ import {
   Minus,
   Compass,
   Crosshair,
+  LocateFixed,
+  LocateOff,
   LoaderCircle,
   MousePointer2,
   Pause,
@@ -70,6 +72,7 @@ import {
   placeElevation,
   snapPlace,
   type FloorNavigation,
+  type FloorRoute,
   type FloorTransition,
   type RoutePlace,
 } from "@/lib/map3d/multi-floor-route";
@@ -92,9 +95,9 @@ type CameraMode = "map" | "pov";
 
 const mapCopy = {
   ID: {
-    loading: "MEMUAT MODEL LANTAI", directions: "Petunjuk arah", from: "Dari", to: "Ke", chooseStart: "Pilih titik awal", chooseDestination: "Pilih tujuan", searchStart: "Cari titik awal", searchDestination: "Cari tujuan", clearSearch: "Hapus pencarian", noResults: "Tidak ditemukan. Coba nama tenant, kode building, atau nomor gate.", routeHint: "Rute terdekat menghindari tembok dan pilar, melalui bukaan pintu yang ada pada model.", chooseStartHint: "Titik awal berada di area jalan terdekat. Pilih tujuan.", selectStartHint: "Pilih posisi awal terlebih dahulu.", noSafeRoute: "Tidak ditemukan jalur aman pada lantai ini. Coba titik awal atau tujuan lain.", noFloorRoute: "Tidak ditemukan jalur lewat eskalator atau tangga menuju lantai tujuan.", stepTitle: "Langkah perjalanan", previous: "Sebelumnya", next: "Berikutnya", mapView: "Lihat peta", simulation: "Mulai simulasi 3D", pause: "Jeda", resume: "Lanjutkan", center: "Pusatkan", estimate: "Perkiraan", minutes: "menit", arrive: "Tiba di tujuan", straight: "Jalan lurus", left: "Belok kiri", right: "Belok kanan", floorDirection: "Ikuti papan petunjuk ke lantai tujuan", operationalHours: "Jam operasional", open24: "Buka 24 jam", activePeriod: "Masa aktif", now: "Sekarang", unspecified: "Tidak ditentukan", facility: "FASILITAS BANDARA", tenant: "TENANT KOMERSIAL", frontPhoto: "Tampak depan", resetRoute: "Hapus rute", showMap: "Tampilkan seluruh peta", zoomIn: "Perbesar peta", zoomOut: "Perkecil peta", hideExterior: "Sembunyikan area luar gedung", showExterior: "Tampilkan area luar gedung", compass: "Arah mata angin pada model peta", locating: "Mencari posisi Anda", locationActive: "Lokasi real-time aktif", locationDenied: "Izin lokasi diblokir", locationUnavailable: "Lokasi hanya tersedia melalui HTTPS atau localhost", locationTimeout: "GPS belum merespons", locationOutside: "Anda belum terdeteksi di sekitar Terminal 1", locationInaccurate: "Akurasi GPS belum cukup", retryLocation: "Coba lagi", yourLocation: "Lokasi Anda (GPS)", locationFloorNote: "GPS tidak dapat mendeteksi lantai. Koreksi bila perlu." },
+    loading: "MEMUAT MODEL LANTAI", directions: "Petunjuk arah", from: "Dari", to: "Ke", chooseStart: "Pilih titik awal", chooseDestination: "Pilih tujuan", searchStart: "Cari titik awal", searchDestination: "Cari tujuan", clearSearch: "Hapus pencarian", noResults: "Tidak ditemukan. Coba nama tenant, kode building, atau nomor gate.", routeHint: "Rute terdekat menghindari tembok dan pilar, melalui bukaan pintu yang ada pada model.", chooseStartHint: "Titik awal berada di area jalan terdekat. Pilih tujuan.", selectStartHint: "Pilih posisi awal terlebih dahulu.", noSafeRoute: "Tidak ditemukan jalur aman pada lantai ini. Coba titik awal atau tujuan lain.", noFloorRoute: "Tidak ditemukan jalur lewat eskalator atau tangga menuju lantai tujuan.", stepTitle: "Langkah perjalanan", previous: "Sebelumnya", next: "Berikutnya", mapView: "Lihat peta", simulation: "Mulai simulasi 3D", continueSimulation: "Lanjutkan simulasi 3D", pause: "Jeda", resume: "Lanjutkan", center: "Pusatkan", estimate: "Perkiraan", minutes: "menit", arrive: "Tiba di tujuan", straight: "Jalan lurus", left: "Belok kiri", right: "Belok kanan", floorDirection: "Ikuti papan petunjuk ke lantai tujuan", operationalHours: "Jam operasional", open24: "Buka 24 jam", activePeriod: "Masa aktif", now: "Sekarang", unspecified: "Tidak ditentukan", facility: "FASILITAS BANDARA", tenant: "TENANT KOMERSIAL", frontPhoto: "Tampak depan", resetRoute: "Hapus rute", showMap: "Tampilkan seluruh peta", zoomIn: "Perbesar peta", zoomOut: "Perkecil peta", hideExterior: "Sembunyikan area luar gedung", showExterior: "Tampilkan area luar gedung", compass: "Arah mata angin pada model peta", locating: "Mencari posisi Anda", locationActive: "Lokasi real-time aktif", locationDenied: "Izin lokasi diblokir", locationUnavailable: "Lokasi hanya tersedia melalui HTTPS atau localhost", locationTimeout: "GPS belum merespons", locationOutside: "Anda belum terdeteksi di sekitar Terminal 1", locationInaccurate: "Akurasi GPS belum cukup", retryLocation: "Coba lagi", yourLocation: "Lokasi Anda (GPS)", locationFloorNote: "GPS tidak dapat mendeteksi lantai. Koreksi bila perlu." },
   EN: {
-    loading: "LOADING FLOOR MODEL", directions: "Directions", from: "From", to: "To", chooseStart: "Choose starting point", chooseDestination: "Choose destination", searchStart: "Search starting point", searchDestination: "Search destination", clearSearch: "Clear search", noResults: "No results. Try a tenant name, building code, or gate number.", routeHint: "The shortest route avoids walls and pillars through the model's available doorways.", chooseStartHint: "Your start is on the nearest walkway. Choose a destination.", selectStartHint: "Choose a starting point first.", noSafeRoute: "No safe route was found on this floor. Try another start or destination.", noFloorRoute: "No route via an escalator or staircase was found to the destination floor.", stepTitle: "Walking steps", previous: "Previous", next: "Next", mapView: "View map", simulation: "Start 3D simulation", pause: "Pause", resume: "Resume", center: "Recenter", estimate: "Estimated", minutes: "min", arrive: "Arrive at destination", straight: "Walk straight", left: "Turn left", right: "Turn right", floorDirection: "Follow signs to the destination floor", operationalHours: "Operating hours", open24: "Open 24 hours", activePeriod: "Active period", now: "Now", unspecified: "Not specified", facility: "AIRPORT FACILITY", tenant: "COMMERCIAL TENANT", frontPhoto: "Front view", resetRoute: "Clear route", showMap: "Show full map", zoomIn: "Zoom in", zoomOut: "Zoom out", hideExterior: "Hide exterior area", showExterior: "Show exterior area", compass: "Map compass", locating: "Finding your position", locationActive: "Live location active", locationDenied: "Location permission is blocked", locationUnavailable: "Location requires HTTPS or localhost", locationTimeout: "GPS has not responded", locationOutside: "You are not detected near Terminal 1", locationInaccurate: "GPS accuracy is not sufficient yet", retryLocation: "Try again", yourLocation: "Your location (GPS)", locationFloorNote: "GPS cannot detect floors. Correct it if needed." },
+    loading: "LOADING FLOOR MODEL", directions: "Directions", from: "From", to: "To", chooseStart: "Choose starting point", chooseDestination: "Choose destination", searchStart: "Search starting point", searchDestination: "Search destination", clearSearch: "Clear search", noResults: "No results. Try a tenant name, building code, or gate number.", routeHint: "The shortest route avoids walls and pillars through the model's available doorways.", chooseStartHint: "Your start is on the nearest walkway. Choose a destination.", selectStartHint: "Choose a starting point first.", noSafeRoute: "No safe route was found on this floor. Try another start or destination.", noFloorRoute: "No route via an escalator or staircase was found to the destination floor.", stepTitle: "Walking steps", previous: "Previous", next: "Next", mapView: "View map", simulation: "Start 3D simulation", continueSimulation: "Continue 3D simulation", pause: "Pause", resume: "Resume", center: "Recenter", estimate: "Estimated", minutes: "min", arrive: "Arrive at destination", straight: "Walk straight", left: "Turn left", right: "Turn right", floorDirection: "Follow signs to the destination floor", operationalHours: "Operating hours", open24: "Open 24 hours", activePeriod: "Active period", now: "Now", unspecified: "Not specified", facility: "AIRPORT FACILITY", tenant: "COMMERCIAL TENANT", frontPhoto: "Front view", resetRoute: "Clear route", showMap: "Show full map", zoomIn: "Zoom in", zoomOut: "Zoom out", hideExterior: "Hide exterior area", showExterior: "Show exterior area", compass: "Map compass", locating: "Finding your position", locationActive: "Live location active", locationDenied: "Location permission is blocked", locationUnavailable: "Location requires HTTPS or localhost", locationTimeout: "GPS has not responded", locationOutside: "You are not detected near Terminal 1", locationInaccurate: "GPS accuracy is not sufficient yet", retryLocation: "Try again", yourLocation: "Your location (GPS)", locationFloorNote: "GPS cannot detect floors. Correct it if needed." },
 } as const;
 const CameraController = forwardRef<
   ViewerApi,
@@ -104,7 +107,7 @@ const CameraController = forwardRef<
     const controlsRef = useRef<OrbitControlsImpl>(null);
     const lastHeadingRef = useRef(Number.NaN);
 
-    useFrame(() => {
+    const updateHeading = useCallback(() => {
       const direction = camera.getWorldDirection(new THREE.Vector3());
       direction.y = 0;
       if (direction.lengthSq() < 0.0001) return;
@@ -116,7 +119,11 @@ const CameraController = forwardRef<
         lastHeadingRef.current = heading;
         onHeadingChange(-heading);
       }
-    });
+    }, [camera, onHeadingChange]);
+
+    // Event ini dipanggil langsung oleh OrbitControls saat gesture/mouse
+    // mengubah kamera, sehingga kompas tidak menunggu siklus useFrame.
+    useFrame(updateHeading);
 
     const getFitDistance = useCallback(
       (box: THREE.Box3, viewDirection: THREE.Vector3, margin: number) => {
@@ -312,6 +319,7 @@ const CameraController = forwardRef<
         panSpeed={1.15}
         rotateSpeed={0.5}
         zoomSpeed={0.9}
+        onChange={updateHeading}
         mouseButtons={{
           LEFT: THREE.MOUSE.PAN,
           MIDDLE: THREE.MOUSE.DOLLY,
@@ -319,7 +327,9 @@ const CameraController = forwardRef<
         }}
         touches={{
           ONE: THREE.TOUCH.PAN,
-          TWO: THREE.TOUCH.DOLLY_PAN,
+          // Dua jari: putar peta sekaligus tetap mendukung pinch-to-zoom.
+          // Klik kanan mouse tetap menjadi kontrol rotasi desktop.
+          TWO: THREE.TOUCH.DOLLY_ROTATE,
         }}
       />
     );
@@ -359,11 +369,83 @@ function recordCenter(record: SceneObjectRecord): RoutePlace {
 
 const DEPARTURE_ENTRANCE = /^DOOR__Keberangkatan_/i;
 
+/**
+ * A departure area has one designated passenger access door. Keep this
+ * mapping explicit so route planning cannot silently pick a different door
+ * just because it happens to be closer in the 3D model.
+ */
+const DEPARTURE_ENTRANCE_BY_AREA: Record<number, RegExp> = {
+  1: /^DOOR__Keberangkatan_1A(?:_\d+)?$/i,
+  2: /^DOOR__Keberangkatan_1A(?:_\d+)?$/i,
+  3: /^DOOR__Keberangkatan_1B(?:_\d+)?$/i,
+  4: /^DOOR__Keberangkatan_1C(?:_\d+)?$/i,
+};
+
 const GATE_OBJECT = /^T1-FF-GATE-(\d+)$/i;
 
 /** Nama pintu masuk untuk ditampilkan: `DOOR__Keberangkatan_1A_4` → `Pintu Keberangkatan 1A`. */
 function entranceLabel(name: string) {
   return `Pintu ${name.replace(DEPARTURE_ENTRANCE, "Keberangkatan ").replace(/_\d+$/, "")}`;
+}
+
+function closestEntrance(
+  objects: SceneObjectRecord[],
+  record: SceneObjectRecord,
+  allowedDoor: RegExp = DEPARTURE_ENTRANCE,
+) {
+  const target = recordCenter(record).point;
+  let best: { record: SceneObjectRecord; distance: number } | null = null;
+  for (const entrance of objects) {
+    if (!allowedDoor.test(entrance.name)) continue;
+    const [x, z] = recordCenter(entrance).point;
+    const distance = Math.hypot(x - target[0], z - target[1]);
+    if (!best || distance < best.distance) best = { record: entrance, distance };
+  }
+  return best?.record ?? null;
+}
+
+function joinRoutes(first: FloorRoute, second: FloorRoute): FloorRoute {
+  const pointOffset = Math.max(0, first.points.length - 1);
+  return {
+    points: [...first.points, ...second.points.slice(1)],
+    pointFloors: [...first.pointFloors, ...second.pointFloors.slice(1)],
+    transitions: [
+      ...first.transitions,
+      ...second.transitions.map((transition) => ({ ...transition, index: transition.index + pointOffset })),
+    ],
+    length: first.length + second.length,
+  };
+}
+
+function requiredDepartureForRecord(record: SceneObjectRecord) {
+  const label = record.selectableLabel ?? "";
+  const departureMatch = /^Departure\s+(\d+)$/i.exec(label);
+  if (departureMatch) return Number(departureMatch[1]);
+  // Pilar pembatas di sisi Departure 1 termasuk akses zona Departure 1.
+  if (/tembok[-_ ]?pillar[-_ ]?6/i.test(`${record.name} ${label}`)) return 1;
+  return null;
+}
+
+function nearestRouteDistance(metrics: { points: THREE.Vector3[]; cumulativeDistances: number[] }, position: RouteWorldPoint) {
+  const point = new THREE.Vector3(...position);
+  let bestDistance = 0;
+  let bestSquared = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < metrics.points.length - 1; index += 1) {
+    const start = metrics.points[index];
+    const end = metrics.points[index + 1];
+    const segment = end.clone().sub(start);
+    const lengthSquared = segment.lengthSq();
+    const ratio = lengthSquared > 0
+      ? THREE.MathUtils.clamp(point.clone().sub(start).dot(segment) / lengthSquared, 0, 1)
+      : 0;
+    const projected = start.clone().addScaledVector(segment, ratio);
+    const squared = projected.distanceToSquared(point);
+    if (squared < bestSquared) {
+      bestSquared = squared;
+      bestDistance = metrics.cumulativeDistances[index] + Math.sqrt(lengthSquared) * ratio;
+    }
+  }
+  return bestDistance;
 }
 
 export function AirportWayfinding() {
@@ -396,6 +478,7 @@ export function AirportWayfinding() {
   const [routePaused, setRoutePaused] = useState(false);
   const [liveTracking, setLiveTracking] = useState(false);
   const [livePosition, setLivePosition] = useState<RouteWorldPoint | null>(null);
+  const liveReadingTimestamp = useRef<number | null>(null);
   const [routeProgress, setRouteProgress] =
     useState<RoutePlaybackSnapshot | null>(null);
   const [routeRestartToken, setRouteRestartToken] = useState(0);
@@ -409,13 +492,24 @@ export function AirportWayfinding() {
   const [automaticLocation, setAutomaticLocation] = useState(true);
   const [locationMapped, setLocationMapped] = useState(false);
   const locationFocusDone = useRef(false);
-  const passengerLocation = usePassengerGeolocation();
+  const passengerLocation = usePassengerGeolocation(automaticLocation);
   const refreshPassengerLocation = useCallback(() => {
     locationFocusDone.current = false;
     setAutomaticLocation(true);
     setLocationMapped(false);
     passengerLocation.refresh();
   }, [passengerLocation.refresh]);
+  const togglePassengerLocation = useCallback(() => {
+    if (automaticLocation || locationMapped) {
+      locationFocusDone.current = false;
+      setAutomaticLocation(false);
+      setLocationMapped(false);
+      setLiveTracking(false);
+      setLivePosition(null);
+      return;
+    }
+    refreshPassengerLocation();
+  }, [automaticLocation, locationMapped, refreshPassengerLocation]);
   const touchStartY = useRef<number | null>(null);
 
   const handleSheetTouchStart = useCallback((e: React.TouchEvent) => {
@@ -509,6 +603,18 @@ export function AirportWayfinding() {
     [routeMetrics, routeTransitions],
   );
   const activeStep = routeSteps[activeStepIndex] ?? null;
+  useEffect(() => {
+    if (!routeProgress || !routeMetrics || routeSteps.length === 0) return;
+    if (routeProgress.progress >= 1) {
+      setActiveStepIndex(routeSteps.length - 1);
+      return;
+    }
+    const nextStepIndex = routeSteps.findIndex((step) => {
+      if (step.kind === "arrive") return false;
+      return routeProgress.distance < routeMetrics.cumulativeDistances[step.endIndex];
+    });
+    if (nextStepIndex >= 0) setActiveStepIndex(nextStepIndex);
+  }, [routeMetrics, routeProgress, routeSteps]);
   const visibleRouteProgress = useMemo(
     () =>
       routeProgress ??
@@ -561,12 +667,26 @@ export function AirportWayfinding() {
   // marker tidak bergetar karena noise GPS.
   useEffect(() => {
     if (!liveTracking || !navigation || !usableLocationReading) return;
+    if (liveReadingTimestamp.current === usableLocationReading.timestamp) return;
+    liveReadingTimestamp.current = usableLocationReading.timestamp;
     const [x, z] = geographicToT1Model(usableLocationReading);
     const snapped = snapPlace(navigation, { floor: passengerFloor, point: [x, z] });
     if (!snapped) return;
     const next: RouteWorldPoint = [snapped.point[0], placeElevation(navigation, snapped), snapped.point[1]];
-    if (livePosition && Math.hypot(next[0] - livePosition[0], next[2] - livePosition[2]) < 3) return;
-    setLivePosition(next);
+    if (livePosition) {
+      const distance = Math.hypot(next[0] - livePosition[0], next[2] - livePosition[2]);
+      if (distance < 1.5) return;
+      // Interpolasi sebagian membuat perpindahan marker terasa kontinu,
+      // sementara filter GPS tetap menolak perubahan mikro.
+      const smoothing = Math.min(0.72, Math.max(0.38, distance / 18));
+      setLivePosition([
+        livePosition[0] + (next[0] - livePosition[0]) * smoothing,
+        next[1],
+        livePosition[2] + (next[2] - livePosition[2]) * smoothing,
+      ]);
+    } else {
+      setLivePosition(next);
+    }
     setStartPoint(snapped);
     setStartName(copy.yourLocation);
   }, [copy.yourLocation, livePosition, liveTracking, navigation, passengerFloor, usableLocationReading]);
@@ -634,6 +754,28 @@ export function AirportWayfinding() {
     [commitStartPoint],
   );
 
+  const handleManualStartPoint = useCallback(
+    (point: THREE.Vector3, objectName?: string) => {
+      if (!navigation) return;
+      // Klik pada tenant/fasilitas harus memakai pusat objek dan metadata
+      // lantainya. Raycast pada dinding atau atap dapat menghasilkan Y yang
+      // bukan ketinggian lantai, sehingga floorAtHeight(point.y) sebelumnya
+      // bisa memilih lantai yang salah dan membuat titik tampak melenceng.
+      const record = objectName
+        ? objects.find((item) => item.name === objectName && item.selectable)
+        : undefined;
+      if (record) {
+        setBuildingAsStart(record);
+        return;
+      }
+      commitStartPoint(
+        { floor: floorAtHeight(navigation, point.y), point: [point.x, point.z] },
+        "Posisi pada peta",
+      );
+    },
+    [commitStartPoint, navigation, objects, passengerFloor, setBuildingAsStart],
+  );
+
   /**
    * Hitung rute dari `start` ke sebuah objek, di lantai yang sama atau lewat
    * eskalator/tangga. Dipakai oleh pencarian, klik peta, dan panduan penumpang.
@@ -642,11 +784,33 @@ export function AirportWayfinding() {
     (start: RoutePlace, record: SceneObjectRecord) => {
       if (!navigation) return false;
       const objectConfig = mapObjectConfigs[record.name] ?? defaultMapObjectConfig(record.name);
-      const route = findFloorRoute(navigation, start, {
+      const target = {
         floor: record.floor,
         rect: recordRect(record),
         entryDoors: objectConfig.entryDoors,
-      });
+      };
+      const departure = requiredDepartureForRecord(record);
+      const requiredEntrance = departure && DEPARTURE_ENTRANCE_BY_AREA[departure]
+        ? closestEntrance(objects, record, DEPARTURE_ENTRANCE_BY_AREA[departure])
+        : null;
+
+      // Departure 1/2/3/4 masing-masing memiliki pintu akses wajib. Jika
+      // pengguna sudah memilih titik awal sendiri, rute tetap harus melewati
+      // pintu yang ditentukan, bukan langsung menuju sisi terdekat bangunan.
+      let route = findFloorRoute(navigation, start, target);
+      if (requiredEntrance) {
+        const entrancePlace = recordCenter(requiredEntrance);
+        const toEntrance = findFloorRoute(navigation, start, {
+          floor: requiredEntrance.floor,
+          rect: recordRect(requiredEntrance),
+        });
+        const entrancePoint = toEntrance?.points.at(-1);
+        const entranceStart = entrancePoint
+          ? snapPlace(navigation, { floor: requiredEntrance.floor, point: [entrancePoint[0], entrancePoint[2]] })
+          : snapPlace(navigation, entrancePlace);
+        const fromEntrance = entranceStart ? findFloorRoute(navigation, entranceStart, target) : null;
+        route = toEntrance && fromEntrance ? joinRoutes(toEntrance, fromEntrance) : null;
+      }
       const label = record.selectableLabel ?? record.name;
       setRouteProgress(null);
       setRoutePaused(false);
@@ -678,7 +842,7 @@ export function AirportWayfinding() {
       if (multiFloor) setFloorView(start.floor);
       return true;
     },
-    [copy.noFloorRoute, copy.noSafeRoute, copy.routeHint, lang, mapObjectConfigs, multiFloor, navigation],
+    [copy.noFloorRoute, copy.noSafeRoute, copy.routeHint, lang, mapObjectConfigs, multiFloor, navigation, objects],
   );
 
   const calculateRoute = useCallback(
@@ -699,6 +863,24 @@ export function AirportWayfinding() {
       let best: { record: SceneObjectRecord; distance: number } | null = null;
       for (const entrance of objects) {
         if (!DEPARTURE_ENTRANCE.test(entrance.name)) continue;
+        const [x, z] = recordCenter(entrance).point;
+        const distance = Math.hypot(x - target[0], z - target[1]);
+        if (!best || distance < best.distance) best = { record: entrance, distance };
+      }
+      return best?.record ?? null;
+    },
+    [objects],
+  );
+
+  const entranceForDeparture = useCallback(
+    (record: SceneObjectRecord, departure: number) => {
+      const allowedDoor = DEPARTURE_ENTRANCE_BY_AREA[departure];
+      if (!allowedDoor) return null;
+
+      const target = recordCenter(record).point;
+      let best: { record: SceneObjectRecord; distance: number } | null = null;
+      for (const entrance of objects) {
+        if (!allowedDoor.test(entrance.name)) continue;
         const [x, z] = recordCenter(entrance).point;
         const distance = Math.hypot(x - target[0], z - target[1]);
         if (!best || distance < best.distance) best = { record: entrance, distance };
@@ -732,14 +914,15 @@ export function AirportWayfinding() {
         setRouteMessage(`${lang === "ID" ? "Area Departure" : "Departure area"} ${departure} ${lang === "ID" ? "belum ditandai pada peta." : "is not marked on the map."}`);
         return;
       }
-      const entrance = nearestEntrance(target);
+      const entrance = entranceForDeparture(target, departure);
       if (!entrance) {
-        setRouteMessage(lang === "ID" ? "Pintu masuk keberangkatan belum ditandai pada peta." : "Departure entrances are not marked on the map yet.");
+        const door = departure <= 2 ? "1A" : departure === 3 ? "1B" : "1C";
+        setRouteMessage(lang === "ID" ? `Pintu Keberangkatan ${door} belum ditandai pada peta.` : `Departure door ${door} is not marked on the map yet.`);
         return;
       }
       startPassengerRoute(entrance, entranceLabel(entrance.name), target);
     },
-    [nearestEntrance, objects, startPassengerRoute],
+    [entranceForDeparture, lang, objects, startPassengerRoute],
   );
 
   const routeToGate = useCallback(
@@ -768,14 +951,21 @@ export function AirportWayfinding() {
     (selection: SelectedObject) => {
       const record = objects.find((item) => item.uuid === selection.uuid);
       if (selectingStart && record) {
-        setBuildingAsStart(record);
+        setSelected(selection);
+        const config = mapObjectConfigs[record.name] ?? defaultMapObjectConfig(record.name);
+        const openDoors = config.entryDoors.filter((door) => door.open);
+        if (openDoors.length > 0) {
+          setRouteMessage(lang === "ID" ? "Pilih pintu masuk bangunan berdasarkan arah mata angin." : "Choose an open building entrance by compass direction.");
+        } else {
+          setBuildingAsStart(record);
+        }
         return;
       }
       if (!record) return;
       if (startPoint) calculateRoute(record);
       else setBuildingAsStart(record);
     },
-    [calculateRoute, objects, selectingStart, setBuildingAsStart, startPoint],
+    [calculateRoute, lang, mapObjectConfigs, objects, selectingStart, setBuildingAsStart, startPoint],
   );
 
   const searchResults = useMemo(() => {
@@ -809,6 +999,10 @@ export function AirportWayfinding() {
   const beginStartSelection = useCallback(() => {
     setQuery("");
     setSelectingStart(true);
+    // Klik manual harus menjadi sumber lokasi tunggal agar pembacaan GPS
+    // yang datang bersamaan tidak mengganti titik yang dipilih pengguna.
+    setAutomaticLocation(false);
+    setLocationMapped(false);
     setViewMode("map");
     clearRoute();
     setRouteMessage(multiFloor
@@ -864,6 +1058,7 @@ export function AirportWayfinding() {
     setLiveTracking((active) => {
       if (active) {
         setLivePosition(null);
+        liveReadingTimestamp.current = null;
         return false;
       }
       setAutomaticLocation(true);
@@ -885,6 +1080,19 @@ export function AirportWayfinding() {
     setViewMode("pov");
     setRouteRestartToken((value) => value + 1);
   }, [routeMetrics]);
+
+  const startOrResumeRoute = useCallback(() => {
+    if (!routeMetrics) return;
+    // Hanya rute yang sudah selesai yang boleh diulang dari awal. Selama
+    // masih berjalan, kamera dan controller mempertahankan jarak tempuhnya.
+    if (!routeProgress || routeProgress.progress >= 1) {
+      restartActiveRoute();
+      return;
+    }
+    setRoutePaused(false);
+    setViewMode("pov");
+    setRouteRecenterToken((value) => value + 1);
+  }, [restartActiveRoute, routeMetrics, routeProgress]);
 
   const handlePlaybackComplete = useCallback(() => {
     setRoutePaused(true);
@@ -948,6 +1156,20 @@ export function AirportWayfinding() {
   const routeFloorsText = routeTransitions.length
     ? [routeTransitions[0].from, ...routeTransitions.map((transition) => transition.to)].map((floor) => FLOOR_LABELS[floor]).join(" → ")
     : routePointFloors[0] ? FLOOR_LABELS[routePointFloors[0]] : "";
+  const traveledRouteDistance = useMemo(() => {
+    if (!routeMetrics) return 0;
+    const simulatedDistance = routeProgress?.distance ?? 0;
+    const gpsDistance = liveTracking && livePosition
+      ? nearestRouteDistance(routeMetrics, livePosition)
+      : 0;
+    return Math.min(routeMetrics.totalDistance, Math.max(simulatedDistance, gpsDistance));
+  }, [livePosition, liveTracking, routeMetrics, routeProgress]);
+  const remainingRouteDistance = routeMetrics
+    ? Math.max(0, routeMetrics.totalDistance - traveledRouteDistance)
+    : 0;
+  const remainingRouteMinutes = remainingRouteDistance > 0
+    ? Math.ceil(remainingRouteDistance / 1.35 / 60)
+    : 0;
   const searchPlaceholderExample = multiFloor ? "T1-GF-01, Gate 5" : "T1-GF-...";
 
   return (
@@ -1008,7 +1230,7 @@ export function AirportWayfinding() {
               showObjectLabels
               selectedUuid={selected?.uuid ?? null}
               onSelect={handleSelect}
-              onSelectPoint={selectingStart && navigation ? (point) => commitStartPoint({ floor: floorAtHeight(navigation, point.y), point: [point.x, point.z] }, "Posisi pada peta") : undefined}
+              onSelectPoint={selectingStart && navigation ? handleManualStartPoint : undefined}
               onSelectEntryPoint={chooseEntryPoint}
               onReady={handleReady}
             />
@@ -1088,17 +1310,14 @@ export function AirportWayfinding() {
           <div className="sea-live-location-main">
             {locationMapped ? <Crosshair size={16} /> : passengerLocation.status === "checking" ? <LoaderCircle size={16} className="sea-location-spinner" /> : <MapPin size={16} />}
             <span>
-              <strong>{locationMapped ? copy.locationActive : passengerLocation.status === "checking" ? copy.locating : passengerLocation.status === "denied" ? copy.locationDenied : passengerLocation.status === "timeout" ? copy.locationTimeout : passengerLocation.status === "unavailable" ? copy.locationUnavailable : usableLocationReading ? copy.locationActive : (passengerLocation.reading ? (passengerLocation.reading.accuracy > T1_GEO_CALIBRATION.maximumUsableAccuracyMeters ? copy.locationInaccurate : copy.locationOutside) : copy.locating)}</strong>
-              <small>{locationMapped && usableLocationReading ? `±${Math.round(usableLocationReading.accuracy)} m · ${FLOOR_LABELS[passengerFloor]}` : copy.locationFloorNote}</small>
+              <strong>{!automaticLocation ? (lang === "ID" ? "Pilih posisi Anda di peta" : "Choose your position on the map") : locationMapped ? copy.locationActive : passengerLocation.status === "checking" ? copy.locating : passengerLocation.status === "denied" ? copy.locationDenied : passengerLocation.status === "timeout" ? copy.locationTimeout : passengerLocation.status === "unavailable" ? copy.locationUnavailable : usableLocationReading ? copy.locationActive : (passengerLocation.reading ? (passengerLocation.reading.accuracy > T1_GEO_CALIBRATION.maximumUsableAccuracyMeters ? copy.locationInaccurate : copy.locationOutside) : copy.locating)}</strong>
+              <small>{usableLocationReading ? `±${Math.round(usableLocationReading.accuracy)} m${locationMapped ? ` · ${FLOOR_LABELS[passengerFloor]}` : ""}` : copy.locationFloorNote}</small>
             </span>
           </div>
           <div className="sea-live-location-actions">
             {modelFloors.length > 1 && (["L1", "L2"] as FloorId[]).filter((floor) => modelFloors.includes(floor)).map((floor) => (
               <button key={floor} type="button" className={passengerFloor === floor ? "is-selected" : ""} onClick={() => { setPassengerFloor(floor); setAutomaticLocation(true); setLocationMapped(false); }} aria-pressed={passengerFloor === floor}>{FLOOR_LABELS[floor]}</button>
             ))}
-            <button type="button" className="sea-live-location-retry" onClick={refreshPassengerLocation} aria-label={lang === "ID" ? "Perbarui lokasi saya" : "Refresh my location"} title={copy.retryLocation}>
-              <Crosshair size={14} />
-            </button>
           </div>
         </div>
         <div className="sea-trip-fields">
@@ -1127,7 +1346,7 @@ export function AirportWayfinding() {
         </div>
         <p className="sea-hint" role="status">{gridError ?? routeMessage}</p>
         {routeMetrics && routeSteps.length > 0 && <div className="sea-route-details">
-          <div className="sea-route-summary"><div><strong>{Math.round(routeMetrics.totalDistance)} m</strong><span>Perkiraan {Math.max(1, Math.ceil(routeMetrics.totalDistance / 1.35 / 60))} menit{routeFloorsText ? ` · ${routeFloorsText}` : ""}</span></div><button type="button" onClick={resetRoute} aria-label="Hapus rute"><X size={18} /></button></div>
+          <div className="sea-route-summary"><div><strong>{Math.round(remainingRouteDistance)} m</strong><span>Perkiraan {remainingRouteMinutes} menit{routeFloorsText ? ` · ${routeFloorsText}` : ""}</span></div><button type="button" onClick={resetRoute} aria-label="Hapus rute"><X size={18} /></button></div>
           <div className="sea-step-header"><h2>{copy.stepTitle}</h2><span>{activeStepIndex + 1} / {routeSteps.length}</span></div>
           <ol className="sea-step-list">{routeSteps.map((step, index) => <li key={`${step.kind}-${step.startIndex}`}><button type="button" className={index === activeStepIndex ? "is-active" : ""} onClick={() => selectRouteStep(index)} aria-current={index === activeStepIndex ? "step" : undefined}><span className="sea-step-number">{index + 1}</span><span><strong>{step.label}</strong><small>{step.kind === "arrive" ? destinationName : step.kind === "up" || step.kind === "down" ? "Ikuti papan petunjuk ke lantai tujuan" : `Sekitar ${Math.round(step.distance)} m${multiFloor && routePointFloors[step.startIndex] ? ` · ${FLOOR_LABELS[routePointFloors[step.startIndex]]}` : ""}`}</small></span></button></li>)}</ol>
         </div>}
@@ -1196,10 +1415,10 @@ export function AirportWayfinding() {
                 <button
                   type="button"
                   className="sea-btn-card sea-btn-simulation-primary"
-                  onClick={restartActiveRoute}
+                  onClick={startOrResumeRoute}
                 >
                   <Play size={13} fill="currentColor" />
-                  <span>{copy.simulation}</span>
+                  <span>{routeProgress && routeProgress.progress < 1 ? copy.continueSimulation : copy.simulation}</span>
                 </button>
               )}
             </div>
@@ -1207,7 +1426,7 @@ export function AirportWayfinding() {
         )}
       </aside>
 
-      <div className="sea-map-actions" aria-label={lang === "ID" ? "Kontrol peta" : "Map controls"}><button type="button" onClick={showMapView} disabled={!bounds} aria-label={copy.showMap}><RotateCcw size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomIn()} disabled={!bounds} aria-label={copy.zoomIn}><Plus size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomOut()} disabled={!bounds} aria-label={copy.zoomOut}><Minus size={18} /></button><button type="button" onClick={refreshPassengerLocation} disabled={!bounds} aria-label={lang === "ID" ? "Perbarui lokasi saya" : "Refresh my location"}><Crosshair size={18} /></button><button type="button" className="map-exterior-toggle" onClick={() => setShowExterior((value) => !value)} disabled={!bounds || shownFloorView === "L2"} aria-pressed={showExterior} aria-label={showExterior ? copy.hideExterior : copy.showExterior} title={lang === "ID" ? "Area luar gedung" : "Exterior area"}><Trees size={18} /></button></div>
+      <div className="sea-map-actions" aria-label={lang === "ID" ? "Kontrol peta" : "Map controls"}><button type="button" onClick={showMapView} disabled={!bounds} aria-label={copy.showMap}><RotateCcw size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomIn()} disabled={!bounds} aria-label={copy.zoomIn}><Plus size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomOut()} disabled={!bounds} aria-label={copy.zoomOut}><Minus size={18} /></button><button type="button" onClick={togglePassengerLocation} disabled={!bounds} aria-pressed={automaticLocation} aria-label={automaticLocation ? (lang === "ID" ? "Nonaktifkan lokasi GPS" : "Turn GPS location off") : (lang === "ID" ? "Aktifkan lokasi GPS" : "Turn GPS location on")} title={automaticLocation ? (lang === "ID" ? "Nonaktifkan lokasi GPS" : "Turn GPS location off") : (lang === "ID" ? "Aktifkan lokasi GPS" : "Turn GPS location on")}>{automaticLocation ? <LocateFixed size={18} /> : <LocateOff size={18} />}</button><button type="button" className="map-exterior-toggle" onClick={() => setShowExterior((value) => !value)} disabled={!bounds || shownFloorView === "L2"} aria-pressed={showExterior} aria-label={showExterior ? copy.hideExterior : copy.showExterior} title={lang === "ID" ? "Area luar gedung" : "Exterior area"}><Trees size={18} /></button></div>
       {exteriorAttribution && <p className="map-attribution">Area luar: {exteriorAttribution}</p>}
 
       <div className="map-compass" aria-label={copy.compass} style={{ transform: `rotate(${compassRotation}deg)` }}>
@@ -1248,7 +1467,10 @@ export function AirportWayfinding() {
                   if (startPoint) {
                     calculateRoute(record);
                   } else {
-                    const entrance = nearestEntrance(record);
+                    const departure = requiredDepartureForRecord(record);
+                    const entrance = departure !== null
+                      ? entranceForDeparture(record, departure)
+                      : nearestEntrance(record);
                     if (entrance) {
                       startPassengerRoute(entrance, entranceLabel(entrance.name), record);
                     } else {

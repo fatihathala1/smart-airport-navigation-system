@@ -1802,6 +1802,11 @@
   border-color: #38bdf8 !important;
   color: #ffffff !important;
 }
+.map3d-root .sea-live-location-retry.is-active,
+.map3d-root .sea-map-actions button[aria-pressed="true"] {
+  background: #126c9d !important;
+  color: #ffffff !important;
+}
 .map3d-root .sea-trip-fields button,
 .map3d-root .sea-search,
 .map3d-root .sea-search-results,

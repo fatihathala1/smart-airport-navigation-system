@@ -7,7 +7,8 @@ export type PassengerLocationStatus =
   | "tracking"
   | "denied"
   | "unavailable"
-  | "timeout";
+  | "timeout"
+  | "disabled";
 
 export type PassengerLocationReading = {
   latitude: number;
@@ -17,8 +18,8 @@ export type PassengerLocationReading = {
   timestamp: number;
 };
 
-export function usePassengerGeolocation() {
-  const [status, setStatus] = useState<PassengerLocationStatus>("checking");
+export function usePassengerGeolocation(enabled = true) {
+  const [status, setStatus] = useState<PassengerLocationStatus>(enabled ? "checking" : "disabled");
   const [reading, setReading] = useState<PassengerLocationReading | null>(null);
   const [attempt, setAttempt] = useState(0);
   const samplesRef = useRef<PassengerLocationReading[]>([]);
@@ -33,6 +34,14 @@ export function usePassengerGeolocation() {
   const retry = refresh;
 
   useEffect(() => {
+    if (!enabled) {
+      samplesRef.current = [];
+      const frame = window.requestAnimationFrame(() => {
+        setReading(null);
+        setStatus("disabled");
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
     if (!window.isSecureContext || !("geolocation" in navigator)) {
       const frame = window.requestAnimationFrame(() => setStatus("unavailable"));
       return () => window.cancelAnimationFrame(frame);
@@ -59,13 +68,17 @@ export function usePassengerGeolocation() {
         }
         samplesRef.current = [...samplesRef.current.slice(-4), next];
         const samples = samplesRef.current;
-        if (samples.length < 3) {
-          setStatus("checking");
+        // Pakai sampel valid pertama agar lokasi awal tampil cepat. Sampel
+        // berikutnya tetap dipakai untuk meredam noise tanpa menunda sinyal.
+        if (samples.length === 1) {
+          setReading(next);
+          setStatus("tracking");
           return;
         }
         const latitude = samples.reduce((sum, sample) => sum + sample.latitude, 0) / samples.length;
         const longitude = samples.reduce((sum, sample) => sum + sample.longitude, 0) / samples.length;
-        setReading({ ...next, latitude, longitude, accuracy: Math.max(next.accuracy, 12) });
+        const averageAccuracy = samples.reduce((sum, sample) => sum + sample.accuracy, 0) / samples.length;
+        setReading({ ...next, latitude, longitude, accuracy: Math.max(10, Math.min(150, averageAccuracy)) });
         setStatus("tracking");
       };
     const handleError = (error: GeolocationPositionError) => {
@@ -88,7 +101,7 @@ export function usePassengerGeolocation() {
       timeout: 20_000,
     });
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [attempt]);
+  }, [attempt, enabled]);
 
   return { status, reading, retry, refresh };
 }

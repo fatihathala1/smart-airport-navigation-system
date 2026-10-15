@@ -280,7 +280,17 @@ function applyFloorView(model: THREE.Object3D, floorView: FloorView) {
 
 /** Bidang lantai yang dapat diklik untuk memilih titik awal, di lantai mana pun. */
 function isFloorSurfaceName(objectName: string) {
-  return getObjectMetadata(objectName).key === "visitor";
+  if (/^DOOR__/i.test(objectName)) return false;
+  if (/^area[_ -]?merah(?:[_ -]|$)/i.test(objectName)) return false;
+  // Beberapa export GLB memakai nama zona langsung tanpa metadata kategori,
+  // termasuk duplikat bersuffix `_2` dan mesh outline zona terminal.
+  if (/^(?:floor|area|lantai|conveyor|keberangkatan|kedatangan)(?:[_ -]|$)/i.test(objectName)) return true;
+  if (/^(?:OUTLINE__)?ZONE_(?:DEPARTURE|KEBERANGKATAN|KEDATANGAN)(?:[_ -]|$)/i.test(objectName)) return true;
+  const key = getObjectMetadata(objectName).key;
+  // Area visitor, pelat lantai, dan bidang zona terminal semuanya adalah
+  // permukaan lantai. Permukaan ini boleh dipilih langsung tanpa pintu.
+  // Zona merah adalah area terlarang/obstacle, bukan permukaan titik awal.
+  return key === "visitor" || key === "departure" || key === "arrival";
 }
 
 export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectPoint, onSelectEntryPoint, onReady, objectConfigs = {}, modelUrl = GROUND_FLOOR_MODEL_URL, floorView = "ALL", showObjectLabels = false }: SceneModelProps) {
@@ -321,12 +331,15 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectPoin
 
       const sourceObjectName = object.userData.sourceObjectName || object.name;
       const objectConfig = effectiveObjectConfigs[sourceObjectName];
+      const isHiddenTerminalZone = HIDDEN_TERMINAL_ZONE_OBJECT.test(sourceObjectName);
       if (HIDDEN_COMMERCIAL_OVERHEAD_OBJECT.test(sourceObjectName)) {
         object.visible = false;
         object.userData.runtimeVisibilityReason = "commercial-overhead-obstruction";
       }
-      if (HIDDEN_TERMINAL_ZONE_OBJECT.test(sourceObjectName)) {
-        object.visible = false;
+      if (isHiddenTerminalZone) {
+        // Zona departure/arrival tetap dirender sebagai mesh tak terlihat agar
+        // raycast pemilihan titik awal dapat menangkap seluruh permukaannya.
+        object.visible = true;
         object.userData.runtimeVisibilityReason = "decorative-terminal-zone";
       }
       if (objectConfig?.occupancy === "WALKABLE") {
@@ -366,6 +379,14 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectPoin
       });
 
       object.material = Array.isArray(object.material) ? runtimeMaterials : runtimeMaterials[0];
+      if (isHiddenTerminalZone) {
+        runtimeMaterials.forEach((material) => {
+          material.opacity = 0;
+          material.transparent = true;
+          material.depthWrite = false;
+          material.needsUpdate = true;
+        });
+      }
       object.userData.runtimeCategory = metadata.key;
     });
 
@@ -528,8 +549,13 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectPoin
       }
       const selectedObject = logicalObject || event.object;
       const sourceName =
-        selectedObject.userData.sourceObjectName || selectedObject.name;
-      if (onSelectPoint) {
+        event.object.userData.sourceObjectName ||
+        selectedObject.userData.sourceObjectName ||
+        event.object.name ||
+        selectedObject.name;
+      // Bidang lantai dapat dipilih di mana saja. Bangunan tetap masuk ke
+      // alur seleksi objek agar marker pintu arah mata angin dapat dipilih.
+      if (onSelectPoint && isFloorSurfaceName(sourceName)) {
         onSelectPoint(event.point.clone(), sourceName);
       } else if (isSelectableBuildingName(sourceName)) {
         onSelect(createSelectedObject(selectedObject));
@@ -562,8 +588,12 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectPoin
           logicalObject = logicalObject.parent;
         }
         const sourceName =
-          logicalObject?.userData.sourceObjectName || logicalObject?.name || "";
-        if (onSelectPoint || isSelectableBuildingName(sourceName) || (onSelectFloor && isFloorSurfaceName(sourceName))) {
+          event.object.userData.sourceObjectName ||
+          logicalObject?.userData.sourceObjectName ||
+          event.object.name ||
+          logicalObject?.name ||
+          "";
+        if ((onSelectPoint && isFloorSurfaceName(sourceName)) || isSelectableBuildingName(sourceName) || (onSelectFloor && isFloorSurfaceName(sourceName))) {
           event.stopPropagation();
           setHovered(true);
         }

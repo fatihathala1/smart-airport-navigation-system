@@ -38,6 +38,7 @@ export type SceneWalkability = {
 
 const DOOR_NAME = /(^|[_\-\s])(door|pintu)([_\-\s]|$)/i;
 const GLASS_NAME = /(glass|kaca)/i;
+const RED_AREA_NAME = /^area[_\- ]?merah(?:[_\- ]|$)/i;
 
 /**
  * Penanda permukaan yang boleh dilalui pengunjung.
@@ -167,6 +168,19 @@ function buildLevelGrid({ parsed, floorSource, levels }: ParsedScene, level: Flo
 
   for (const entry of parsed) {
     const { name } = entry.record;
+    if (RED_AREA_NAME.test(name)) {
+      // Zona merah berada di atas permukaan lantai, jadi perlu dipotong
+      // eksplisit dari grid sebagai obstacle meskipun geometrinya datar.
+      for (const surface of entry.surfaces) {
+        if (!onThisLevel(surface.y)) continue;
+        const [a, b, c] = surface.vertices;
+        obstacleTriangles.push({
+          triangle: [[a[0], a[2]], [b[0], b[2]], [c[0], c[2]]],
+          kind: "solid",
+        });
+      }
+      continue;
+    }
     if (DOOR_NAME.test(name)) {
       // Pintu lantai lain tidak boleh membuka dinding kaca di lantai ini.
       if (!entry.box.isEmpty() && entry.box.max.y >= bandBottom && entry.box.min.y <= bandTop) {

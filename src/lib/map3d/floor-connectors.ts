@@ -36,6 +36,9 @@ const CONNECTOR_NAME = /(eks|eskalator|escalator)[\s_-]*(naik|turun)|tangga|stai
 // dari L2 ke L1. Konektor lain tetap dapat tampil sebagai objek 3D, tetapi
 // tidak dipakai sebagai transisi navigasi.
 const ALLOWED_INTERFLOOR_CONNECTOR = /T1-GF-(?:EKS NAIK-0[12]|TANGGA-0[12]|EKS TURUN-(?:09|10))(?:$|__)/i;
+// Konektor Lantai 2 yang berada di sisi Gate 7 sedang ditutup. Nama modelnya
+// memakai prefix T1-FF dan memiliki dua varian eskalator turun.
+const CLOSED_GATE_7_CONNECTOR = /T1-FF-(?:EKS|TANGGA|STAIR)/i;
 
 /** Titik dalam jarak ini dari ketinggian lantai dianggap sebagai ujung. */
 const END_TOLERANCE = 0.35;
@@ -89,6 +92,7 @@ export function detectFloorConnectors(
   const connectors: FloorConnector[] = [];
   for (const { name, object } of objects) {
     if (!CONNECTOR_NAME.test(name)) continue;
+    if (CLOSED_GATE_7_CONNECTOR.test(name)) continue;
     // Pada model Terminal 1, terapkan daftar empat konektor resmi. Fixture
     // atau model generik tanpa prefix T1-GF tetap memakai deteksi nama umum.
     if (/T1-GF-/i.test(name) && !ALLOWED_INTERFLOOR_CONNECTOR.test(name)) continue;
