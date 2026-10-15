@@ -60,6 +60,8 @@ type SceneModelProps = {
   selectedUuid: string | null;
   onSelect: (selection: SelectedObject) => void;
   onSelectFloor?: (point: THREE.Vector3, objectName?: string) => void;
+  /** Dipanggil saat pengunjung sedang memilih titik awal secara manual. */
+  onSelectPoint?: (point: THREE.Vector3, objectName?: string) => void;
   onSelectEntryPoint?: (point: THREE.Vector3, objectName: string, side: MapObjectDoor["side"]) => void;
   onReady: (bounds: SceneBounds, objects: SceneObjectRecord[]) => void;
   objectConfigs?: MapObjectConfigByName;
@@ -281,7 +283,7 @@ function isFloorSurfaceName(objectName: string) {
   return getObjectMetadata(objectName).key === "visitor";
 }
 
-export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntryPoint, onReady, objectConfigs = {}, modelUrl = GROUND_FLOOR_MODEL_URL, floorView = "ALL", showObjectLabels = false }: SceneModelProps) {
+export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectPoint, onSelectEntryPoint, onReady, objectConfigs = {}, modelUrl = GROUND_FLOOR_MODEL_URL, floorView = "ALL", showObjectLabels = false }: SceneModelProps) {
   const gltf = useGLTF(modelUrl);
   const sourceScene = gltf.scene;
   const sourceParser = gltf.parser as typeof gltf.parser & {
@@ -527,7 +529,9 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
       const selectedObject = logicalObject || event.object;
       const sourceName =
         selectedObject.userData.sourceObjectName || selectedObject.name;
-      if (isSelectableBuildingName(sourceName)) {
+      if (onSelectPoint) {
+        onSelectPoint(event.point.clone(), sourceName);
+      } else if (isSelectableBuildingName(sourceName)) {
         onSelect(createSelectedObject(selectedObject));
       } else if (isFloorSurfaceName(sourceName)) {
         onSelectFloor?.(event.point.clone(), sourceName);
@@ -559,7 +563,7 @@ export function SceneModel({ selectedUuid, onSelect, onSelectFloor, onSelectEntr
         }
         const sourceName =
           logicalObject?.userData.sourceObjectName || logicalObject?.name || "";
-        if (isSelectableBuildingName(sourceName) || (onSelectFloor && isFloorSurfaceName(sourceName))) {
+        if (onSelectPoint || isSelectableBuildingName(sourceName) || (onSelectFloor && isFloorSurfaceName(sourceName))) {
           event.stopPropagation();
           setHovered(true);
         }

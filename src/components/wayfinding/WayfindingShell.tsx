@@ -17,7 +17,7 @@ export function WayfindingShell() {
           <ExploreSection />
           <div className="section-overlap-stack">
             <WayfindingFullTutorialSection />
-            <WayfindingVideoTutorial />
+            <WayfindingVideoTutorial videoUrl="/media/todjuanda.mp4" />
           </div>
         </section>
       </main>

@@ -393,6 +393,8 @@ export function AirportWayfinding() {
   const [selectingStart, setSelectingStart] = useState(false);
   const [viewMode, setViewMode] = useState<CameraMode>("map");
   const [routePaused, setRoutePaused] = useState(false);
+  const [liveTracking, setLiveTracking] = useState(false);
+  const [livePosition, setLivePosition] = useState<RouteWorldPoint | null>(null);
   const [routeProgress, setRouteProgress] =
     useState<RoutePlaybackSnapshot | null>(null);
   const [routeRestartToken, setRouteRestartToken] = useState(0);
@@ -407,6 +409,12 @@ export function AirportWayfinding() {
   const [locationMapped, setLocationMapped] = useState(false);
   const locationFocusDone = useRef(false);
   const passengerLocation = usePassengerGeolocation();
+  const refreshPassengerLocation = useCallback(() => {
+    locationFocusDone.current = false;
+    setAutomaticLocation(true);
+    setLocationMapped(false);
+    passengerLocation.refresh();
+  }, [passengerLocation.refresh]);
   const touchStartY = useRef<number | null>(null);
 
   const handleSheetTouchStart = useCallback((e: React.TouchEvent) => {
@@ -520,6 +528,10 @@ export function AirportWayfinding() {
   // bisa dipakai sebagai origin rute.
   useEffect(() => {
     if (!automaticLocation || !navigation || !usableLocationReading) return;
+    // Kunci titik awal setelah satu pembacaan yang lolos kalibrasi. GPS indoor
+    // dapat bergeser beberapa puluh meter; pembacaan baru hanya dipakai setelah
+    // penumpang menekan tombol pusatkan/perbarui lokasi secara eksplisit.
+    if (locationFocusDone.current) return;
     const [x, z] = geographicToT1Model(usableLocationReading);
     const snapped = snapPlace(navigation, { floor: passengerFloor, point: [x, z] });
     if (!snapped) return;
@@ -542,6 +554,21 @@ export function AirportWayfinding() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [automaticLocation, copy.chooseStartHint, copy.yourLocation, multiFloor, navigation, passengerFloor, routeSessionActive, usableLocationReading]);
+
+  // Mode navigasi aktif: ikuti GPS yang sudah dirata-ratakan dan tempelkan
+  // marker ke koridor terdekat. Perubahan kurang dari 3 m diabaikan agar
+  // marker tidak bergetar karena noise GPS.
+  useEffect(() => {
+    if (!liveTracking || !navigation || !usableLocationReading) return;
+    const [x, z] = geographicToT1Model(usableLocationReading);
+    const snapped = snapPlace(navigation, { floor: passengerFloor, point: [x, z] });
+    if (!snapped) return;
+    const next: RouteWorldPoint = [snapped.point[0], placeElevation(navigation, snapped), snapped.point[1]];
+    if (livePosition && Math.hypot(next[0] - livePosition[0], next[2] - livePosition[2]) < 3) return;
+    setLivePosition(next);
+    setStartPoint(snapped);
+    setStartName(copy.yourLocation);
+  }, [copy.yourLocation, livePosition, liveTracking, navigation, passengerFloor, usableLocationReading]);
 
   // Saat simulasi berjalan dengan satu lantai terpilih, peta mengikuti lantai
   // tempat pengunjung berada tanpa mengubah pilihan pengguna.
@@ -832,6 +859,18 @@ export function AirportWayfinding() {
     setRoutePaused((value) => !value);
   }, []);
 
+  const toggleLiveTracking = useCallback(() => {
+    setLiveTracking((active) => {
+      if (active) {
+        setLivePosition(null);
+        return false;
+      }
+      setAutomaticLocation(true);
+      setLivePosition(startWorldPoint);
+      return true;
+    });
+  }, [startWorldPoint]);
+
   const recenterActiveRoute = useCallback(() => {
     if (!routeSessionActive) return;
     setViewMode("pov");
@@ -852,6 +891,8 @@ export function AirportWayfinding() {
 
 
   const resetRoute = useCallback(() => {
+    setLiveTracking(false);
+    setLivePosition(null);
     if (!automaticLocation) {
       setStartPoint(null);
       setStartName(null);
@@ -966,7 +1007,7 @@ export function AirportWayfinding() {
               showObjectLabels
               selectedUuid={selected?.uuid ?? null}
               onSelect={handleSelect}
-              onSelectFloor={selectingStart && navigation ? (point) => commitStartPoint({ floor: floorAtHeight(navigation, point.y), point: [point.x, point.z] }, "Posisi pada peta") : undefined}
+              onSelectPoint={selectingStart && navigation ? (point) => commitStartPoint({ floor: floorAtHeight(navigation, point.y), point: [point.x, point.z] }, "Posisi pada peta") : undefined}
               onSelectEntryPoint={chooseEntryPoint}
               onReady={handleReady}
             />
@@ -980,7 +1021,7 @@ export function AirportWayfinding() {
               highlightedPoints={highlightedPoints}
               start={startWorldPoint}
               destination={destinationWorldPoint}
-              visitorPosition={visibleRouteProgress?.position ?? null}
+              visitorPosition={liveTracking ? livePosition : (visibleRouteProgress?.position ?? null)}
             />
           </Suspense>
           <CameraController
@@ -1054,8 +1095,8 @@ export function AirportWayfinding() {
             {modelFloors.length > 1 && (["L1", "L2"] as FloorId[]).filter((floor) => modelFloors.includes(floor)).map((floor) => (
               <button key={floor} type="button" className={passengerFloor === floor ? "is-selected" : ""} onClick={() => { setPassengerFloor(floor); setAutomaticLocation(true); setLocationMapped(false); }} aria-pressed={passengerFloor === floor}>{FLOOR_LABELS[floor]}</button>
             ))}
-            <button type="button" className="sea-live-location-retry" onClick={() => { if (locationMapped && startWorldPoint) viewerApi.current?.focusPoint(new THREE.Vector3(...startWorldPoint)); else { setAutomaticLocation(true); setLocationMapped(false); passengerLocation.retry(); } }} aria-label={locationMapped ? (lang === "ID" ? "Pusatkan lokasi saya" : "Center my location") : copy.retryLocation}>
-              {locationMapped ? <Crosshair size={14} /> : copy.retryLocation}
+            <button type="button" className="sea-live-location-retry" onClick={refreshPassengerLocation} aria-label={lang === "ID" ? "Perbarui lokasi saya" : "Refresh my location"}>
+              <Crosshair size={14} /> {copy.retryLocation}
             </button>
           </div>
         </div>
@@ -1113,6 +1154,16 @@ export function AirportWayfinding() {
               </button>
             </div>
             <div className={`sea-simulation-controls${viewMode === "pov" ? " is-pov" : ""}`}>
+              <button
+                type="button"
+                className={`sea-btn-card sea-btn-live-navigation${liveTracking ? " is-active" : ""}`}
+                onClick={toggleLiveTracking}
+                aria-pressed={liveTracking}
+                title={liveTracking ? "Hentikan navigasi GPS" : "Mulai navigasi GPS"}
+              >
+                <Crosshair size={13} />
+                <span>{liveTracking ? "Hentikan GPS" : "Mulai navigasi GPS"}</span>
+              </button>
               {viewMode === "pov" ? (
                 <>
                   <button
@@ -1155,7 +1206,7 @@ export function AirportWayfinding() {
         )}
       </aside>
 
-      <div className="sea-map-actions" aria-label={lang === "ID" ? "Kontrol peta" : "Map controls"}><button type="button" onClick={showMapView} disabled={!bounds} aria-label={copy.showMap}><RotateCcw size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomIn()} disabled={!bounds} aria-label={copy.zoomIn}><Plus size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomOut()} disabled={!bounds} aria-label={copy.zoomOut}><Minus size={18} /></button><button type="button" onClick={() => { if (locationMapped && startWorldPoint) viewerApi.current?.focusPoint(new THREE.Vector3(...startWorldPoint)); else { setAutomaticLocation(true); setLocationMapped(false); passengerLocation.retry(); } }} disabled={!bounds} aria-label={locationMapped ? (lang === "ID" ? "Pusatkan lokasi saya" : "Center my location") : copy.retryLocation}><Crosshair size={18} /></button><button type="button" className="map-exterior-toggle" onClick={() => setShowExterior((value) => !value)} disabled={!bounds || shownFloorView === "L2"} aria-pressed={showExterior} aria-label={showExterior ? copy.hideExterior : copy.showExterior} title={lang === "ID" ? "Area luar gedung" : "Exterior area"}><Trees size={18} /></button></div>
+      <div className="sea-map-actions" aria-label={lang === "ID" ? "Kontrol peta" : "Map controls"}><button type="button" onClick={showMapView} disabled={!bounds} aria-label={copy.showMap}><RotateCcw size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomIn()} disabled={!bounds} aria-label={copy.zoomIn}><Plus size={18} /></button><button type="button" onClick={() => viewerApi.current?.zoomOut()} disabled={!bounds} aria-label={copy.zoomOut}><Minus size={18} /></button><button type="button" onClick={refreshPassengerLocation} disabled={!bounds} aria-label={lang === "ID" ? "Perbarui lokasi saya" : "Refresh my location"}><Crosshair size={18} /></button><button type="button" className="map-exterior-toggle" onClick={() => setShowExterior((value) => !value)} disabled={!bounds || shownFloorView === "L2"} aria-pressed={showExterior} aria-label={showExterior ? copy.hideExterior : copy.showExterior} title={lang === "ID" ? "Area luar gedung" : "Exterior area"}><Trees size={18} /></button></div>
       {exteriorAttribution && <p className="map-attribution">Area luar: {exteriorAttribution}</p>}
 
       <div className="map-compass" aria-label={copy.compass} style={{ transform: `rotate(${compassRotation}deg)` }}>

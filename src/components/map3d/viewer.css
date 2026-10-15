@@ -1584,6 +1584,7 @@
 .map3d-root .sea-btn-step-prev, .map3d-root .sea-btn-step-next { flex: 1; }
 .map3d-root .sea-simulation-controls { display: flex; gap: 8px; width: 100%; padding: 0; }
 .map3d-root .sea-simulation-controls.is-pov { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.map3d-root .sea-btn-live-navigation.is-active { background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: rgba(167, 243, 208, 0.65); color: #ecfdf5; }
 .map3d-root .sea-simulation-controls .sea-btn-simulation-primary { width: 100%; min-height: 38px; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 9px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; font-size: 12px; font-weight: 700; letter-spacing: 0.01em; box-shadow: 0 3px 12px rgba(2, 132, 199, 0.35); }
 .map3d-root .sea-simulation-controls .sea-btn-simulation-primary:hover:not(:disabled) { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); box-shadow: 0 5px 16px rgba(2, 132, 199, 0.5); transform: translateY(-1px); }
 .map3d-root .sea-simulation-controls .sea-btn-simulation-primary:active:not(:disabled) { transform: translateY(0) scale(0.97); }

@@ -10,7 +10,6 @@ import {
   Building2,
   CirclePause,
   CirclePlay,
-  Clock3,
   FileSpreadsheet,
   FileClock,
   FileText,
@@ -577,48 +576,6 @@ export function AdminDashboardClient({
               </p>
             </div>
           </div>
-
-          {/* Operational metrics are intentionally shown only to Airport Admin. */}
-          {activeRole === "AIRPORT_ADMIN" && <div className="metrics-grid">
-              <>
-                <div className="metric-card">
-                  <div className="metric-icon fnb">
-                    <Store size={22} />
-                  </div>
-                  <div>
-                    <strong>{tenants.length} Objek Peta</strong>
-                    <span>Bangunan dan fasilitas terkonfigurasi</span>
-                  </div>
-                </div>
-                <div className="metric-card">
-                  <div className="metric-icon space">
-                    <Building2 size={22} />
-                  </div>
-                  <div>
-                    <strong>24 Unit Space</strong>
-                    <span>88% Okupansi Komersil</span>
-                  </div>
-                </div>
-                <div className="metric-card">
-                  <div className="metric-icon poi">
-                    <Map size={22} />
-                  </div>
-                  <div>
-                    <strong>32 POI Fasilitas</strong>
-                    <span>Toilet, Musala, ATM, Gate</span>
-                  </div>
-                </div>
-                <div className="metric-card">
-                  <div className="metric-icon hours">
-                    <Clock3 size={22} />
-                  </div>
-                  <div>
-                    <strong>94% Buka Operasional</strong>
-                    <span>{tenants.filter((t) => t.status === "ACTIVE").length} Aktif</span>
-                  </div>
-                </div>
-              </>
-          </div>}
 
           {/* Dynamic Content Views */}
           {activeTab === "overview" && <DashboardAnalytics tenants={tenants} />}
