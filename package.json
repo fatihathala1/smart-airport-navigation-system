@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "node scripts/dev-network.mjs",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
