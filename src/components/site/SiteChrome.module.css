@@ -368,19 +368,19 @@
   z-index: 30;
   padding: 0;
   color: #ffffff;
-  background: #0756a8;
-  border-top: 0;
-  font-size: 12px;
+  background: linear-gradient(180deg, #0756a8 0%, #06407c 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 13px;
 }
 
 .footerMain {
-  width: min(1700px, calc(100% - 40px));
+  width: min(1400px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 32px 0 28px;
+  padding: 36px 0 30px;
   display: grid;
-  grid-template-columns: minmax(210px, 1.05fr) minmax(230px, 1.15fr) minmax(170px, 0.8fr) minmax(260px, 1.1fr);
+  grid-template-columns: 210px minmax(260px, 1.2fr) minmax(360px, 1.8fr);
   align-items: center;
-  gap: 28px;
+  gap: clamp(24px, 3.5vw, 44px);
 }
 
 .footerBrand {
@@ -404,83 +404,122 @@
 .footerAddress {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   padding-left: 28px;
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
   font-style: normal;
   line-height: 1.5;
 }
 
 .footerAddress strong {
   color: #ffffff;
+  font-size: 13.5px;
   font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
 }
 
-.footerAddress a,
-.footerContact a {
+.footerAddress span {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.footerAddress a {
   width: fit-content;
-  color: inherit;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
   text-decoration: none;
+  transition: color 0.15s ease;
 }
 
-.footerAddress a:hover,
-.footerContact a:hover {
+.footerAddress a:hover {
   color: #ffffff;
   text-decoration: underline;
 }
 
-.footerContact {
+.footerContacts {
   display: flex;
   align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.footerContact {
+  display: inline-flex;
+  align-items: center;
   gap: 12px;
-  min-width: 0;
-}
-
-.footerContact > svg {
-  flex: 0 0 auto;
+  padding: 10px 16px;
+  min-height: 52px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
   color: #ffffff;
+  text-decoration: none;
+  transition: all 0.2s ease;
 }
 
-.footerContact div {
+.footerContact:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.contactIconWrap {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #7dd3fc;
+  flex-shrink: 0;
+}
+
+.contactDetails {
   display: flex;
   min-width: 0;
   flex-direction: column;
+  gap: 1px;
 }
 
-.footerContact span {
-  color: #ffffff;
-  font-size: 11px;
+.contactLabel {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.footerContact a {
-  overflow-wrap: anywhere;
-  font-size: 15px;
+.contactValue {
+  color: #ffffff;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .footerBottomBar {
   width: 100%;
-  background: #0756a8;
+  background: rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .footerBottom {
-  width: min(1700px, calc(100% - 40px));
-  min-height: 64px;
+  width: min(1400px, calc(100% - 48px));
+  min-height: 56px;
   margin: 0 auto;
-  padding: 14px 0;
+  padding: 12px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 22px;
-  border-top: 0;
+  gap: 20px;
 }
 
 .footerText {
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11.5px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -494,45 +533,46 @@
 }
 
 .socialLink {
-  min-height: 32px;
-  padding: 4px 8px 4px 5px;
+  min-height: 30px;
+  padding: 4px 10px 4px 6px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  border: 0;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
   color: #ffffff;
-  background: transparent;
-  font-size: 10px;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 11px;
+  font-weight: 500;
   text-decoration: none;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: all 0.18s ease;
 }
 
 .socialMark {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-
   color: #0756a8;
   background: #ffffff;
 }
 
 .socialIcon {
   display: block;
-  width: 14px;
-  height: 14px;
+  width: 11px;
+  height: 11px;
 }
 
 .socialLink:hover {
   color: #ffffff;
-  background: transparent;
-  text-decoration: underline;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.28);
+  text-decoration: none;
 }
 
 .adminSecretLink {
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.55);
   font-size: 11px;
   text-decoration: none;
   font-weight: 500;
@@ -859,30 +899,103 @@
 
   .footerMain {
     width: calc(100% - 32px);
-    padding: 26px 0 22px;
-    grid-template-columns: 1fr;
-    gap: 20px;
+    padding: 24px 0 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
   .footerLogoSurface {
-    width: 180px;
+    width: 155px;
+  }
+
+  .footerAddress {
+    padding-left: 0;
+    border-left: 0;
+    gap: 2px;
+  }
+
+  .footerAddress strong {
+    font-size: 13px;
+  }
+
+  .footerAddress span,
+  .footerAddress a {
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .footerContacts {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .footerContact {
+    padding: 9px 12px;
+    min-height: 44px;
+    border-radius: 10px;
+    gap: 10px;
+  }
+
+  .contactIconWrap {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .contactLabel {
+    font-size: 9.5px;
+  }
+
+  .contactValue {
+    font-size: 12px;
   }
 
   .footerBottom {
     width: calc(100% - 32px);
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
-    gap: 12px;
-    padding: 18px 0 22px;
+    gap: 14px;
+    padding: 16px 0 22px;
   }
 
   .footerText {
     white-space: normal;
+    font-size: 11px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.65);
   }
 
   .socialLinks {
-    order: initial;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+
+  .socialLink {
+    padding: 6px 4px;
+    min-height: 32px;
+    justify-content: center;
+    font-size: 10.5px;
+    gap: 5px;
+  }
+
+  .socialMark {
+    width: 18px;
+    height: 18px;
+  }
+
+  .socialIcon {
+    width: 10px;
+    height: 10px;
+  }
+
+  .adminSecretLink {
+    font-size: 10.5px;
+    text-align: left;
   }
 }
 

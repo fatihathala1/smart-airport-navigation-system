@@ -150,7 +150,7 @@ export function MapStage({
         }}
         onPointerDown={(event) => {
           if ((event.target as Element).closest(".map-space, .map-poi")) return;
-          event.currentTarget.setPointerCapture(event.pointerId);
+          try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
           const point = clientToMap(event.clientX, event.clientY);
           const t = transformRef.current;
           dragRef.current = {
@@ -171,6 +171,7 @@ export function MapStage({
         }}
         onPointerUp={(event) => {
           if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+          try { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); } catch {}
         }}
         onPointerCancel={() => {
           dragRef.current = null;

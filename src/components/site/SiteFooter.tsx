@@ -84,26 +84,31 @@ export function SiteFooter() {
 
         <address className={styles.footerAddress}>
           <strong>Bandar Udara Internasional Juanda</strong>
-          <span>Jalan Ir. Haji Juanda</span>
-          <span>Surabaya 61253</span>
+          <span>Jalan Ir. Haji Juanda, Surabaya 61253</span>
           <a href="tel:+62312986200">Telephone: T1 (+6231) 2986200</a>
           <a href="tel:+62312986700">T2 (+6231) 2986700</a>
         </address>
 
-        <div className={styles.footerContact}>
-          <PhoneCall aria-hidden="true" size={28} strokeWidth={1.8} />
-          <div>
-            <span>Hotline Kami</span>
-            <a href="tel:172">172</a>
-          </div>
-        </div>
+        <div className={styles.footerContacts}>
+          <a href="tel:172" className={styles.footerContact} aria-label="Hubungi Hotline 172">
+            <span className={styles.contactIconWrap} aria-hidden="true">
+              <PhoneCall size={18} strokeWidth={2} />
+            </span>
+            <div className={styles.contactDetails}>
+              <span className={styles.contactLabel}>Hotline Kami</span>
+              <strong className={styles.contactValue}>172</strong>
+            </div>
+          </a>
 
-        <div className={styles.footerContact}>
-          <MessageSquareText aria-hidden="true" size={30} strokeWidth={1.8} />
-          <div>
-            <span>Tulis Masukan</span>
-            <a href="mailto:cc172@injourneyairports.id">cc172@injourneyairports.id</a>
-          </div>
+          <a href="mailto:cc172@injourneyairports.id" className={styles.footerContact} aria-label="Kirim email masukan ke cc172@injourneyairports.id">
+            <span className={styles.contactIconWrap} aria-hidden="true">
+              <MessageSquareText size={18} strokeWidth={2} />
+            </span>
+            <div className={styles.contactDetails}>
+              <span className={styles.contactLabel}>Tulis Masukan</span>
+              <strong className={styles.contactValue}>cc172@injourneyairports.id</strong>
+            </div>
+          </a>
         </div>
       </div>
 

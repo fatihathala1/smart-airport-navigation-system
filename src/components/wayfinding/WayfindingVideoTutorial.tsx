@@ -6,8 +6,6 @@ import {
   ArrowRight,
   Play,
   Clock,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 import { useMapStore } from "@/store/mapStore";
 import styles from "./WayfindingVideoTutorial.module.css";
@@ -24,7 +22,6 @@ export function WayfindingVideoTutorial({
   const lang = useMapStore((state) => state.lang);
   const router = useRouter();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   function handlePlay() {
@@ -79,7 +76,6 @@ export function WayfindingVideoTutorial({
                 poster={posterUrl}
                 controls={isPlaying}
                 playsInline
-                muted={isMuted}
                 onPause={() => setIsPlaying(false)}
                 className="vts-video-el"
               />
@@ -128,25 +124,6 @@ export function WayfindingVideoTutorial({
               <div className="vts-meta-icon-dot" />
               <span>{lang === "ID" ? "Panduan penggunaan peta" : "Map usage guide"}</span>
             </div>
-            {videoUrl && <div className="vts-meta-right">
-              <button
-                type="button"
-                className="vts-mute-btn"
-                onClick={() => {
-                  const next = !isMuted;
-                  setIsMuted(next);
-                  if (videoRef.current) videoRef.current.muted = next;
-                }}
-                title={isMuted
-                  ? (lang === "ID" ? "Aktifkan suara" : "Turn sound on")
-                  : (lang === "ID" ? "Matikan suara" : "Turn sound off")}
-              >
-                {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                <span>{isMuted
-                  ? (lang === "ID" ? "Senyap" : "Muted")
-                  : (lang === "ID" ? "Suara aktif" : "Sound on")}</span>
-              </button>
-            </div>}
           </div>
         </div>
       </div>

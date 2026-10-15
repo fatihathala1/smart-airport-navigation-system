@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Flag, MapPin, Navigation2, Search } from "lucide-react";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -154,82 +154,234 @@ export function HelpPage() {
   const t = guides[lang];
   const [active, setActive] = useState(0);
   const current = t.steps[active];
+  const pageRef = useRef<HTMLElement>(null);
 
-  return <div className={styles.page}>
-    <SiteHeader />
-    <main>
-      <section className={styles.hero} aria-labelledby="help-title">
-        <div className={styles.heroGlow} aria-hidden="true" />
-        <div className={styles.heroInner}>
-          <div className={styles.heroCopy}>
-            <div className={styles.heroEyebrow}>
-              <span className={styles.heroEyebrowDot} aria-hidden="true" />
-              {lang === "ID" ? "PANDUAN WAYFINDING · TERMINAL 1" : "WAYFINDING GUIDE · TERMINAL 1"}
-            </div>
-            <h1 id="help-title">{t.title}</h1>
-            <p>{t.intro}</p>
-            <div className={styles.heroActions}><a className={styles.primaryButton} href="#panduan"><span>{t.start}</span><ArrowRight size={19} /></a><Link className={styles.ghostButton} href="/map">{t.map}<ArrowRight size={17} /></Link></div>
-            <div className={styles.heroMeta} aria-label={lang === "ID" ? "Ringkasan panduan" : "Guide summary"}>
-              <span><strong>04</strong> {lang === "ID" ? "langkah inti" : "core steps"}</span>
-              <span className={styles.heroMetaDivider} aria-hidden="true" />
-              <span><strong>3D</strong> {lang === "ID" ? "peta interaktif" : "interactive map"}</span>
-            </div>
-          </div>
-          <div className={styles.heroArt} aria-hidden="true">
-            <span className={styles.heroArtLabel}>TERMINAL WAYFINDING / 01—04</span>
-            <svg viewBox="0 0 560 400" fill="none"><path className={styles.heroGrid} d="M20 55H540M20 145H540M20 235H540M20 325H540M85 20V380M200 20V380M320 20V380M440 20V380" /><path className={styles.heroTrack} d="M82 310H186V228H315V135H470V65" /><path className={styles.heroRoute} d="M82 310H186V228H315V135H470V65" /><circle cx="82" cy="310" r="18" fill="#0AA5DA" stroke="#D8F6FF" strokeWidth="7" /><circle cx="470" cy="65" r="18" fill="#34D3A0" stroke="#D9FFF1" strokeWidth="7" /><circle cx="315" cy="135" r="5" fill="white" /></svg>
-            <span className={`${styles.heroLabel} ${styles.labelStart}`}>01 / START</span><span className={`${styles.heroLabel} ${styles.labelFinish}`}>04 / DESTINATION</span>
-          </div>
-        </div>
-      </section>
+  useEffect(() => {
+    const container = pageRef.current;
+    if (!container) return;
 
-      <section className={styles.guideSection} id="panduan" aria-labelledby="guide-title">
-        <div className={styles.sectionHeading}><span className={styles.kicker}>{t.sectionEyebrow}</span><h2 id="guide-title">{t.sectionTitle}</h2><p>{t.sectionIntro}</p></div>
-        <div className={styles.guideLayout}>
-          <nav className={styles.stepNav} aria-label={lang === "ID" ? "Langkah panduan" : "Guide steps"}>
-            <span className={styles.navCaption}>{lang === "ID" ? "ALUR PENGGUNAAN" : "YOUR JOURNEY"}</span>
-            {t.steps.map((item, index) => { const Icon = icons[index]; return <button key={item.short} type="button" onClick={() => setActive(index)} className={styles.stepButton} data-active={active === index} aria-current={active === index ? "step" : undefined} aria-controls="step-content"><span className={styles.stepIcon}><Icon size={21} strokeWidth={1.8} /></span><span className={styles.stepButtonCopy}><small>0{index + 1}</small><strong>{item.short}</strong></span><ArrowRight className={styles.stepArrow} size={16} /></button>; })}
-            <span className={styles.navFoot}>{lang === "ID" ? "Klik langkah untuk melihat contoh" : "Select a step to see an example"}</span>
-          </nav>
-          <div className={styles.stepContent} id="step-content" aria-live="polite">
-            <div className={styles.stepText} key={`text-${active}`}>
-              <span className={styles.stepEyebrow}>{t.step} 0{active + 1} <span className={styles.stepDash} /> 04</span>
-              <h3>{current.title}</h3><p>{current.desc}</p>
-              <ul>{current.tips.map((tip) => <li key={tip}><Check size={16} /><span>{tip}</span></li>)}</ul>
-              <Link className={styles.stepCta} href={current.href}>{current.action}<ArrowRight size={17} /></Link>
-            </div>
-            <div className={styles.previewWrap}><div className={styles.previewHeading}><span>{t.preview}</span><span>{t.previewNote}</span></div><StepPreview active={active} lang={lang} /></div>
-            <div className={styles.stepControls}><span>0{active + 1} / 04</span><div><button type="button" onClick={() => setActive((value) => Math.max(0, value - 1))} disabled={active === 0} aria-label={t.previous}><ArrowLeft size={18} /><span>{t.previous}</span></button><button type="button" onClick={() => setActive((value) => Math.min(3, value + 1))} disabled={active === 3} aria-label={t.next}><span>{t.next}</span><ArrowRight size={18} /></button></div></div>
-          </div>
-        </div>
-        <aside className={styles.notice}><span className={styles.noticeIcon}>i</span><div><strong>{t.reminder}</strong><p>{t.reminderText}</p></div></aside>
-      </section>
+    const revealElements = container.querySelectorAll<HTMLElement>(".reveal-on-scroll");
 
-      <section className={styles.passengerSection} aria-labelledby="passenger-title">
-        <div className={styles.passengerInner}>
-          <div className={styles.passengerHeading}>
-            <h2 id="passenger-title">{t.passengerTitle}</h2>
-            <p>{t.passengerIntro}</p>
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-revealed");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        root: null,
+        threshold: 0.08,
+        rootMargin: "0px 0px -40px 0px",
+      },
+    );
+
+    revealElements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className={styles.page}>
+      <SiteHeader />
+      <main className="page-fade-in" ref={pageRef}>
+        <section className={styles.hero} aria-labelledby="help-title">
+          <div className={styles.heroGlow} aria-hidden="true" />
+          <div className={styles.heroInner}>
+            <div className={styles.heroCopy}>
+              <div className={styles.heroEyebrow}>
+                <span className={styles.heroEyebrowDot} aria-hidden="true" />
+                {lang === "ID" ? "PANDUAN WAYFINDING · TERMINAL 1" : "WAYFINDING GUIDE · TERMINAL 1"}
+              </div>
+              <h1 id="help-title">{t.title}</h1>
+              <p>{t.intro}</p>
+              <div className={styles.heroActions}>
+                <a className={styles.primaryButton} href="#panduan">
+                  <span>{t.start}</span>
+                  <ArrowRight size={19} />
+                </a>
+                <Link className={styles.ghostButton} href="/map">
+                  {t.map}
+                  <ArrowRight size={17} />
+                </Link>
+              </div>
+              <div className={styles.heroMeta} aria-label={lang === "ID" ? "Ringkasan panduan" : "Guide summary"}>
+                <span><strong>04</strong> {lang === "ID" ? "langkah inti" : "core steps"}</span>
+                <span className={styles.heroMetaDivider} aria-hidden="true" />
+                <span><strong>3D</strong> {lang === "ID" ? "peta interaktif" : "interactive map"}</span>
+              </div>
+            </div>
+            <div className={styles.heroArt} aria-hidden="true">
+              <span className={styles.heroArtLabel}>TERMINAL WAYFINDING / 01—04</span>
+              <svg viewBox="0 0 560 400" fill="none">
+                <path className={styles.heroGrid} d="M20 55H540M20 145H540M20 235H540M20 325H540M85 20V380M200 20V380M320 20V380M440 20V380" />
+                <path className={styles.heroTrack} d="M82 310H186V228H315V135H470V65" />
+                <path className={styles.heroRoute} d="M82 310H186V228H315V135H470V65" />
+                <circle cx="82" cy="310" r="18" fill="#0AA5DA" stroke="#D8F6FF" strokeWidth="7" />
+                <circle cx="470" cy="65" r="18" fill="#34D3A0" stroke="#D9FFF1" strokeWidth="7" />
+                <circle cx="315" cy="135" r="5" fill="white" />
+              </svg>
+              <span className={`${styles.heroLabel} ${styles.labelStart}`}>01 / START</span>
+              <span className={`${styles.heroLabel} ${styles.labelFinish}`}>04 / DESTINATION</span>
+            </div>
           </div>
-          <ol className={styles.passengerSteps}>
-            {t.passengerSteps.map((item, index) => (
-              <li key={item.title} className={styles.passengerStep}>
-                <span className={styles.passengerNumber} aria-hidden="true">0{index + 1}</span>
-                <div>
-                  <h3>{item.title}</h3>
-                  <p>{item.description}</p>
+        </section>
+
+        <section className={`${styles.guideSection} reveal-on-scroll`} id="panduan" aria-labelledby="guide-title">
+          <div className={styles.sectionHeading}>
+            <span className={styles.kicker}>{t.sectionEyebrow}</span>
+            <h2 id="guide-title">{t.sectionTitle}</h2>
+            <p>{t.sectionIntro}</p>
+          </div>
+          <div className={styles.guideLayout}>
+            <nav className={styles.stepNav} aria-label={lang === "ID" ? "Langkah panduan" : "Guide steps"}>
+              <span className={styles.navCaption}>{lang === "ID" ? "ALUR PENGGUNAAN" : "YOUR JOURNEY"}</span>
+              {t.steps.map((item, index) => {
+                const Icon = icons[index];
+                return (
+                  <button
+                    key={item.short}
+                    type="button"
+                    onClick={() => setActive(index)}
+                    className={styles.stepButton}
+                    data-active={active === index}
+                    aria-current={active === index ? "step" : undefined}
+                    aria-controls="step-content"
+                  >
+                    <span className={styles.stepIcon}>
+                      <Icon size={21} strokeWidth={1.8} />
+                    </span>
+                    <span className={styles.stepButtonCopy}>
+                      <small>0{index + 1}</small>
+                      <strong>{item.short}</strong>
+                    </span>
+                    <ArrowRight className={styles.stepArrow} size={16} />
+                  </button>
+                );
+              })}
+              <span className={styles.navFoot}>
+                {lang === "ID" ? "Klik langkah untuk melihat contoh" : "Select a step to see an example"}
+              </span>
+            </nav>
+            <div className={styles.stepContent} id="step-content" aria-live="polite">
+              <div className={styles.stepText} key={`text-${active}`}>
+                <span className={styles.stepEyebrow}>
+                  {t.step} 0{active + 1} <span className={styles.stepDash} /> 04
+                </span>
+                <h3>{current.title}</h3>
+                <p>{current.desc}</p>
+                <ul>
+                  {current.tips.map((tip) => (
+                    <li key={tip}>
+                      <Check size={16} />
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link className={styles.stepCta} href={current.href}>
+                  {current.action}
+                  <ArrowRight size={17} />
+                </Link>
+              </div>
+              <div className={styles.previewWrap}>
+                <div className={styles.previewHeading}>
+                  <span>{t.preview}</span>
+                  <span>{t.previewNote}</span>
                 </div>
-                <span className={styles.passengerFloor}>{item.floor}</span>
-              </li>
-            ))}
-          </ol>
-          <p className={styles.passengerNote}>{t.passengerNote}</p>
-        </div>
-      </section>
+                <StepPreview active={active} lang={lang} />
+              </div>
+              <div className={styles.stepControls}>
+                <span>0{active + 1} / 04</span>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setActive((value) => Math.max(0, value - 1))}
+                    disabled={active === 0}
+                    aria-label={t.previous}
+                  >
+                    <ArrowLeft size={18} />
+                    <span>{t.previous}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActive((value) => Math.min(3, value + 1))}
+                    disabled={active === 3}
+                    aria-label={t.next}
+                  >
+                    <span>{t.next}</span>
+                    <ArrowRight size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <aside className={styles.notice}>
+            <span className={styles.noticeIcon}>i</span>
+            <div>
+              <strong>{t.reminder}</strong>
+              <p>{t.reminderText}</p>
+            </div>
+          </aside>
+        </section>
 
-      <section className={styles.faqSection} aria-labelledby="faq-title"><div className={styles.faqInner}><div className={styles.faqHeading}><span className={styles.kicker}>{t.faqEyebrow}</span><h2 id="faq-title">{t.faqTitle}</h2></div><div className={styles.faqList}>{t.faq.map((item, index) => <details key={item.q}><summary><span>0{index + 1}</span><strong>{item.q}</strong><ChevronDown size={19} /></summary><p>{item.a}</p></details>)}</div></div></section>
-      <section className={styles.closing}><div><span className={styles.kicker}>{t.closingEyebrow}</span><h2>{t.closingTitle}</h2><p>{t.closingText}</p></div><Link href="/map" className={styles.primaryButton}>{t.map}<ArrowRight size={19} /></Link></section>
-    </main>
-    <SiteFooter />
-  </div>;
+        <section className={`${styles.passengerSection} reveal-on-scroll`} aria-labelledby="passenger-title">
+          <div className={styles.passengerInner}>
+            <div className={styles.passengerHeading}>
+              <h2 id="passenger-title">{t.passengerTitle}</h2>
+              <p>{t.passengerIntro}</p>
+            </div>
+            <ol className={styles.passengerSteps}>
+              {t.passengerSteps.map((item, index) => (
+                <li key={item.title} className={styles.passengerStep}>
+                  <span className={styles.passengerNumber} aria-hidden="true">0{index + 1}</span>
+                  <div>
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
+                  </div>
+                  <span className={styles.passengerFloor}>{item.floor}</span>
+                </li>
+              ))}
+            </ol>
+            <p className={styles.passengerNote}>{t.passengerNote}</p>
+          </div>
+        </section>
+
+        <section className={`${styles.faqSection} reveal-on-scroll`} aria-labelledby="faq-title">
+          <div className={styles.faqInner}>
+            <div className={styles.faqHeading}>
+              <span className={styles.kicker}>{t.faqEyebrow}</span>
+              <h2 id="faq-title">{t.faqTitle}</h2>
+            </div>
+            <div className={styles.faqList}>
+              {t.faq.map((item, index) => (
+                <details key={item.q}>
+                  <summary>
+                    <span>0{index + 1}</span>
+                    <strong>{item.q}</strong>
+                    <ChevronDown size={19} />
+                  </summary>
+                  <p>{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className={`${styles.closing} reveal-on-scroll`}>
+          <div>
+            <span className={styles.kicker}>{t.closingEyebrow}</span>
+            <h2>{t.closingTitle}</h2>
+            <p>{t.closingText}</p>
+          </div>
+          <Link href="/map" className={styles.primaryButton}>
+            {t.map}
+            <ArrowRight size={19} />
+          </Link>
+        </section>
+      </main>
+      <SiteFooter />
+    </div>
+  );
 }

@@ -25,6 +25,7 @@ import {
   Compass,
   Crosshair,
   LoaderCircle,
+  MousePointer2,
   Pause,
   Play,
   Plus,
@@ -1095,8 +1096,8 @@ export function AirportWayfinding() {
             {modelFloors.length > 1 && (["L1", "L2"] as FloorId[]).filter((floor) => modelFloors.includes(floor)).map((floor) => (
               <button key={floor} type="button" className={passengerFloor === floor ? "is-selected" : ""} onClick={() => { setPassengerFloor(floor); setAutomaticLocation(true); setLocationMapped(false); }} aria-pressed={passengerFloor === floor}>{FLOOR_LABELS[floor]}</button>
             ))}
-            <button type="button" className="sea-live-location-retry" onClick={refreshPassengerLocation} aria-label={lang === "ID" ? "Perbarui lokasi saya" : "Refresh my location"}>
-              <Crosshair size={14} /> {copy.retryLocation}
+            <button type="button" className="sea-live-location-retry" onClick={refreshPassengerLocation} aria-label={lang === "ID" ? "Perbarui lokasi saya" : "Refresh my location"} title={copy.retryLocation}>
+              <Crosshair size={14} />
             </button>
           </div>
         </div>
@@ -1161,7 +1162,7 @@ export function AirportWayfinding() {
                 aria-pressed={liveTracking}
                 title={liveTracking ? "Hentikan navigasi GPS" : "Mulai navigasi GPS"}
               >
-                <Crosshair size={13} />
+                <MousePointer2 size={13} />
                 <span>{liveTracking ? "Hentikan GPS" : "Mulai navigasi GPS"}</span>
               </button>
               {viewMode === "pov" ? (

@@ -368,7 +368,7 @@ export function AboutPage() {
     <div className={styles.page}>
       <SiteHeader />
 
-      <main ref={pageContainerRef}>
+      <main ref={pageContainerRef} className="page-fade-in">
         {/* =========================================
             HERO SECTION
             ========================================= */}
