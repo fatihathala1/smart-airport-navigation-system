@@ -1,4 +1,4 @@
-# 🛫 Juanda Smart Airport Navigation & Indoor Wayfinding System
+# Juanda Smart Airport Navigation & Indoor Wayfinding System
 
 <div align="center">
 
@@ -57,7 +57,7 @@ Sistem ini terintegrasi penuh dengan **Portal Administrasi Bandara** terproteksi
 
 ---
 
-## 🏛️ Arsitektur & Teknologi
+## Arsitektur & Teknologi
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -224,7 +224,7 @@ Aplikasi siap dibuka di browser:
 
 ---
 
-## 🛠️ Perintah Pengujian & Kualitas Kode
+## Perintah Pengujian & Kualitas Kode
 
 ```bash
 # Menjalankan validasi tipe TypeScript
