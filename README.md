@@ -19,7 +19,7 @@
 
 ---
 
-## 📌 Ringkasan Proyek
+##  Ringkasan Proyek
 
 **Juanda Smart Airport Navigation System** adalah platform navigasi dalam ruangan (*indoor wayfinding*) berbasis web 3D interaktif yang dirancang khusus untuk memandu penumpang di **Bandar Udara Internasional Juanda Surabaya (SUB)**. 
 
@@ -29,26 +29,26 @@ Sistem ini terintegrasi penuh dengan **Portal Administrasi Bandara** terproteksi
 
 ---
 
-## ✨ Fitur Utama
+## Fitur Utama
 
-### 1. 🧭 Peta 3D Digital Twin Interaktif (Terminal 1)
+### 1. Peta 3D Digital Twin Interaktif (Terminal 1)
 - **Model 3D Multi-Lantai Terpadu**: Model GLB gabungan (`t1-gabungan.glb`) yang mencakup Lantai 1 (GF) dan Lantai 2 (FF) dengan sinkronisasi elevasi presisi berdasarkan struktur pilar bandara.
 - **Peralihan Lantai Mulus (*Floor Switcher*)**: Beralih antara tampilan Lantai 1, Lantai 2, atau Seluruh Gedung tanpa memuat ulang model (*zero-reload*).
 - **Apron & Pesawat Realistis**: Visualisasi area luar terminal (*exterior apron*) lengkap dengan model pesawat maskapai pada setiap garbarata (*jetbridge*).
 - **Kamera & Orbit Kontrol Responsif**: Dukungan navigasi sentuh (cubit untuk zoom, geser untuk rotasi/pan) yang dioptimalkan untuk perangkat mobile, tablet, desktop, maupun layar kiosk.
 
-### 2. 🚶‍♂️ Mesin Navigasi & Algoritma Rute Antarlantai
+### 2. Mesin Navigasi & Algoritma Rute Antarlantai
 - **Dijkstra Multi-Floor Route Engine**: Perhitungan rute terpendek dan paling efisien menggunakan algoritma Dijkstra berbasis grid permukaan lantai yang dapat dilalui (*walkable grid*).
 - **Konektor Vertikal Arah-Tertentu**: Menangani eskalator searah (Naik / Turun) dan tangga dengan instruksi kontekstual (*e.g., "Naik eskalator ke Lantai 2"*).
 - **Estimasi Waktu Tempuh (ETA)**: Menghitung jarak tempuh riil dalam meter dan estimasi waktu berjalan kaki dengan kecepatan standar penumpang (72 m/menit).
 - **Passenger Roadmap**: Panduan alur penumpang mandiri dari pintu masuk, *check-in security check point* (SCP), boarding lounge, hingga gate keberangkatan.
 
-### 3. 🔍 Pencarian & Direktori Fasilitas Bandara
+### 3. Pencarian & Direktori Fasilitas Bandara
 - **Pencarian Cepat (*Omni-search*)**: Menemukan gate, tenant F&B, toko ritel, dan fasilitas dengan autocomplete instan.
 - **Filter Berdasarkan Kategori**: Memilah tujuan berdasarkan kategori (*Restoran, Kafe, Belanja, ATM, Toilet, Mushola, Medis, Layanan Informasi*).
 - **Jadwal Keberangkatan Penerbangan (*Flight Departures*)**: Integrasi nomor penerbangan, maskapai, waktu terbang, status, dan gate tujuan langsung di panel navigasi.
 
-### 4. ⚙️ Portal Manajemen Admin & Sinkronisasi Database
+### 4. Portal Manajemen Admin & Sinkronisasi Database
 - **Sinkronisasi Objek Peta 3D (*Map Object Config*)**: Pengelola dapat mengedit nama tampilan, kategori, jam buka/tutup, foto, dan status keterisian objek 3D langsung dari browser dan tersimpan ke PostgreSQL.
 - **Role-Based Access Control (RBAC)**:
   - **Super Admin**: Akses penuh ke seluruh konfigurasi sistem, manajemen pengguna admin, data terminal, dan audit log.
@@ -114,7 +114,7 @@ Sistem ini terintegrasi penuh dengan **Portal Administrasi Bandara** terproteksi
 
 ---
 
-## 📁 Struktur Repositori
+## Struktur Repositori
 
 ```text
 smart-airport-navigation-system/
@@ -158,7 +158,7 @@ smart-airport-navigation-system/
 
 ---
 
-## 🚀 Panduan Instalasi & Menjalankan
+## Panduan Instalasi & Menjalankan
 
 ### Prasyarat Sistem
 - **Node.js**: Versi `v20.x` atau lebih baru
@@ -219,7 +219,7 @@ Aplikasi siap dibuka di browser:
 - **Pusat Bantuan & Tutorial**: `http://localhost:3000/help`
 - **Portal Admin**: `http://localhost:3000/admin` *(Login menggunakan akun hasil seeding)*
 
-> 💡 **Akses Perangkat Mobile di Jaringan yang Sama**:  
+> **Akses Perangkat Mobile di Jaringan yang Sama**:  
 > Script `npm run dev` secara otomatis menampilkan IP Wi-Fi lokal Anda (contoh: `http://192.168.1.15:3000`). Buka URL tersebut di browser smartphone Anda untuk menguji navigasi secara langsung di genggaman.
 
 ---
@@ -242,7 +242,7 @@ npm run build
 
 ---
 
-## 🔒 Model Keamanan & Otorisasi
+## Model Keamanan & Otorisasi
 
 Sistem mengimplementasikan prinsip *defense-in-depth* untuk melindungi data operasional bandara:
 
@@ -254,7 +254,7 @@ Sistem mengimplementasikan prinsip *defense-in-depth* untuk melindungi data oper
 
 ---
 
-## 👥 Tim Pengembang & Kontributor
+## Tim Pengembang & Kontributor
 
 Proyek **Juanda Smart Airport Navigation System** dirancang, dikembangkan, dan disempurnakan oleh kolaborasi tim yang berdedikasi:
 
@@ -274,7 +274,7 @@ Proyek **Juanda Smart Airport Navigation System** dirancang, dikembangkan, dan d
 
 ---
 
-## 📄 Lisensi & Hak Cipta
+## Lisensi & Hak Cipta
 
 Dibuat untuk keperluan pengembangan dan inovasi navigasi cerdas **Bandar Udara Internasional Juanda (PT Angkasa Pura Indonesia / InJourney Airports)**.
 
