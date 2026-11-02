@@ -6,6 +6,7 @@ import {
   isUsableT1Position,
   T1_GEO_CALIBRATION,
 } from "../src/lib/map3d/passenger-geolocation";
+import { T1_METERS_PER_MODEL_UNIT } from "../src/lib/map3d/distance-calibration";
 
 test("T1 origin uses the same calibrated model transform as exterior data", () => {
   const point = geographicToT1Model({
@@ -17,7 +18,7 @@ test("T1 origin uses the same calibrated model transform as exterior data", () =
   assert.ok(Math.abs(point[1] - -2.12) < 0.02);
 });
 
-test("nearby movement is converted to model meters with the calibrated scale", () => {
+test("nearby GPS movement agrees with the calibrated route distance", () => {
   const origin = T1_GEO_CALIBRATION.origin;
   const start = geographicToT1Model({ latitude: origin.latitude, longitude: origin.longitude });
   const aboutOneHundredMetersEast = geographicToT1Model({
@@ -25,11 +26,11 @@ test("nearby movement is converted to model meters with the calibrated scale", (
     longitude: origin.longitude + 100 / (111_320 * Math.cos((origin.latitude * Math.PI) / 180)),
   });
   const modelDistance = Math.hypot(
-    aboutOneHundredMetersEast[0] - start[0],
-    aboutOneHundredMetersEast[1] - start[1],
+    (aboutOneHundredMetersEast[0] - start[0]) * T1_METERS_PER_MODEL_UNIT[0],
+    (aboutOneHundredMetersEast[1] - start[1]) * T1_METERS_PER_MODEL_UNIT[2],
   );
 
-  assert.ok(Math.abs(modelDistance - 81) < 0.5);
+  assert.ok(Math.abs(modelDistance - 100) < 0.01);
 });
 
 test("only accurate readings near Terminal 1 are used on the indoor map", () => {

@@ -1,11 +1,14 @@
 import * as THREE from "three";
+import type { MetersPerModelUnit } from "./distance-calibration";
 
 export const VISITOR_SPEED_METERS_PER_SECOND = 1.35;
 
 export type RouteWorldPoint = [number, number, number];
 
 export type RouteMetrics = {
+  /** Positions stay in model coordinates; all distances below are meters. */
   points: THREE.Vector3[];
+  metersPerModelUnit: MetersPerModelUnit;
   cumulativeDistances: number[];
   totalDistance: number;
 };
@@ -26,7 +29,12 @@ export type RouteGuidance = {
 
 export function createRouteMetrics(
   sourcePoints: RouteWorldPoint[],
+  metersPerModelUnit: MetersPerModelUnit = [1, 1, 1],
 ): RouteMetrics | null {
+  if (metersPerModelUnit.some((scale) => !Number.isFinite(scale) || scale <= 0)) {
+    throw new Error("Distance calibration must contain positive finite scales");
+  }
+  const scale = new THREE.Vector3(...metersPerModelUnit);
   const points = sourcePoints
     .map((point) => new THREE.Vector3(...point))
     .filter(
@@ -39,14 +47,38 @@ export function createRouteMetrics(
   for (let index = 1; index < points.length; index += 1) {
     cumulativeDistances.push(
       cumulativeDistances[index - 1] +
-        points[index].distanceTo(points[index - 1]),
+        points[index].clone().sub(points[index - 1]).multiply(scale).length(),
     );
   }
   return {
     points,
+    metersPerModelUnit,
     cumulativeDistances,
     totalDistance: cumulativeDistances.at(-1) ?? 0,
   };
+}
+
+/** Project GPS/model position onto the route, returning traveled meters. */
+export function nearestRouteDistance(metrics: RouteMetrics, position: RouteWorldPoint) {
+  const scale = new THREE.Vector3(...metrics.metersPerModelUnit);
+  const point = new THREE.Vector3(...position).multiply(scale);
+  let bestDistance = 0;
+  let bestSquared = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < metrics.points.length - 1; index += 1) {
+    const start = metrics.points[index].clone().multiply(scale);
+    const segment = metrics.points[index + 1].clone().multiply(scale).sub(start);
+    const lengthSquared = segment.lengthSq();
+    const ratio = lengthSquared > 0
+      ? THREE.MathUtils.clamp(point.clone().sub(start).dot(segment) / lengthSquared, 0, 1)
+      : 0;
+    const squared = start.addScaledVector(segment, ratio).distanceToSquared(point);
+    if (squared < bestSquared) {
+      bestSquared = squared;
+      const segmentMeters = metrics.cumulativeDistances[index + 1] - metrics.cumulativeDistances[index];
+      bestDistance = metrics.cumulativeDistances[index] + segmentMeters * ratio;
+    }
+  }
+  return bestDistance;
 }
 
 export function sampleRouteAtDistance(
@@ -120,6 +152,9 @@ export function getRouteGuidance(
     const after = metrics.points[index + 1]
       .clone()
       .sub(metrics.points[index]);
+    const scale = new THREE.Vector3(...metrics.metersPerModelUnit);
+    before.multiply(scale);
+    after.multiply(scale);
     before.y = 0;
     after.y = 0;
     if (before.lengthSq() < 0.04 || after.lengthSq() < 0.04) continue;

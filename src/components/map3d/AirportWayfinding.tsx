@@ -55,10 +55,13 @@ import { RoutePlaybackController } from "@/components/map3d/RoutePlaybackControl
 import {
   createPlaybackSnapshot,
   createRouteMetrics,
+  nearestRouteDistance,
+  VISITOR_SPEED_METERS_PER_SECOND,
   type RouteWorldPoint,
   type RoutePlaybackSnapshot,
 } from "@/lib/map3d/route-guidance";
 import { createRouteSteps } from "@/lib/map3d/route-steps";
+import { T1_DISTANCE_CALIBRATION_ID, T1_METERS_PER_MODEL_UNIT } from "@/lib/map3d/distance-calibration";
 import {
   createSelectedObject,
   type SelectedObject,
@@ -426,28 +429,6 @@ function requiredDepartureForRecord(record: SceneObjectRecord) {
   return null;
 }
 
-function nearestRouteDistance(metrics: { points: THREE.Vector3[]; cumulativeDistances: number[] }, position: RouteWorldPoint) {
-  const point = new THREE.Vector3(...position);
-  let bestDistance = 0;
-  let bestSquared = Number.POSITIVE_INFINITY;
-  for (let index = 0; index < metrics.points.length - 1; index += 1) {
-    const start = metrics.points[index];
-    const end = metrics.points[index + 1];
-    const segment = end.clone().sub(start);
-    const lengthSquared = segment.lengthSq();
-    const ratio = lengthSquared > 0
-      ? THREE.MathUtils.clamp(point.clone().sub(start).dot(segment) / lengthSquared, 0, 1)
-      : 0;
-    const projected = start.clone().addScaledVector(segment, ratio);
-    const squared = projected.distanceToSquared(point);
-    if (squared < bestSquared) {
-      bestSquared = squared;
-      bestDistance = metrics.cumulativeDistances[index] + Math.sqrt(lengthSquared) * ratio;
-    }
-  }
-  return bestDistance;
-}
-
 export function AirportWayfinding() {
   const viewerApi = useRef<ViewerApi>(null);
   const [bounds, setBounds] = useState<SceneBounds | null>(null);
@@ -585,7 +566,7 @@ export function AirportWayfinding() {
   const gateNumbers = useMemo(() => [...gateRecords.keys()].sort((left, right) => left - right), [gateRecords]);
 
   const routeMetrics = useMemo(
-    () => createRouteMetrics(routeWorldPoints),
+    () => createRouteMetrics(routeWorldPoints, T1_METERS_PER_MODEL_UNIT),
     [routeWorldPoints],
   );
   const routeSessionActive = Boolean(routeMetrics);
@@ -1137,6 +1118,8 @@ export function AirportWayfinding() {
     if (!routeMetrics) return;
     const routeBounds = new THREE.Box3().setFromPoints(routeMetrics.points);
     const routeReport = {
+      calibration: T1_DISTANCE_CALIBRATION_ID,
+      metersPerModelUnit: T1_METERS_PER_MODEL_UNIT,
       pointCount: routeMetrics.points.length,
       totalDistance: routeMetrics.totalDistance,
       first: routeMetrics.points[0]?.toArray(),
@@ -1168,7 +1151,7 @@ export function AirportWayfinding() {
     ? Math.max(0, routeMetrics.totalDistance - traveledRouteDistance)
     : 0;
   const remainingRouteMinutes = remainingRouteDistance > 0
-    ? Math.ceil(remainingRouteDistance / 1.35 / 60)
+    ? Math.ceil(remainingRouteDistance / VISITOR_SPEED_METERS_PER_SECOND / 60)
     : 0;
   const searchPlaceholderExample = multiFloor ? "T1-GF-01, Gate 5" : "T1-GF-...";
 

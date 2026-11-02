@@ -29,6 +29,11 @@ export function createRouteSteps(metrics: RouteMetrics, transitions: readonly Ro
     if (isRidePoint(index)) continue;
     const before = metrics.points[index].clone().sub(metrics.points[index - 1]);
     const after = metrics.points[index + 1].clone().sub(metrics.points[index]);
+    const [scaleX, , scaleZ] = metrics.metersPerModelUnit;
+    before.x *= scaleX;
+    before.z *= scaleZ;
+    after.x *= scaleX;
+    after.z *= scaleZ;
     before.y = 0;
     after.y = 0;
     if (before.lengthSq() < 0.04 || after.lengthSq() < 0.04) continue;

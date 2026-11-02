@@ -1,3 +1,5 @@
+import { T1_METERS_PER_MODEL_UNIT } from "./distance-calibration";
+
 export type GeographicPoint = {
   latitude: number;
   longitude: number;
@@ -6,13 +8,15 @@ export type GeographicPoint = {
 export type ModelPoint = [x: number, z: number];
 
 /**
- * Kalibrasi yang sama dengan scripts/build-exterior.mjs. Menyatukan koordinat
- * GPS, lingkungan OpenStreetMap, dan model Terminal 1 dalam satu bidang X/Z.
+ * Retain the geographic origin/heading from the exterior fit, but use the
+ * accepted Google Earth distance calibration for movement along X/Z.
  */
 export const T1_GEO_CALIBRATION = {
   origin: { longitude: 112.7953, latitude: -7.375 },
   rotationDeg: -9.2,
-  scale: 0.81,
+  // Original OSM fit is used only to preserve the existing model origin.
+  anchorFitScale: 0.81,
+  metersPerModelUnit: T1_METERS_PER_MODEL_UNIT,
   centroid: [-58.8628, -1.2603] as const,
   shift: [-47.5, 4.5] as const,
   /** Hindari menempelkan lokasi berbasis IP yang masih jauh dari Terminal 1. */
@@ -46,15 +50,16 @@ export function geographicToT1Model(point: GeographicPoint): ModelPoint {
     ((point.latitude - calibration.origin.latitude) * Math.PI * EARTH_RADIUS_METERS) /
     180;
 
-  const px = east - calibration.centroid[0];
-  const pz = -north - calibration.centroid[1];
   const rotation = (calibration.rotationDeg * Math.PI) / 180;
   const cosine = Math.cos(rotation);
   const sine = Math.sin(rotation);
+  const [cx, cz] = calibration.centroid;
+  const originX = (-cosine * cx + sine * cz) * calibration.anchorFitScale + calibration.shift[0];
+  const originZ = (-sine * cx - cosine * cz) * calibration.anchorFitScale + calibration.shift[1];
 
   return [
-    (cosine * px - sine * pz) * calibration.scale + calibration.shift[0],
-    (sine * px + cosine * pz) * calibration.scale + calibration.shift[1],
+    originX + (cosine * east + sine * north) / calibration.metersPerModelUnit[0],
+    originZ + (sine * east - cosine * north) / calibration.metersPerModelUnit[2],
   ];
 }
 

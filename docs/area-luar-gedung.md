@@ -39,13 +39,14 @@ dengan mencari rotasi, skala, dan pergeseran yang memaksimalkan IoU.
 | Skala | 0,81 |
 | Rotasi | -9,2 derajat |
 
-Dua temuan dari proses ini:
+Dua temuan historis dari proses ini (fit visual area luar):
 
 1. **Model GLB berskala sekitar 81% dari ukuran asli.** Bentuknya cocok, termasuk
    sayap barat yang sempit, takik di ujung timur, dan gerigi gate di sisi selatan.
-   Akibatnya jarak yang ditampilkan di panel rute ("29 m", "159 m") sekitar 19%
-   lebih pendek dari jarak berjalan sebenarnya. Kalau angka itu dipakai untuk
-   estimasi waktu, kalikan dengan 1/0,81 atau perbaiki skala model di Blender.
+   Sebelumnya jarak panel rute dihitung langsung dari unit model. Perhitungan rute
+   sekarang memakai dua acuan Google Earth pengguna; lihat
+   [kalibrasi jarak](kalibrasi-jarak.md). Jangan menerapkan lagi faktor 1/0,81
+   di atas hasil jarak terkalibrasi tersebut.
 2. **Model diluruskan sekitar 9 derajat.** Bangunan aslinya sedikit miring terhadap
    arah timur. Area luar ikut diputar agar sejajar dengan model, jadi kompas di
    layar tidak menunjuk utara sebenarnya dengan tepat.
